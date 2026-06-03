@@ -46,6 +46,14 @@ Drop the `.ttf` files (and their `OFL.txt`) into
 — `LumaFonts.registerIfNeeded()` registers them at launch. See that folder's
 README for the exact filenames.
 
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push/PR on a
+**macOS** runner: it `swift test`s the design-system package and builds the app
+for **iOS Simulator + macOS** via `xcodegen generate` + `xcodebuild`. This is the
+automated compile/test check (the scaffold was authored on Linux without a Swift
+toolchain, so CI is the real verification).
+
 ## Layout
 
 ```

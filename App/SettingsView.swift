@@ -9,6 +9,8 @@ import TunerEngine
 struct SettingsView: View {
     @Bindable var model: LiveTunerModel
     @Environment(\.dismiss) private var dismiss
+    /// Hero-strobe choice, shared with `LiveTunerScreen` via the same `@AppStorage` key.
+    @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
 
     var body: some View {
         NavigationStack {
@@ -35,6 +37,19 @@ struct SettingsView: View {
                             Text(preset.label).tag(preset.id)
                         }
                     }
+                }
+
+                Section {
+                    Picker("Strobe", selection: $strobeStyle) {
+                        ForEach(StrobeStyle.allCases) { style in
+                            Text(style.label).tag(style)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                } header: {
+                    Text("Display")
+                } footer: {
+                    Text("The hero visual. Reduce Motion replaces it with a still gauge.")
                 }
 
                 Section("Feel") {

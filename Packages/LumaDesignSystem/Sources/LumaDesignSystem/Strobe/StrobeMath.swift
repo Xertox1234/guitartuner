@@ -22,6 +22,24 @@ enum StrobeMath {
         0.5 - 0.34 * max(prox, lock)
     }
 
+    // MARK: Radial phase ring (Concept B)
+
+    /// Ring rotation speed (radians/sec) — the Radial analogue of `scrollSpeed`.
+    /// Proportional to the signed error (sharp → CW, flat → CCW), eased to zero at
+    /// lock. Mirrors `(sign·absErr)·0.010` per `dt·60` frame in `strobe-radial.jsx`,
+    /// i.e. `cents·0.010·60·(1 − lock)`.
+    static func ringSpeed(cents: Double, lock: Double) -> Double {
+        cents * 0.010 * 60 * (1 - lock)
+    }
+
+    /// Per-mark brightness envelope (0.35…1) at ring angle `a` (radians). A `cos`
+    /// sweep that peaks at the top of the ring (`a = −π/2`) so the leading edge
+    /// reads as motion. Mirrors `0.35 + 0.65·((phase+1)/2)^1.5` in `strobe-radial.jsx`.
+    static func markEnvelope(angle a: Double) -> Double {
+        let phase = cos(a + .pi / 2)        // peaks at the top (a = −π/2); == −sin(a)
+        return 0.35 + 0.65 * pow((phase + 1) / 2, 1.5)
+    }
+
     // MARK: Reduced-motion gauge
 
     /// Degrees swept either side of centre.

@@ -18,11 +18,12 @@ The remaining pillar is **#2, the strobe / experience layer** — co-equal with
 accuracy, so worth doing well.
 
 ### Strobe & experience (DESIGN §2.2, EXPERIENCE §2/§8/§11)
-- [ ] **Radial Phase Ring** strobe variant — second hero visual, rendered from the
+- [x] **Radial Phase Ring** strobe variant — second hero visual, rendered from the
       existing `StrobeInput` contract (cents/phase/locked). Decision is locked:
-      *ship both, user-selectable*.
-- [ ] **Strobe Settings toggle** — Aurora (default) / Radial, persisted in
+      *ship both, user-selectable*. *(Plan 05.)*
+- [x] **Strobe Settings toggle** — Aurora (default) / Radial, persisted in
       `@AppStorage`; the reduced-motion gauge still auto-engages on Reduce Motion.
+      *(Plan 05.)*
 - [ ] **Metal `StrobeRenderer`** — the real 120 fps hero path, a drop-in behind
       `StrobeInput` (DESIGN §5). Today's Aurora is a `Canvas`/`TimelineView`
       prototype; Metal is the production render path. *Needs on-device validation.*
@@ -83,3 +84,8 @@ networking in v1, ever.
 - [x] **Plan 04 — Tuner UX**: manual string-lock + Auto/String mode, tuning presets
       (guitar + bass 4/5-string), A4 calibration, on-device tone generator, in-tune
       Core Haptics, Settings sheet.
+- [x] **Plan 05 — Radial strobe + style toggle**: `RadialStrobe` phase-ring hero
+      (port of `strobe-radial.jsx`), a peer of Aurora behind `StrobeField`/`StrobeInput`
+      with the same phase-driven true-strobe path; Aurora/Radial selector in Settings
+      (`@AppStorage`) + the Strobe lab; Reduce Motion still overrides to the gauge.
+      Pure `ringSpeed`/`markEnvelope` math unit-tested.

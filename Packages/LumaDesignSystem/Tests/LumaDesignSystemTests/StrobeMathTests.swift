@@ -27,6 +27,28 @@ final class StrobeMathTests: XCTestCase {
         XCTAssertEqual(StrobeMath.spread(prox: 0, lock: 1), 0.16, accuracy: 1e-9)  // lock also converges
     }
 
+    func testRingSpeed() {
+        XCTAssertEqual(StrobeMath.ringSpeed(cents: 0, lock: 0), 0, accuracy: 1e-9)
+        XCTAssertEqual(StrobeMath.ringSpeed(cents: 30, lock: 1), 0, accuracy: 1e-9)   // frozen at lock
+        // sharp rotates one way, flat the other
+        XCTAssertGreaterThan(StrobeMath.ringSpeed(cents: 10, lock: 0), 0)
+        XCTAssertLessThan(StrobeMath.ringSpeed(cents: -10, lock: 0), 0)
+        XCTAssertEqual(StrobeMath.ringSpeed(cents: 10, lock: 0), 10 * 0.010 * 60, accuracy: 1e-9)
+    }
+
+    func testMarkEnvelope() {
+        // Peaks at the top of the ring (a = −π/2), dimmest at the bottom (a = +π/2).
+        XCTAssertEqual(StrobeMath.markEnvelope(angle: -.pi / 2), 1.0, accuracy: 1e-9)
+        XCTAssertEqual(StrobeMath.markEnvelope(angle: .pi / 2), 0.35, accuracy: 1e-9)
+        XCTAssertEqual(StrobeMath.markEnvelope(angle: 0), 0.35 + 0.65 * pow(0.5, 1.5), accuracy: 1e-9)
+        // Always within [0.35, 1] across a full revolution.
+        for deg in stride(from: 0.0, to: 360.0, by: 7.0) {
+            let env = StrobeMath.markEnvelope(angle: deg * .pi / 180)
+            XCTAssertGreaterThanOrEqual(env, 0.35 - 1e-9)
+            XCTAssertLessThanOrEqual(env, 1.0 + 1e-9)
+        }
+    }
+
     func testGaugeAngle() {
         XCTAssertEqual(StrobeMath.gaugeAngle(cents: 0), 0, accuracy: 1e-9)
         XCTAssertEqual(StrobeMath.gaugeAngle(cents: 50), 122, accuracy: 1e-9)
@@ -73,5 +95,30 @@ final class TunerSimulatorTests: XCTestCase {
         sim.setManual(0)
         let expected = LumaMusic.frequency(midi: sim.activeString.midi, a4: 440)
         XCTAssertEqual(sim.displayedFrequency(a4: 440), expected, accuracy: 1e-6)
+    }
+}
+
+/// The hero-strobe selection contract (Settings picker + `@AppStorage` persistence).
+final class StrobeStyleTests: XCTestCase {
+
+    func testAuroraIsTheDefaultAndFirstOption() {
+        // Aurora is the documented default — leftmost in the segmented picker.
+        XCTAssertEqual(StrobeStyle.allCases.first, .aurora)
+        XCTAssertEqual(StrobeStyle.allCases, [.aurora, .radial])
+    }
+
+    func testLabelsAndIdentity() {
+        XCTAssertEqual(StrobeStyle.aurora.label, "Aurora")
+        XCTAssertEqual(StrobeStyle.radial.label, "Radial")
+        XCTAssertEqual(StrobeStyle.radial.id, StrobeStyle.radial.rawValue)
+    }
+
+    func testRawValueRoundTripForAppStorage() {
+        // The persisted raw string must survive a round-trip; unknown values are nil
+        // (callers fall back to the .aurora default).
+        for style in StrobeStyle.allCases {
+            XCTAssertEqual(StrobeStyle(rawValue: style.rawValue), style)
+        }
+        XCTAssertNil(StrobeStyle(rawValue: "spinner"))
     }
 }

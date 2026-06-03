@@ -13,6 +13,9 @@ import TunerEngine
 struct LiveTunerScreen: View {
     @State private var model = LiveTunerModel()
     @State private var showSettings = false
+    /// Persisted hero-strobe choice (Aurora default); shared with the Settings sheet
+    /// via the same key. Reduce Motion still overrides to the still gauge.
+    @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
 
     private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
 
@@ -24,7 +27,7 @@ struct LiveTunerScreen: View {
     var body: some View {
         ZStack {
             ScreenBackground()
-            StrobeField(input: model.strobeInput, idle: model.idle, phaseScroll: true)
+            StrobeField(input: model.strobeInput, idle: model.idle, style: strobeStyle, phaseScroll: true)
             VStack(spacing: 0) {
                 topChrome
                 Spacer(minLength: Space.s4)

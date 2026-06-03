@@ -28,7 +28,7 @@ public struct AuroraStrobe: View {
     @Environment(\.colorScheme) private var scheme
     @State private var clock = AuroraClock()
 
-    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, ribbonCount: Int = StrobeMath.ribbonCount) {
+    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, ribbonCount: Int = 13) {
         self.input = input
         self.idle = idle
         self.animated = animated

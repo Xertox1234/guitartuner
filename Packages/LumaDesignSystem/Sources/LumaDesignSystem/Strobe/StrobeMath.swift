@@ -3,9 +3,6 @@ import Foundation
 /// Pure strobe math ported from `strobe-aurora.jsx` / `strobe-core.jsx`. Kept
 /// free of SwiftUI so it's unit-testable.
 enum StrobeMath {
-    /// Number of Aurora ribbons.
-    static let ribbonCount = 13
-
     /// Proximity 0...1 (1 = on pitch) — drives ribbon convergence and the blend
     /// toward mint. `max(0, 1 − |cents|/18)`.
     static func proximity(cents: Double) -> Double {

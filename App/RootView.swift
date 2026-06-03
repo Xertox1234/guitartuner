@@ -21,15 +21,16 @@ enum LumaTheme: String, CaseIterable, Identifiable {
     }
 }
 
-/// Root of the app. No tuner logic yet (Plan 01/03) — this surfaces the static
-/// LUMA tuner screen and the Design-System Gallery, with a manual theme toggle.
+/// Root of the app. The **Tuner** tab now runs the live `TunerEngine` (Plan 01);
+/// the **Strobe** tab keeps the interactive simulator lab (Plan 03); plus the
+/// Design-System Gallery, with a manual theme toggle.
 struct RootView: View {
     @AppStorage("theme") private var themeRaw = LumaTheme.dark.rawValue
     private var theme: LumaTheme { LumaTheme(rawValue: themeRaw) ?? .dark }
 
     var body: some View {
         TabView {
-            TunerScreenStatic()
+            LiveTunerScreen()
                 .tabItem { Label("Tuner", systemImage: "tuningfork") }
 
             StrobeLab()

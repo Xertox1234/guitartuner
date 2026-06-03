@@ -8,6 +8,11 @@ final class AuroraClock {
     var scroll: Double = 0
     var lock: Double = 0
     var last: Double = 0
+    // Phase-driven mode (opt-in): track the engine's last strobe phase, when it
+    // changed, and the resulting scroll velocity (cycles/sec).
+    var lastPhase: Double = -1
+    var phaseChangeTime: Double = 0
+    var scrollVel: Double = 0
 }
 
 /// **Concept A — Aurora ribbons.** Vertical ribbons of light flow laterally:
@@ -24,15 +29,27 @@ public struct AuroraStrobe: View {
     var idle: Bool
     var animated: Bool
     var ribbonCount: Int
+    /// When `true`, lateral scroll is driven by the engine's live `phase`
+    /// (`StrobeInput.phase`) at the measured beat velocity — a true strobe — instead
+    /// of the cents-derived approximation. Default `false` keeps the simulator path.
+    var phaseScroll: Bool
 
     @Environment(\.colorScheme) private var scheme
     @State private var clock = AuroraClock()
 
-    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, ribbonCount: Int = 13) {
+    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, ribbonCount: Int = 13, phaseScroll: Bool = false) {
         self.input = input
         self.idle = idle
         self.animated = animated
         self.ribbonCount = ribbonCount
+        self.phaseScroll = phaseScroll
+    }
+
+    /// Shortest signed distance between two wrapped 0…1 phases, in (−0.5, 0.5].
+    static func wrappedDelta(_ a: Double, _ b: Double) -> Double {
+        var d = b - a
+        d -= d.rounded()
+        return d
     }
 
     public var body: some View {
@@ -65,7 +82,23 @@ public struct AuroraStrobe: View {
         let lock = clock.lock
 
         let prox = StrobeMath.proximity(cents: err)
-        if animated { clock.scroll += StrobeMath.scrollSpeed(cents: err, lock: lock) * dt }
+        if phaseScroll {
+            // Engine-driven: estimate scroll velocity from the live phase advance
+            // (Δphase over the time between readings), eased to zero at lock.
+            if clock.lastPhase < 0 { clock.lastPhase = input.phase; clock.phaseChangeTime = time }
+            if input.phase != clock.lastPhase {
+                let d = AuroraStrobe.wrappedDelta(clock.lastPhase, input.phase)
+                let elapsed = time - clock.phaseChangeTime
+                if elapsed > 1e-4 { clock.scrollVel = d / elapsed }
+                clock.lastPhase = input.phase
+                clock.phaseChangeTime = time
+            } else if time - clock.phaseChangeTime > 0.25 {
+                clock.scrollVel = 0          // stale (silence) → stop drifting
+            }
+            if animated { clock.scroll += clock.scrollVel * dt * (1 - lock) }
+        } else if animated {
+            clock.scroll += StrobeMath.scrollSpeed(cents: err, lock: lock) * dt
+        }
 
         let breath = idle ? 0.6 + 0.4 * sin(time * 1.4) : 1.0
 

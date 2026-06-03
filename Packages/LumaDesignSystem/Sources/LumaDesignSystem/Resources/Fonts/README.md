@@ -1,32 +1,33 @@
-# Fonts — drop-in slot
+# Fonts — bundled
 
-LUMA uses two open-licensed (OFL 1.1) typefaces. The Swift code resolves them by
-**family name** at runtime and **falls back to SF Pro Display / SF Mono** if the
-files aren't present — so the app builds and runs without them. Drop the files in
-here to get the real LUMA look.
+LUMA uses two open-licensed (OFL 1.1) typefaces, **vendored here** and resolved
+by **family name** at runtime. The Swift code still **falls back to SF Pro
+Display / SF Mono** if the files are ever absent — so the app always builds and
+runs.
 
-## Required files
+## Bundled files
 
-| Role | Family | Weight(s) used | File(s) to add |
+| Role | Family | Weight(s) | File |
 |---|---|---|---|
 | Display / note / wordmark | **Chakra Petch** | 600 (SemiBold) | `ChakraPetch-SemiBold.ttf` |
 | Numerals / labels / mono | **JetBrains Mono** | 400, 500 | `JetBrainsMono-Regular.ttf`, `JetBrainsMono-Medium.ttf` |
 
-Add each typeface's **license file** alongside the fonts:
+Each typeface's SIL Open Font License 1.1 ships alongside it:
 
 - `ChakraPetch-OFL.txt`
 - `JetBrainsMono-OFL.txt`
 
-> **Verify the license before bundling.** Both are SIL Open Font License 1.1 at
-> time of writing; confirm the exact license shipped with the version you
-> download and keep the `OFL.txt` next to the fonts.
+## Provenance
 
-## Where to get them
+Vendored as the canonical static `.ttf` instances (not variable/web formats):
 
-- Chakra Petch — Google Fonts (designer: Cadson Demak), OFL 1.1.
-- JetBrains Mono — JetBrains, OFL 1.1.
+- **Chakra Petch** (designer: Cadson Demak) — `google/fonts` (`ofl/chakrapetch/`), OFL 1.1.
+- **JetBrains Mono** — `JetBrains/JetBrainsMono` (`fonts/ttf/`), OFL 1.1.
 
-Download the static `.ttf` files (not variable/web formats) for the weights above.
+> To refresh: re-pull the same `.ttf`s + their `OFL.txt` from the sources above.
+> The registered family names must stay `Chakra Petch` / `JetBrains Mono` to
+> match `LumaFont.displayFamily` / `LumaFont.monoFamily` (verified: nameID 1 /
+> typographic family resolve to those).
 
 ## How registration works
 

@@ -26,8 +26,14 @@
 	     processed entirely on-device and is never recorded, stored, or sent. -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>LUMA analyzes pitch from your microphone entirely on your device. Your playing is never recorded, stored, or sent anywhere.</string>
+	<!-- Cold open (EXPERIENCE §10): the launch screen IS the strobe canvas, so the
+	     app fades straight into the breathing strobe with no white flash. The
+	     named colour resolves light/dark from the asset catalog (= lumaBg). -->
 	<key>UILaunchScreen</key>
-	<dict/>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchCanvas</string>
+	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

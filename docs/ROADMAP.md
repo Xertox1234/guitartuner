@@ -43,10 +43,21 @@ accuracy, so worth doing well.
       `StageView` + a top-chrome toggle; keeps the screen awake on iOS.
 
 ### Polish / first-run (DESIGN §10, EXPERIENCE §10)
-- [ ] Bundle **Chakra Petch + JetBrains Mono** (OFL) — currently falling back to
-      SF Pro / SF Mono (see `Packages/LumaDesignSystem/.../Resources/Fonts/`, BUILD.md).
-- [ ] Real **app icon** drawn from the strobe language — placeholder today.
-- [ ] **Cold open** straight into the breathing strobe (no splash screen).
+- [x] Bundle **Chakra Petch + JetBrains Mono** (OFL 1.1) — vendored into the
+      package `Fonts/` bundle (Chakra Petch SemiBold; JetBrains Mono Regular +
+      Medium) with their `OFL.txt`, registered at launch by `LumaFonts`. Family
+      names verified to resolve as `Chakra Petch` / `JetBrains Mono`; SF Pro /
+      SF Mono stays the fallback. *(On-device: confirm the faces render — CI can't
+      rasterize.)*
+- [x] Real **app icon** drawn from the strobe language — a glowing mint tuned ring
+      + central lock column on the canvas (the in-tune moment), generated
+      reproducibly by `Tools/make_app_icon.py` (pure-stdlib PNG, no deps): iOS 1024
+      full-bleed + every macOS size on the squircle, legible to 16pt.
+- [x] **Cold open** straight into the breathing strobe (no splash). Release ships
+      the *single focused screen* (`RootView` → `LiveTunerScreen`; the strobe lab +
+      design gallery are now DEBUG-only); the iOS launch screen is tinted to the
+      canvas (`LaunchCanvas` = `lumaBg`, light/dark) so there's no white flash into
+      the strobe. Theme (System/Dark/Light) moved to Settings → Appearance.
 
 ---
 

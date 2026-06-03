@@ -21,9 +21,14 @@ enum LumaTheme: String, CaseIterable, Identifiable {
     }
 }
 
-/// Root of the app. The **Tuner** tab now runs the live `TunerEngine` (Plan 01);
-/// the **Strobe** tab keeps the interactive simulator lab (Plan 03); plus the
-/// Design-System Gallery, with a manual theme toggle.
+/// Root of the app.
+///
+/// **Release** ships a *single focused screen* (EXPERIENCE §3): the live tuner,
+/// cold-opening straight into the breathing strobe — *the attract state is the
+/// intro* (§10), no splash. **Debug** wraps that in a development `TabView` that
+/// also surfaces the interactive strobe lab (Plan 03) and the design-system
+/// gallery for previews/QA. Theme (light/dark/system) is applied here and picked
+/// in Settings (release) or the gallery toolbar (debug) — same `@AppStorage` key.
 struct RootView: View {
     /// The shared live tuner, owned by `LumaApp` (also drives the menu-bar strobe).
     var model: LiveTunerModel
@@ -31,6 +36,15 @@ struct RootView: View {
     private var theme: LumaTheme { LumaTheme(rawValue: themeRaw) ?? .dark }
 
     var body: some View {
+        shell
+            .tint(.lumaInTune)
+            .preferredColorScheme(theme.colorScheme)
+    }
+
+    /// The shipping face is just the live tuner so cold open lands on the
+    /// full-bleed breathing strobe; the lab + gallery are debug-only scaffolding.
+    @ViewBuilder private var shell: some View {
+        #if DEBUG
         TabView {
             LiveTunerScreen(model: model)
                 .tabItem { Label("Tuner", systemImage: "tuningfork") }
@@ -48,10 +62,12 @@ struct RootView: View {
             }
             .tabItem { Label("Design", systemImage: "paintpalette") }
         }
-        .tint(.lumaInTune)
-        .preferredColorScheme(theme.colorScheme)
+        #else
+        LiveTunerScreen(model: model)
+        #endif
     }
 
+    #if DEBUG
     private var themeMenu: some ToolbarContent {
         ToolbarItem {
             Menu {
@@ -63,6 +79,7 @@ struct RootView: View {
             }
         }
     }
+    #endif
 }
 
 #if DEBUG

@@ -23,8 +23,7 @@ public struct StrobeLab: View {
     public var body: some View {
         ZStack {
             ScreenBackground()
-            StrobeField(input: sim.input)
-                .environment(\.accessibilityReduceMotion, reduceMotion)
+            StrobeField(input: sim.input, forceReduceMotion: reduceMotion)
             readouts
             VStack {
                 Spacer()

@@ -49,8 +49,9 @@ calmer than the free options.
 8. **In-tune confirmation** — an unmistakable visual lock + (on iOS/iPadOS) a subtle haptic.
 
 ### Explicitly out of scope for v1 (planned v2+)
-Affiliate "Gear" surface · polyphonic / all-strings-at-once tuning · metronome ·
-sweetened / just-intonation temperaments · tuning history · accounts / cloud / sync.
+Affiliate "Gear" surface · **opt-in email signup (in-app form)** · polyphonic /
+all-strings-at-once tuning · metronome · sweetened / just-intonation temperaments · tuning
+history · accounts / cloud / sync.
 None of these belong in v1; all are clean later additions.
 
 ---
@@ -154,14 +155,13 @@ low-latency precision audio rules out JS/Flutter layers between us and the sampl
 processed **on-device** and is never recorded, stored, or transmitted — no accounts, no
 registration, no analytics SDKs, and no networking for the tuner itself. This isn't a
 promise you have to trust; the architecture makes it true. The **only** data we ever
-collect is an email address, and **only** if you explicitly opt in (see *Growth* below) —
-everything else stays on your device. Mic-permission copy says plainly that audio never
-leaves the device.
+collect is an email address, and **only** if you explicitly opt in (a **v2** feature — see
+*Growth* below); **v1 collects nothing**, and everything else always stays on your device.
+Mic-permission copy says plainly that audio never leaves the device.
 
-**Privacy label:** if the opt-in list is collected via a hosted web page (recommended
-below), the app itself can keep a clean **"Data Not Collected"** label; if we ever capture
-email *in-app*, we honestly declare *Contact Info → Email, used for marketing*. We don't
-game the label.
+**Privacy label:** **v1 collects nothing → a clean "Data Not Collected" label.** The opt-in
+email form is a **v2** addition; because it captures email *in-app*, v2 honestly declares
+*Contact Info → Email, used for marketing*. We don't game the label.
 
 **Monetization:**
 - **v1:** **paid up-front — a flat $9.95, one time.** No tiers, no upsell, no purchase
@@ -171,15 +171,15 @@ game the label.
   privacy: zero tracking SDKs in-app, affiliate links open in the system browser (the
   retailer logs the click, not us), relationship disclosed per Apple + FTC rules.
 
-**Growth — opt-in email list (legal & ethical by design):**
+**Growth — opt-in email list (v2; legal & ethical by design):**
 - **Strictly opt-in, never intrusive.** No pre-checked boxes, never gated in front of the
   tuner, no launch pop-ups. A tasteful entry point in Settings/About with a clear value
   exchange (gear deals + app news).
-- **Recommended mechanism — link-out:** signup happens on a hosted page (our site / an ESP
-  landing page) opened in the browser. The *app* collects nothing and stays
-  networking-free; consent and storage live on the web property under its own clear policy.
-  Most on-brand for a privacy-first product. *Alternative:* a minimal in-app form — more
-  seamless, but then the app collects email and must declare it.
+- **Mechanism — in-app form, shipping in v2 (decided):** a minimal, tasteful email field
+  inside the app, posted to our ESP. Because it ships in **v2**, **v1 stays networking-free
+  with a clean "Data Not Collected" label.** In v2 the form brings an in-app consent UI, a
+  linked privacy policy, the app's single isolated network call (to the ESP), and an honest
+  label update (*Contact Info → Email, used for marketing*).
 - **Double opt-in** (email confirmation) — strongest consent record, cleaner list.
 - **Compliance baseline:** GDPR (explicit, informed, freely-given consent; easy withdrawal;
   access / erasure; lawful basis = consent), CAN-SPAM (real sender identity, valid physical
@@ -198,9 +198,8 @@ game the label.
 - **App name** — currently unnamed.
 - **Exact deployment OS floor.**
 - **Final tuning-preset list** for v1.
-- **Email list:** collection mechanism (link-out vs. in-app form), ESP choice (e.g.
-  Buttondown / ConvertKit / Mailchimp), single vs. double opt-in (recommend double), and
-  whether it ships in v1 (a link-out is low-effort) or v2.
+- **Email list (v2, in-app form — decided):** remaining choices are the ESP (e.g.
+  Buttondown / ConvertKit / Mailchimp) and single vs. double opt-in (recommend double).
 
 ---
 
@@ -208,5 +207,6 @@ game the label.
 
 - **v1 (MVP):** the eight features in §2 — accurate engine, Metal strobe, chromatic +
   string-lock, presets, A4 calibration, tone generator, paid up-front, fully private.
-- **v2+:** affiliate Gear surface · sweetened/just-intonation temperaments · metronome ·
-  tuning history — added only once the core is impeccable.
+- **v2+:** affiliate Gear surface · opt-in email signup (in-app form) ·
+  sweetened/just-intonation temperaments · metronome · tuning history — added only once the
+  core is impeccable.

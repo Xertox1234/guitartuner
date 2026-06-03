@@ -12,14 +12,18 @@ public struct StrobeField: View {
     /// harness / previews). `nil` honors `accessibilityReduceMotion` — which is
     /// read-only, so we can't inject it via `.environment`.
     var forceReduceMotion: Bool?
+    /// Drive the Aurora scroll from the engine's live `phase` (true strobe) rather
+    /// than the cents-derived approximation. Default `false` (simulator path).
+    var phaseScroll: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, forceReduceMotion: Bool? = nil) {
+    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, forceReduceMotion: Bool? = nil, phaseScroll: Bool = false) {
         self.input = input
         self.idle = idle
         self.animated = animated
         self.forceReduceMotion = forceReduceMotion
+        self.phaseScroll = phaseScroll
     }
 
     private var usesReducedMotion: Bool { forceReduceMotion ?? reduceMotion }
@@ -28,7 +32,7 @@ public struct StrobeField: View {
         if usesReducedMotion {
             ReducedGauge(cents: input.cents, locked: input.locked)
         } else {
-            AuroraStrobe(input: input, idle: idle, animated: animated)
+            AuroraStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
         }
     }
 }

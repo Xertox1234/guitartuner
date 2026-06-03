@@ -65,5 +65,11 @@ modern iPhone at phone-sized fields.
 ## Next
 
 - Get on-device fps (iPhone + iPad ProMotion, Mac) and record numbers here.
-- Plan 01 `phase` normalization, then switch scroll from cents-derived to phase.
+- ~~Plan 01 `phase` normalization, then switch scroll from cents-derived to phase.~~
+  **Done (Plan 01).** `phase` is defined as a normalized 0…1 cycle position of the
+  tracked fundamental against the nearest-note reference; `TunerEngine` emits it on
+  every `PitchReading`. `AuroraStrobe`/`StrobeField` gained an opt-in `phaseScroll`
+  (default off — the simulator path is unchanged) that scrolls at the measured beat
+  velocity from the live phase. The app's live Tuner screen drives it with
+  `phaseScroll: true`.
 - Radial strobe variant (Settings) when the hero approach is locked.

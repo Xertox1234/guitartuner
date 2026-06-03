@@ -22,6 +22,8 @@ settings:
 packages:
   LumaDesignSystem:
     path: Packages/LumaDesignSystem
+  TunerEngine:
+    path: Packages/TunerEngine
 
 targets:
   LUMA:
@@ -35,6 +37,9 @@ targets:
     dependencies:
       - package: LumaDesignSystem
         product: LumaDesignSystem
+      # The shared, UI-free DSP engine (Plan 01) — drives the live Tuner screen.
+      - package: TunerEngine
+        product: TunerEngine
     settings:
       base:
         PRODUCT_NAME: LUMA

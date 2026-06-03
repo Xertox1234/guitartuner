@@ -4,9 +4,11 @@ The measured-accuracy spec for `TunerEngine` (DESIGN §3 — *"we publish the sp
 from measured data, not guesses"*).
 
 - **`accuracy.md`** — the human-readable report (headline numbers, by signal type,
-  by range, noise robustness, octave safety, the window/hop table). Quote this in
-  DESIGN §3.
-- **`accuracy.csv`** — every benchmark case, machine-readable.
+  by range, noise robustness, octave safety, the window/hop table). Committed here
+  (populated from a real macOS CI run) and quoted in DESIGN §3.
+- **`accuracy.csv`** — every benchmark case, machine-readable. Produced by
+  `--out` and uploaded as the CI `accuracy-report` artifact (not committed, to keep
+  the diff small); regenerate locally any time.
 
 ## Regenerate
 

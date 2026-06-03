@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Strobe concept study — Tuner (non-production)</title>
+<style>
+  :root {
+    --canvas: #0A0B10;
+    --ink: #E8ECF6;
+    --dim: #6b7385;
+    --accent: #28F0C0;           /* the sacred in-tune accent */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--canvas); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* centered readout overlay */
+  #readout { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; pointer-events: none; }
+  #note { font-size: clamp(72px, 18vw, 220px); font-weight: 700; letter-spacing: -0.02em;
+    line-height: 0.9; transition: color .25s ease, text-shadow .25s ease; }
+  #note small { font-size: 0.34em; font-weight: 600; vertical-align: super; opacity: .6; margin-left: .06em; }
+  #cents { margin-top: .35em; font-size: clamp(18px, 3.2vw, 30px); font-weight: 600;
+    font-variant-numeric: tabular-nums; color: var(--dim); transition: color .25s ease; }
+  #state { margin-top: .5em; font-size: 13px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--dim); transition: color .25s ease, opacity .25s ease; }
+
+  /* tag */
+  #tag { position: absolute; top: 14px; left: 16px; font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--dim); pointer-events: none; }
+  #tag b { color: var(--ink); opacity: .8; font-weight: 600; }
+
+  /* controls */
+  #panel { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom));
+    transform: translateX(-50%); width: min(680px, 94vw);
+    background: rgba(20,22,30,.72); backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .seg { display: inline-flex; background: rgba(255,255,255,.06); border-radius: 10px; padding: 3px; }
+  button { font: inherit; font-size: 13px; color: var(--ink); background: transparent;
+    border: 0; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+  .seg button.active { background: rgba(255,255,255,.12); }
+  button.ghost { background: rgba(255,255,255,.06); border-radius: 10px; }
+  button.ghost.on { background: var(--accent); color: #04130f; font-weight: 700; }
+  .spacer { flex: 1 1 auto; }
+  label.slider { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--dim); font-size: 12px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; border-radius: 4px;
+    background: linear-gradient(90deg,#3b82f6,#6b7385 48%,#6b7385 52%,#f59e0b); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--ink); border: 3px solid var(--canvas); box-shadow: 0 0 0 1px rgba(255,255,255,.2); cursor: pointer; }
+  #centsVal { width: 56px; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .hint { font-size: 11px; color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="readout">
+    <div id="note">E<small>2</small></div>
+    <div id="cents">0&cent;</div>
+    <div id="state">listening</div>
+  </div>
+  <div id="tag"><b>Strobe concept study</b> &nbsp;·&nbsp; design exploration, not production code</div>
+
+  <div id="panel">
+    <div class="row">
+      <div class="seg" id="modeSeg">
+        <button data-mode="aurora" class="active">Aurora ribbons</button>
+        <button data-mode="ring">Radial phase ring</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="ghost" id="pluck">Pluck a string</button>
+      <button class="ghost" id="auto">Auto-sway</button>
+    </div>
+    <div class="row">
+      <label class="slider">flat
+        <input id="centsSlider" type="range" min="-50" max="50" step="0.5" value="18" />
+        sharp <span id="centsVal">+18.0&cent;</span>
+      </label>
+    </div>
+    <div class="hint">Drag the slider to set pitch error. Watch the field freeze &amp; bloom in the &plusmn;2&cent; in-tune window. &ldquo;Pluck&rdquo; simulates a note settling into tune.</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const noteEl = document.getElementById('note');
+  const centsEl = document.getElementById('cents');
+  const stateEl = document.getElementById('state');
+  const centsVal = document.getElementById('centsVal');
+  const slider = document.getElementById('centsSlider');
+
+  const LOCK = 2;            // in-tune window, cents
+  const ACCENT = '#28F0C0';
+
+  let W = 0, H = 0, DPR = 1;
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+
+  // state
+  let mode = 'aurora';
+  let target = parseFloat(slider.value);  // where the slider/pluck wants cents to be
+  let cents = target;                     // smoothed displayed error
+  let auto = false;
+  let phase = 0;                          // scroll/rotation accumulator
+  let bloom = 0;                          // 0..1 lock bloom
+  let plucking = false;
+  let t0 = performance.now() / 1000;
+
+  // --- helpers ---
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b-a)*t;
+  // hue: flat(blue ~212) -> neutral -> sharp(amber ~38); locked overrides to accent
+  function errColor(c, alpha=1) {
+    const m = clamp(Math.abs(c)/50, 0, 1);
+    const hue = c < 0 ? 212 : 38;
+    const sat = lerp(35, 92, m);
+    const light = lerp(62, 56, m);
+    return `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+  }
+
+  // --- renderers ---
+  function drawAurora(locked, col) {
+    const bands = 9;
+    const spacing = 1 / bands;
+    ctx.globalCompositeOperation = 'lighter';
+    const conv = bloom;                       // 0 normal, 1 fully converged to center
+    for (let i = 0; i < bands; i++) {
+      // normal position scrolls with phase; converge toward center column when locked
+      let u = ((i * spacing + phase) % 1 + 1) % 1;
+      const centerU = 0.5;
+      u = lerp(u, centerU, conv * 0.92);
+      const x = u * W;
+      const halfW = lerp(W * 0.055, W * 0.10, conv);
+      const peak = locked ? 0.95 : lerp(0.32, 0.6, clamp(Math.abs(cents)/50,0,1));
+      const g = ctx.createLinearGradient(x - halfW, 0, x + halfW, 0);
+      const c = locked ? ACCENT : col;
+      g.addColorStop(0,   tint(c, 0));
+      g.addColorStop(0.5, tint(c, peak));
+      g.addColorStop(1,   tint(c, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(x - halfW, 0, halfW * 2, H);
+    }
+    if (locked) {
+      const r = Math.min(W,H) * 0.5;
+      const rg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, r);
+      rg.addColorStop(0, tint(ACCENT, 0.5 * bloom));
+      rg.addColorStop(1, tint(ACCENT, 0));
+      ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  function drawRing(locked, col) {
+    const cx = W/2, cy = H/2;
+    const R = Math.min(W,H) * 0.30;
+    const marks = 36;
+    const c = locked ? ACCENT : col;
+    ctx.save();
+    ctx.translate(cx, cy);
+    // soft inner disc
+    const disc = ctx.createRadialGradient(0,0,0,0,0,R*1.25);
+    disc.addColorStop(0, tint(c, locked ? 0.28*bloom+0.06 : 0.05));
+    disc.addColorStop(1, tint(c, 0));
+    ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(0,0,R*1.25,0,Math.PI*2); ctx.fill();
+    // rotating phase marks
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.rotate(phase * Math.PI * 2);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < marks; i++) {
+      const a = (i/marks) * Math.PI*2;
+      const lit = (i % 2 === 0);
+      const len = lit ? R*0.18 : R*0.10;
+      const w = lit ? 6 : 3;
+      const alpha = locked ? 0.95 : 0.6;
+      ctx.strokeStyle = tint(c, alpha);
+      ctx.shadowColor = tint(c, 1); ctx.shadowBlur = locked ? 26 : 14;
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a)*(R - len), Math.sin(a)*(R - len));
+      ctx.lineTo(Math.cos(a)*(R + len), Math.sin(a)*(R + len));
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // tint: apply alpha to a hex or hsl color
+  function tint(color, a) {
+    if (color === ACCENT) return `rgba(40,240,192,${a})`;
+    // color is an hsla string already with its own alpha = 1; replace
+    return color.replace(/,\s*1\)$/, `, ${a})`).replace(/, 1\)/, `, ${a})`);
+  }
+
+  // --- loop ---
+  function frame(now) {
+    now /= 1000; const dt = Math.min(0.05, now - (frame._p || now)); frame._p = now;
+    const t = now - t0;
+
+    if (auto) target = 30 * Math.sin(t * 0.55);
+    // ease displayed cents toward target (snappier for slider, gentler while plucking)
+    const rate = plucking ? 1.6 : 12;
+    cents += (target - cents) * clamp(dt * rate, 0, 1);
+    if (plucking && Math.abs(cents) < 0.2 && Math.abs(target) < 0.2) plucking = false;
+
+    const locked = Math.abs(cents) <= LOCK;
+    bloom += ((locked ? 1 : 0) - bloom) * clamp(dt * 6, 0, 1);
+
+    // motion: velocity proportional to cents, frozen when locked
+    const aurVel = cents * 0.02;     // wraps/sec
+    const ringVel = cents * 0.16;    // rev/sec-ish
+    const vel = mode === 'aurora' ? aurVel : ringVel;
+    phase += vel * dt * (1 - bloom); // freeze as we lock
+
+    // clear
+    ctx.clearRect(0,0,W,H);
+    // subtle vignette base
+    const vg = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.1, W/2,H/2,Math.max(W,H)*0.7);
+    vg.addColorStop(0,'rgba(255,255,255,0.015)'); vg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+
+    const col = errColor(cents, 1);
+    if (mode === 'aurora') drawAurora(locked, col); else drawRing(locked, col);
+
+    // readouts
+    const shown = cents.toFixed(1);
+    centsVal.textContent = (cents>=0?'+':'') + shown + '¢';
+    slider.value = clamp(cents, -50, 50);
+    centsEl.innerHTML = (cents>=0?'+':'') + shown + '&cent;';
+    if (locked) {
+      noteEl.style.color = ACCENT;
+      noteEl.style.textShadow = `0 0 ${24+30*bloom}px rgba(40,240,192,${0.55*bloom})`;
+      centsEl.style.color = ACCENT;
+      stateEl.textContent = 'in tune';
+      stateEl.style.color = ACCENT; stateEl.style.opacity = 1;
+    } else {
+      const c2 = errColor(cents,1);
+      noteEl.style.color = '#E8ECF6';
+      noteEl.style.textShadow = `0 0 18px ${tint(c2,0.25)}`;
+      centsEl.style.color = '#6b7385';
+      stateEl.textContent = cents < 0 ? 'flat — tune up' : 'sharp — tune down';
+      stateEl.style.color = '#6b7385'; stateEl.style.opacity = .9;
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  // --- wire up ---
+  document.getElementById('modeSeg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-mode]'); if (!b) return;
+    mode = b.dataset.mode;
+    [...e.currentTarget.children].forEach(x => x.classList.toggle('active', x === b));
+  });
+  slider.addEventListener('input', () => { auto = false; document.getElementById('auto').classList.remove('on'); target = parseFloat(slider.value); plucking = false; });
+  document.getElementById('pluck').addEventListener('click', () => {
+    auto = false; document.getElementById('auto').classList.remove('on');
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    cents = dir * (16 + Math.random()*26);
+    target = 0; plucking = true;
+  });
+  document.getElementById('auto').addEventListener('click', e => {
+    auto = !auto; e.currentTarget.classList.toggle('on', auto); plucking = false;
+  });
+
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

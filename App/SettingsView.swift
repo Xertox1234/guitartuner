@@ -15,6 +15,8 @@ struct SettingsView: View {
     @AppStorage("showScope") private var showScope = false
     /// Opt-in Metal hero renderer for the Aurora field (experimental; validate on-device).
     @AppStorage("useMetalStrobe") private var useMetalStrobe = false
+    /// Manual light/dark/system override, shared with `RootView` via the same key.
+    @AppStorage("theme") private var themeRaw = LumaTheme.dark.rawValue
 
     var body: some View {
         NavigationStack {
@@ -41,6 +43,13 @@ struct SettingsView: View {
                             Text(preset.label).tag(preset.id)
                         }
                     }
+                }
+
+                Section("Appearance") {
+                    Picker("Theme", selection: $themeRaw) {
+                        ForEach(LumaTheme.allCases) { Text($0.label).tag($0.rawValue) }
+                    }
+                    .pickerStyle(.segmented)
                 }
 
                 Section {

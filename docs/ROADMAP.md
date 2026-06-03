@@ -24,9 +24,12 @@ accuracy, so worth doing well.
 - [x] **Strobe Settings toggle** — Aurora (default) / Radial, persisted in
       `@AppStorage`; the reduced-motion gauge still auto-engages on Reduce Motion.
       *(Plan 05.)*
-- [ ] **Metal `StrobeRenderer`** — the real 120 fps hero path, a drop-in behind
-      `StrobeInput` (DESIGN §5). Today's Aurora is a `Canvas`/`TimelineView`
-      prototype; Metal is the production render path. *Needs on-device validation.*
+- [x] **Metal `StrobeRenderer`** — the 120 fps GPU hero path, a drop-in behind
+      `StrobeInput` (DESIGN §5). `MetalStrobe` (`MTKView` + a runtime-compiled MSL
+      shader) reproduces the Aurora field on the GPU. **Opt-in** (Settings → Display
+      "Metal renderer", Aurora only; A/B in the Strobe lab against its fps readout);
+      the Canvas Aurora stays the default. Pure `StrobeShaderColors` unit-tested.
+      *Landed CI-only — the 120 fps device pass is tracked below.*
 - [x] **Optional oscilloscope** — live-waveform scope view, restyled into LUMA
       tokens (carried over from the alternate exploration; DESIGN_SYSTEM §Oscilloscope).
       `Oscilloscope` + pure `ScopeMath`; opt-in via Settings, shown under the readouts.
@@ -60,6 +63,10 @@ hardware. Track a real-device pass:
       elsewhere).
 - [ ] Permission prompts + entitlements: `NSMicrophoneUsageDescription` (present),
       macOS `com.apple.security.device.audio-input` for a sandboxed/notarized build.
+- [ ] **Metal hero (`StrobeRenderer`)** — confirm the GPU path matches Aurora's look
+      and holds **120 fps** on a ProMotion panel (Strobe lab fps readout), the
+      light/dark blends read right, and Settings → Display "Metal renderer" swaps
+      cleanly. *(Landed CI-only; opt-in, Aurora.)*
 
 ---
 

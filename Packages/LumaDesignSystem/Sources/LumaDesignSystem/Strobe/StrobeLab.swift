@@ -12,6 +12,7 @@ public struct StrobeLab: View {
     @State private var scheme: ColorScheme = .dark
     @State private var reduceMotion = false
     @State private var style: StrobeStyle = .aurora
+    @State private var useMetal = false
 
     // Physics tick, off the view-update path (advancing @Observable inside body
     // would trip "modifying state during view update").
@@ -24,7 +25,7 @@ public struct StrobeLab: View {
     public var body: some View {
         ZStack {
             ScreenBackground()
-            StrobeField(input: sim.input, style: style, forceReduceMotion: reduceMotion)
+            StrobeField(input: sim.input, style: style, forceReduceMotion: reduceMotion, useMetalRenderer: useMetal)
             readouts
             VStack {
                 Spacer()
@@ -94,6 +95,12 @@ public struct StrobeLab: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                Toggle(isOn: $useMetal) {
+                    Text("Metal").font(LumaFont.mono(10)).foregroundStyle(Color.lumaDim)
+                }
+                .toggleStyle(.switch)
+                .tint(.lumaInTune)
+                .fixedSize()
             }
 
             HStack {

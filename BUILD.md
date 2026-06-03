@@ -37,14 +37,14 @@ run the model tests:
 cd Packages/LumaDesignSystem && swift test
 ```
 
-## Fonts (optional, recommended)
+## Fonts
 
-LUMA uses **Chakra Petch** + **JetBrains Mono** (both OFL 1.1). They aren't
-committed; the code falls back to **SF Pro Display / SF Mono** until you add them.
-Drop the `.ttf` files (and their `OFL.txt`) into
+LUMA uses **Chakra Petch** (display) + **JetBrains Mono** (numerals/mono), both
+OFL 1.1. They are **bundled** in the design-system package under
 [`Packages/LumaDesignSystem/Sources/LumaDesignSystem/Resources/Fonts/`](Packages/LumaDesignSystem/Sources/LumaDesignSystem/Resources/Fonts/README.md)
-— `LumaFonts.registerIfNeeded()` registers them at launch. See that folder's
-README for the exact filenames.
+(with their `OFL.txt` licenses) and registered at launch by
+`LumaFonts.registerIfNeeded()`. The code still falls back to **SF Pro Display /
+SF Mono** if they're ever absent, so the app always renders.
 
 ## The tuner engine
 

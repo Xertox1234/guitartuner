@@ -43,11 +43,12 @@ accuracy, so worth doing well.
       `StageView` + a top-chrome toggle; keeps the screen awake on iOS.
 
 ### Polish / first-run (DESIGN §10, EXPERIENCE §10)
-- [ ] Bundle **Chakra Petch + JetBrains Mono** (OFL) — currently falling back to
-      SF Pro / SF Mono. The registration *plumbing is done* (`LumaFonts.registerIfNeeded`
-      auto-registers any `.ttf`/`.otf` in the package `Fonts/` bundle, SF fallback
-      otherwise); this is now purely a **license-gated binary drop-in** — confirm
-      the OFL version and add the files + `OFL.txt` (see `Resources/Fonts/README.md`).
+- [x] Bundle **Chakra Petch + JetBrains Mono** (OFL 1.1) — vendored into the
+      package `Fonts/` bundle (Chakra Petch SemiBold; JetBrains Mono Regular +
+      Medium) with their `OFL.txt`, registered at launch by `LumaFonts`. Family
+      names verified to resolve as `Chakra Petch` / `JetBrains Mono`; SF Pro /
+      SF Mono stays the fallback. *(On-device: confirm the faces render — CI can't
+      rasterize.)*
 - [x] Real **app icon** drawn from the strobe language — a glowing mint tuned ring
       + central lock column on the canvas (the in-tune moment), generated
       reproducibly by `Tools/make_app_icon.py` (pure-stdlib PNG, no deps): iOS 1024

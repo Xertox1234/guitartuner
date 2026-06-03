@@ -14,7 +14,8 @@ import UIKit
 /// Live capture can't run in CI (no audio device) — it compiles here and runs
 /// on-device; `LiveTunerModel` surfaces availability/permission issues as status.
 struct LiveTunerScreen: View {
-    @State private var model = LiveTunerModel()
+    /// Shared with the menu-bar strobe; owned by `LumaApp`.
+    @Bindable var model: LiveTunerModel
     @State private var showSettings = false
     /// Full-screen, max-contrast Stage Mode (EXPERIENCE §8).
     @State private var stageMode = false
@@ -170,6 +171,6 @@ struct LiveTunerScreen: View {
 
 #if DEBUG
 #Preview("Live Tuner — dark") {
-    LiveTunerScreen().preferredColorScheme(.dark)
+    LiveTunerScreen(model: LiveTunerModel()).preferredColorScheme(.dark)
 }
 #endif

@@ -25,12 +25,14 @@ enum LumaTheme: String, CaseIterable, Identifiable {
 /// the **Strobe** tab keeps the interactive simulator lab (Plan 03); plus the
 /// Design-System Gallery, with a manual theme toggle.
 struct RootView: View {
+    /// The shared live tuner, owned by `LumaApp` (also drives the menu-bar strobe).
+    var model: LiveTunerModel
     @AppStorage("theme") private var themeRaw = LumaTheme.dark.rawValue
     private var theme: LumaTheme { LumaTheme(rawValue: themeRaw) ?? .dark }
 
     var body: some View {
         TabView {
-            LiveTunerScreen()
+            LiveTunerScreen(model: model)
                 .tabItem { Label("Tuner", systemImage: "tuningfork") }
 
             StrobeLab()
@@ -65,6 +67,6 @@ struct RootView: View {
 
 #if DEBUG
 #Preview {
-    RootView()
+    RootView(model: LiveTunerModel())
 }
 #endif

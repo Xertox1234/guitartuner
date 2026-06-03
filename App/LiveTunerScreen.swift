@@ -24,6 +24,8 @@ struct LiveTunerScreen: View {
     @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
     /// Optional waveform scope under the readouts (off by default).
     @AppStorage("showScope") private var showScope = false
+    /// Opt-in Metal hero renderer for the Aurora field (experimental; validate on-device).
+    @AppStorage("useMetalStrobe") private var useMetalStrobe = false
 
     private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
 
@@ -35,7 +37,8 @@ struct LiveTunerScreen: View {
     var body: some View {
         ZStack {
             ScreenBackground()
-            StrobeField(input: model.strobeInput, idle: model.idle, style: strobeStyle, phaseScroll: true)
+            StrobeField(input: model.strobeInput, idle: model.idle, style: strobeStyle,
+                        phaseScroll: true, useMetalRenderer: useMetalStrobe)
             VStack(spacing: 0) {
                 topChrome
                 Spacer(minLength: Space.s4)

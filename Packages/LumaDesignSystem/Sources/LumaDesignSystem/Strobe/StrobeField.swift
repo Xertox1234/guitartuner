@@ -18,16 +18,21 @@ public struct StrobeField: View {
     /// Drive the strobe scroll/rotation from the engine's live `phase` (true strobe)
     /// rather than the cents-derived approximation. Default `false` (simulator path).
     var phaseScroll: Bool
+    /// Render the Aurora field with the Metal hero path (`MetalStrobe`, DESIGN §5)
+    /// instead of the Canvas prototype. Off by default; ignored under Reduce Motion
+    /// and for the Radial style (its Metal port is future work).
+    var useMetalRenderer: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, style: StrobeStyle = .aurora, forceReduceMotion: Bool? = nil, phaseScroll: Bool = false) {
+    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, style: StrobeStyle = .aurora, forceReduceMotion: Bool? = nil, phaseScroll: Bool = false, useMetalRenderer: Bool = false) {
         self.input = input
         self.idle = idle
         self.animated = animated
         self.style = style
         self.forceReduceMotion = forceReduceMotion
         self.phaseScroll = phaseScroll
+        self.useMetalRenderer = useMetalRenderer
     }
 
     private var usesReducedMotion: Bool { forceReduceMotion ?? reduceMotion }
@@ -38,7 +43,11 @@ public struct StrobeField: View {
         } else {
             switch style {
             case .aurora:
-                AuroraStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
+                if useMetalRenderer {
+                    MetalStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
+                } else {
+                    AuroraStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
+                }
             case .radial:
                 RadialStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
             }

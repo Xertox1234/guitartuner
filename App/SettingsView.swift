@@ -13,6 +13,8 @@ struct SettingsView: View {
     @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
     /// Optional waveform scope under the readouts (off by default).
     @AppStorage("showScope") private var showScope = false
+    /// Opt-in Metal hero renderer for the Aurora field (experimental; validate on-device).
+    @AppStorage("useMetalStrobe") private var useMetalStrobe = false
 
     var body: some View {
         NavigationStack {
@@ -50,10 +52,14 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
 
                     Toggle("Oscilloscope", isOn: $showScope)
+
+                    if strobeStyle == .aurora {
+                        Toggle("Metal renderer", isOn: $useMetalStrobe)
+                    }
                 } header: {
                     Text("Display")
                 } footer: {
-                    Text("The hero strobe, plus an optional waveform scope under the readouts. Reduce Motion replaces the strobe with a still gauge.")
+                    Text("The hero strobe, plus an optional waveform scope under the readouts. The Metal renderer is an experimental GPU path for the Aurora field. Reduce Motion replaces the strobe with a still gauge.")
                 }
 
                 Section("Feel") {

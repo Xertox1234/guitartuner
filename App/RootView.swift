@@ -32,6 +32,9 @@ struct RootView: View {
             TunerScreenStatic()
                 .tabItem { Label("Tuner", systemImage: "tuningfork") }
 
+            StrobeLab()
+                .tabItem { Label("Strobe", systemImage: "waveform") }
+
             NavigationStack {
                 DesignSystemGallery()
                     .navigationTitle("Design System")

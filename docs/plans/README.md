@@ -9,6 +9,7 @@ the specific plan, then build.
 - [`docs/EXPERIENCE.md`](../EXPERIENCE.md) — the experience pillar
 - [`docs/design_reference/DESIGN_SYSTEM.md`](../design_reference/DESIGN_SYSTEM.md) — LUMA tokens & components
 - [`docs/design_reference/`](../design_reference/) — the raw design export (CSS/JSX + screenshots)
+- [`docs/ROADMAP.md`](../ROADMAP.md) — **the living backlog**: what's left, on-device checks, open decisions
 
 ## The three workstreams
 | # | Plan | Depends on | Can start |

@@ -31,7 +31,8 @@ accuracy, so worth doing well.
       tokens (carried over from the alternate exploration; DESIGN_SYSTEM §Oscilloscope).
 - [ ] **Mac menu-bar micro-strobe** — a tiny live ring for quick checks while
       recording (EXPERIENCE §8). Same DSP, same look.
-- [ ] **Stage Mode** — one-tap max-contrast full-screen strobe + note, all platforms.
+- [x] **Stage Mode** — one-tap max-contrast full-screen strobe + note, all platforms.
+      `StageView` + a top-chrome toggle; keeps the screen awake on iOS.
 
 ### Polish / first-run (DESIGN §10, EXPERIENCE §10)
 - [ ] Bundle **Chakra Petch + JetBrains Mono** (OFL) — currently falling back to

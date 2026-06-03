@@ -1,6 +1,9 @@
 import SwiftUI
 import LumaDesignSystem
 import TunerEngine
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// The live Tuner screen — the real `TunerEngine` driving the Aurora strobe via
 /// `LiveTunerModel`, with the full LUMA layout: top chrome, the hero strobe + note
@@ -13,6 +16,8 @@ import TunerEngine
 struct LiveTunerScreen: View {
     @State private var model = LiveTunerModel()
     @State private var showSettings = false
+    /// Full-screen, max-contrast Stage Mode (EXPERIENCE §8).
+    @State private var stageMode = false
     /// Persisted hero-strobe choice (Aurora default); shared with the Settings sheet
     /// via the same key. Reduce Motion still overrides to the still gauge.
     @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
@@ -35,12 +40,30 @@ struct LiveTunerScreen: View {
                 Spacer(minLength: Space.s4)
                 dock
             }
+
+            if stageMode {
+                StageView(input: model.strobeInput, note: model.note, octave: model.octave,
+                          cents: model.cents, idle: model.idle, style: strobeStyle, phaseScroll: true) {
+                    withAnimation(.easeInOut(duration: 0.3)) { stageMode = false }
+                }
+                .transition(.opacity)
+                .zIndex(1)
+            }
         }
         .lumaGlow(state)
         .foregroundStyle(Color.lumaInk)
         .task { await model.start() }
-        .onDisappear { model.stop() }
+        .onChange(of: stageMode) { _, active in setStageHold(active) }
+        .onDisappear { setStageHold(false); model.stop() }
         .sheet(isPresented: $showSettings) { SettingsView(model: model) }
+    }
+
+    /// Keep the screen awake while Stage Mode is up (a propped-on-the-amp prop
+    /// shouldn't dim/sleep). iOS-only; a clean no-op elsewhere.
+    private func setStageHold(_ active: Bool) {
+        #if canImport(UIKit)
+        UIApplication.shared.isIdleTimerDisabled = active
+        #endif
     }
 
     // MARK: Top chrome
@@ -50,6 +73,10 @@ struct LiveTunerScreen: View {
             Brand()
             Spacer()
             InputSource(source: inputBinding)
+            EdgeIconButton(systemImage: "arrow.up.left.and.arrow.down.right",
+                           accessibilityLabel: "Stage Mode") {
+                withAnimation(.easeInOut(duration: 0.3)) { stageMode = true }
+            }
             SettingsButton { showSettings = true }
         }
         .padding(.horizontal, Space.s6)

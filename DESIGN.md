@@ -216,3 +216,7 @@ email form is a **v2** addition; because it captures email *in-app*, v2 honestly
 - **v2+:** affiliate Gear surface · opt-in email signup (in-app form) ·
   sweetened/just-intonation temperaments · metronome · tuning history — added only once the
   core is impeccable.
+
+**Build plans:** session-ready plans for the first three engineering workstreams — the DSP
+engine, the SwiftUI design-system scaffold, and the first strobe prototype — live in
+[`docs/plans/`](docs/plans/).

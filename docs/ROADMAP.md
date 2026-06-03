@@ -30,8 +30,12 @@ accuracy, so worth doing well.
 - [x] **Optional oscilloscope** — live-waveform scope view, restyled into LUMA
       tokens (carried over from the alternate exploration; DESIGN_SYSTEM §Oscilloscope).
       `Oscilloscope` + pure `ScopeMath`; opt-in via Settings, shown under the readouts.
-- [ ] **Mac menu-bar micro-strobe** — a tiny live ring for quick checks while
-      recording (EXPERIENCE §8). Same DSP, same look.
+- [x] **Mac menu-bar micro-strobe** — a tiny live ring for quick checks while
+      recording (EXPERIENCE §8). Same DSP, same look. `MenuBarExtra` (window style)
+      reusing `StrobeField` + the readouts, driven by the *one* `LiveTunerModel`
+      (hoisted to `LumaApp`, shared with the main window); the bar glyph shows the
+      note while listening (pure `MenuBarStrobe.caption`, unit-tested). *In-bar
+      animated ring deferred to the on-device pass.*
 - [x] **Stage Mode** — one-tap max-contrast full-screen strobe + note, all platforms.
       `StageView` + a top-chrome toggle; keeps the screen awake on iOS.
 

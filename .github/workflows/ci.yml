@@ -76,3 +76,12 @@ jobs:
             -scheme LUMA \
             -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO
+
+      # Echo the generated report to the log tail so the measured numbers are
+      # readable without artifact-host access (sandbox can't reach blob storage).
+      - name: Print accuracy report
+        if: always()
+        run: |
+          echo "===ACCURACY-MD-BEGIN==="
+          cat docs/benchmarks/accuracy.md || true
+          echo "===ACCURACY-MD-END==="

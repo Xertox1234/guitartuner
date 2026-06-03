@@ -21,6 +21,8 @@ struct LiveTunerScreen: View {
     /// Persisted hero-strobe choice (Aurora default); shared with the Settings sheet
     /// via the same key. Reduce Motion still overrides to the still gauge.
     @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
+    /// Optional waveform scope under the readouts (off by default).
+    @AppStorage("showScope") private var showScope = false
 
     private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
 
@@ -38,6 +40,15 @@ struct LiveTunerScreen: View {
                 Spacer(minLength: Space.s4)
                 readouts
                 Spacer(minLength: Space.s4)
+                if showScope {
+                    Oscilloscope(freq: model.frequency, cents: model.cents ?? 0,
+                                 state: state, active: !model.idle)
+                        .frame(height: 56)
+                        .frame(maxWidth: 420)
+                        .padding(.horizontal, Space.s6)
+                        .padding(.bottom, Space.s4)
+                        .allowsHitTesting(false)
+                }
                 dock
             }
 

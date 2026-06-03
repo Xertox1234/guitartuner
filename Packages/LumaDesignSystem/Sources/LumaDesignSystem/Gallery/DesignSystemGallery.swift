@@ -278,6 +278,11 @@ struct ComponentLibCard: View {
                 StringRow(tuning: Tunings.guitar, activeIdx: $pick)
                     .frame(maxWidth: 380)
             }
+            block("Oscilloscope · optional scope") {
+                Oscilloscope(freq: 146.8, cents: -6, state: .flat, active: true)
+                    .frame(height: 56)
+                    .frame(maxWidth: 380)
+            }
         }
     }
 

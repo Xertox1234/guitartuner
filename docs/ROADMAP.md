@@ -27,8 +27,9 @@ accuracy, so worth doing well.
 - [ ] **Metal `StrobeRenderer`** — the real 120 fps hero path, a drop-in behind
       `StrobeInput` (DESIGN §5). Today's Aurora is a `Canvas`/`TimelineView`
       prototype; Metal is the production render path. *Needs on-device validation.*
-- [ ] **Optional oscilloscope** — live-waveform scope view, restyled into LUMA
+- [x] **Optional oscilloscope** — live-waveform scope view, restyled into LUMA
       tokens (carried over from the alternate exploration; DESIGN_SYSTEM §Oscilloscope).
+      `Oscilloscope` + pure `ScopeMath`; opt-in via Settings, shown under the readouts.
 - [ ] **Mac menu-bar micro-strobe** — a tiny live ring for quick checks while
       recording (EXPERIENCE §8). Same DSP, same look.
 - [x] **Stage Mode** — one-tap max-contrast full-screen strobe + note, all platforms.

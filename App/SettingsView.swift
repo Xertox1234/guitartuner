@@ -11,6 +11,8 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     /// Hero-strobe choice, shared with `LiveTunerScreen` via the same `@AppStorage` key.
     @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
+    /// Optional waveform scope under the readouts (off by default).
+    @AppStorage("showScope") private var showScope = false
 
     var body: some View {
         NavigationStack {
@@ -46,10 +48,12 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+
+                    Toggle("Oscilloscope", isOn: $showScope)
                 } header: {
                     Text("Display")
                 } footer: {
-                    Text("The hero visual. Reduce Motion replaces it with a still gauge.")
+                    Text("The hero strobe, plus an optional waveform scope under the readouts. Reduce Motion replaces the strobe with a still gauge.")
                 }
 
                 Section("Feel") {

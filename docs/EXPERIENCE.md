@@ -3,6 +3,10 @@
 > Experience is co-equal with accuracy. Direction is locked: **bold & stage-ready,
 > dark-first (+ light mode), with a *modern reinterpretation* of the strobe** as the
 > signature visual. This document goes deep on how that looks and feels.
+>
+> **Update (2026-06-03):** the design is realised as the **LUMA** system — exact tokens,
+> components, and *both* strobe concepts are specified in
+> [`design_reference/DESIGN_SYSTEM.md`](design_reference/DESIGN_SYSTEM.md).
 
 ---
 
@@ -36,19 +40,22 @@ math is the same stroboscopic mapping.
 - `cents → drift velocity`. Velocity is proportional to the cents error.
 - `sign(cents) → direction`. Sharp drifts one way, flat the other (sharp = clockwise / →,
   flat = counter-clockwise / ←, by convention).
-- Near zero the velocity eases toward stillness; inside the **in-tune window (±~2–3 ¢,
-  tunable)** it locks: motion freezes, the field blooms to the in-tune accent, a haptic taps.
+- Near zero the velocity eases toward stillness; inside the **in-tune window (±3 ¢,
+  `LOCK_CENTS`)** it locks: motion freezes, the field blooms to the in-tune accent, a haptic taps.
 - Driven by the **live phase** from the DSP (not a canned animation), so it's as accurate as
   the engine and naturally sub-cent.
 
-**Three concept directions** (prototype explores the first two):
-- **A — Aurora ribbons.** Vertical ribbons of light that slide laterally with the error and
-  converge into a single still, glowing column when in tune. Calm but vivid; very legible.
-- **B — Radial phase ring.** A glowing ring whose internal phase marks rotate; rotation
-  speed = error, frozen = in tune, with a central note. Iconic, scales gorgeously to big
-  iPad/Mac screens, makes a strong app-icon language.
-- **C — Particle flow.** A river of luminous particles streaming sideways that settles into
-  a stable lattice when locked. The most "alive," the most GPU-ambitious.
+**Three concept directions explored — DECIDED:** ship **both A and B, user-selectable**
+(Aurora default, Radial in Settings); **C is dropped from v1.**
+- **A — Aurora ribbons (default).** Vertical ribbons of light that slide laterally with the
+  error and converge into a single still, glowing column when in tune. Calm but vivid; very
+  legible.
+- **B — Radial phase ring (Settings).** A glowing ring whose internal phase marks rotate;
+  rotation speed = error, frozen = in tune, with a central note. Iconic, scales gorgeously to
+  big iPad/Mac screens, makes a strong app-icon language.
+- **C — Particle flow (dropped).** A river of luminous particles streaming sideways that
+  settles into a stable lattice when locked. The most "alive," the most GPU-ambitious — held
+  for a possible future, not v1.
 
 ---
 
@@ -158,9 +165,14 @@ A single focused screen. Layered, back to front:
 
 ---
 
-## 11. Open visual decisions
+## 11. Visual decisions — resolved
 
-- **Which signature-strobe concept** — Aurora ribbons (A) vs. Radial phase ring (B) vs.
-  Particle flow (C). (Prototype lets you feel A and B.)
-- **Exact accent palette** — the two error hues and the sacred in-tune accent.
-- **Display typeface** for the note name (system vs. a characterful custom face).
+All settled by the **[LUMA design system](design_reference/DESIGN_SYSTEM.md)**:
+- **Signature strobe** — **ship both** Aurora (default) and Radial (Settings), selectable;
+  reduced-motion gauge as the accessible alternative. Particle flow dropped from v1.
+- **Accent palette** — FLAT `#4D8BFF` · SHARP `#FFA53C` · sacred in-tune `#28F0C0`, on a
+  `#0A0B10` canvas (full dark + light tokens in the design system).
+- **Display typeface** — **Chakra Petch** for the note/display; **JetBrains Mono** for all
+  numerals; system font for UI.
+- **New (carried from the alternate exploration):** an optional **oscilloscope** scope view,
+  restyled into LUMA tokens.

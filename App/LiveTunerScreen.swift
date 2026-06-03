@@ -3,29 +3,57 @@ import LumaDesignSystem
 import TunerEngine
 
 /// The live Tuner screen — the real `TunerEngine` driving the Aurora strobe via
-/// `LiveTunerModel`, **replacing** the simulator on this tab (the Strobe tab keeps
-/// the interactive `StrobeLab` simulator). Phase-driven scroll (`phaseScroll: true`)
-/// uses the engine's live phase for true-strobe motion (Plan 01 wiring).
+/// `LiveTunerModel`, with the full LUMA layout: top chrome, the hero strobe + note
+/// stack, and the controls dock (Auto/String-lock toggle, string row, tone). A4
+/// calibration and tuning presets live in the Settings sheet. Phase-driven scroll
+/// (`phaseScroll: true`) uses the engine's live phase for true-strobe motion.
 ///
 /// Live capture can't run in CI (no audio device) — it compiles here and runs
 /// on-device; `LiveTunerModel` surfaces availability/permission issues as status.
 struct LiveTunerScreen: View {
     @State private var model = LiveTunerModel()
+    @State private var showSettings = false
 
     private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
+
+    /// The string cell glows mint only when we're locked *onto that target*.
+    private var lockedIdx: Int? {
+        (model.mode == .lock && state == .tune) ? model.activeIdx : nil
+    }
 
     var body: some View {
         ZStack {
             ScreenBackground()
             StrobeField(input: model.strobeInput, idle: model.idle, phaseScroll: true)
-            readouts
-            VStack { Spacer(); controls }
+            VStack(spacing: 0) {
+                topChrome
+                Spacer(minLength: Space.s4)
+                readouts
+                Spacer(minLength: Space.s4)
+                dock
+            }
         }
         .lumaGlow(state)
         .foregroundStyle(Color.lumaInk)
         .task { await model.start() }
         .onDisappear { model.stop() }
+        .sheet(isPresented: $showSettings) { SettingsView(model: model) }
     }
+
+    // MARK: Top chrome
+
+    private var topChrome: some View {
+        HStack {
+            Brand()
+            Spacer()
+            InputSource(source: inputBinding)
+            SettingsButton { showSettings = true }
+        }
+        .padding(.horizontal, Space.s6)
+        .padding(.top, Space.s5)
+    }
+
+    // MARK: Readouts (reused Plan 02 components)
 
     private var readouts: some View {
         VStack(spacing: 0) {
@@ -41,15 +69,20 @@ struct LiveTunerScreen: View {
         .allowsHitTesting(false)
     }
 
-    private var controls: some View {
-        VStack(spacing: Space.s4) {
-            Text(model.status)
-                .font(LumaFont.mono(11))
-                .foregroundStyle(Color.lumaDim)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+    // MARK: Dock
 
-            HStack {
+    private var dock: some View {
+        VStack(spacing: Space.s4) {
+            TargetChip(mode: modeBinding)
+
+            StringRow(
+                tuning: model.tuning,
+                activeIdx: .constant(model.activeIdx),
+                lockedIdx: lockedIdx,
+                onPick: { model.selectString($0) }
+            )
+
+            HStack(spacing: Space.s3) {
                 Button { Task { await model.toggle() } } label: {
                     Label(model.running ? "Stop" : "Start",
                           systemImage: model.running ? "stop.fill" : "mic.fill")
@@ -58,24 +91,39 @@ struct LiveTunerScreen: View {
 
                 Spacer()
 
-                Text("A4 \(Int(model.a4))")
-                    .font(LumaFont.mono(11)).monospacedDigit()
-                    .foregroundStyle(Color.lumaDim)
-                Stepper("A4", value: a4Binding, in: 430...450, step: 1)
-                    .labelsHidden()
-                    .frame(maxWidth: 100)
+                ToneToggle(on: $model.toneOn, label: toneLabel)
             }
+
+            Text(model.status)
+                .font(LumaFont.mono(10))
+                .foregroundStyle(Color.lumaDim)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
         }
         .padding(Space.s5)
         .background(Color.lumaSurface.opacity(0.55),
                     in: RoundedRectangle(cornerRadius: Radius.r4, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.r4, style: .continuous)
             .stroke(Color.lumaLine, lineWidth: 1))
-        .padding(Space.s5)
+        .padding(.horizontal, Space.s5)
+        .padding(.bottom, Space.s5)
     }
 
-    private var a4Binding: Binding<Double> {
-        Binding(get: { model.a4 }, set: { model.a4 = $0 })
+    /// The tone toggle names the string it will sound, e.g. `Tone · A2`.
+    private var toneLabel: String {
+        if let s = model.activeString { return "Tone · \(s.note)\(s.octave)" }
+        return "Tone"
+    }
+
+    // MARK: Bindings into the @Observable model
+
+    private var modeBinding: Binding<TargetMode> {
+        Binding(get: { model.mode }, set: { model.setMode($0) })
+    }
+
+    private var inputBinding: Binding<InputKind> {
+        Binding(get: { model.inputKind }, set: { model.setInputKind($0) })
     }
 }
 

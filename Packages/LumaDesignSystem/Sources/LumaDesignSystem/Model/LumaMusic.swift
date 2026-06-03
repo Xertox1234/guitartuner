@@ -21,6 +21,16 @@ public enum LumaMusic {
         a4 * pow(2, (Double(midi) - 69) / 12)
     }
 
+    /// MIDI note → sharp note name (e.g. 61 → `"C♯"`). Mirrors the engine's `Note`.
+    public static func noteName(midi: Int) -> String {
+        names[((midi % 12) + 12) % 12]
+    }
+
+    /// MIDI note → scientific-pitch octave (A4 = 69 → 4, C4 = 60 → 4, B0 = 23 → 0).
+    public static func octave(midi: Int) -> Int {
+        Int((Double(midi) / 12).rounded(.down)) - 1
+    }
+
     public struct Nearest: Equatable, Sendable {
         public let name: String
         public let octave: Int

@@ -11,9 +11,12 @@ import Foundation
 /// | Band     | f0 range     | Window        | Hop          | Overlap | Settles |
 /// |----------|--------------|---------------|--------------|---------|---------|
 /// | high     | ≥ 250 Hz     | 1024 (21 ms)  | 256 (5.3 ms) | 75 %    | ~30 ms  |
-/// | mid      | 80–250 Hz    | 2048 (43 ms)  | 512 (11 ms)  | 75 %    | ~55 ms  |
-/// | low      | < 80 Hz      | 4096 (85 ms)  | 1024 (21 ms) | 75 %    | ~110 ms |
+/// | mid      | 120–250 Hz   | 2048 (43 ms)  | 512 (11 ms)  | 75 %    | ~55 ms  |
+/// | low      | < 120 Hz     | 4096 (85 ms)  | 1024 (21 ms) | 75 %    | ~110 ms |
 /// | acquire  | (cold start) | 4096 (85 ms)  | 1024 (21 ms) | 75 %    | ~110 ms |
+///
+/// The low band reaches up to 120 Hz so the low guitar strings (E2 ~82, A2 ~110)
+/// get a long window with ≥~7 periods — they read as low strings, not mids.
 ///
 /// Acquisition always uses the long window so the very first lock is octave-safe
 /// even on low B; once a confident pitch is known we drop to the band's window
@@ -46,7 +49,7 @@ public struct AnalysisConfig: Sendable, Equatable {
     /// caller (it nudges the boundaries) to avoid chattering at the edges.
     public static func band(forFrequency f0: Double) -> AnalysisConfig {
         if f0 >= 250 { return .high }
-        if f0 >= 80 { return .mid }
+        if f0 >= 120 { return .mid }
         return .low
     }
 }

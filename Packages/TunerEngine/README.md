@@ -50,10 +50,10 @@ concurrency — so CI runs the whole thing on synthesized / file input. The
 
 | Band    | f0        | Window        | Hop          | Overlap | Notes                       |
 |---------|-----------|---------------|--------------|---------|-----------------------------|
-| high    | ≥ 250 Hz  | 1024 (21 ms)  | 256 (5.3 ms) | 75 %    | snappy high strings         |
-| mid     | 80–250 Hz | 2048 (43 ms)  | 512 (11 ms)  | 75 %    | guitar mids                 |
-| low     | < 80 Hz   | 4096 (85 ms)  | 1024 (21 ms) | 75 %    | low E / B, bass             |
-| acquire | cold start| 4096 (85 ms)  | 1024 (21 ms) | 75 %    | octave-safe cold acquisition|
+| high    | ≥ 250 Hz   | 1024 (21 ms)  | 256 (5.3 ms) | 75 %    | snappy high strings         |
+| mid     | 120–250 Hz | 2048 (43 ms)  | 512 (11 ms)  | 75 %    | guitar mids                 |
+| low     | < 120 Hz   | 4096 (85 ms)  | 1024 (21 ms) | 75 %    | low E/A, low B, bass        |
+| acquire | cold start | 4096 (85 ms)  | 1024 (21 ms) | 75 %    | octave-safe cold acquisition|
 
 Low B (~31 Hz, ~32 ms period) needs ~2–3 periods, so the lowest notes settle in
 ~100–150 ms — documented, not fought (DESIGN §3). Higher notes track on short,

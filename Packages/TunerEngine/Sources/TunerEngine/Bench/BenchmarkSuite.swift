@@ -220,8 +220,8 @@ public enum BenchmarkSuite {
         md += "\n## Window / hop strategy (48 kHz)\n\n"
         md += "| Band | f0 | Window | Hop | Overlap |\n|---|---|---|---|---|\n"
         md += "| high | ≥250 Hz | 1024 (21 ms) | 256 (5.3 ms) | 75% |\n"
-        md += "| mid | 80–250 Hz | 2048 (43 ms) | 512 (11 ms) | 75% |\n"
-        md += "| low | <80 Hz | 4096 (85 ms) | 1024 (21 ms) | 75% |\n"
+        md += "| mid | 120–250 Hz | 2048 (43 ms) | 512 (11 ms) | 75% |\n"
+        md += "| low | <120 Hz | 4096 (85 ms) | 1024 (21 ms) | 75% |\n"
         md += "| acquire (cold) | unknown | 4096 (85 ms) | 1024 (21 ms) | 75% |\n\n"
 
         md += "## Method\n\n"

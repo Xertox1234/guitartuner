@@ -27,7 +27,8 @@ final class LiveTunerModel {
         didSet {
             let clamped = min(450, max(430, a4))
             if clamped != a4 { a4 = clamped }     // setting within didSet won't re-fire it
-            Task { await engine.setA4(clamped) }
+            let e = engine                        // capture the actor, not self
+            Task { await e.setA4(clamped) }
         }
     }
 
@@ -67,7 +68,8 @@ final class LiveTunerModel {
         watchdog?.cancel(); watchdog = nil
         cents = nil
         status = "Stopped"
-        Task { await engine.stop() }
+        let e = engine                      // capture the actor, not self
+        Task { await e.stop() }
     }
 
     func toggle() async {

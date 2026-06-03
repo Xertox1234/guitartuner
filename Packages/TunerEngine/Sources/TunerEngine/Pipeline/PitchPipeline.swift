@@ -35,7 +35,9 @@ public final class PitchPipeline {
 
     private var preproc: Preprocessor
     private var smoother = FrequencySmoother()
-    private var gate = SustainGate()
+    // Gate margin sits below clean clarity (~0.95) and inharmonic-low clarity
+    // (~0.7–0.85 on raw frames) but above noise (~0.3–0.5).
+    private var gate = SustainGate(minConfidence: 0.6)
     private var hannCache: [Int: [Float]] = [:]      // per-instance window cache
     private var config: AnalysisConfig = .acquire
     private var lastAnalyzedAt = 0
@@ -99,8 +101,11 @@ public final class PitchPipeline {
     private func analyze() -> PitchReading? {
         let window = config.window
         let frameStart = totalSamples - window
-        var frame = recent(window)
-        applyHann(&frame)
+        // Raw frame for the time-domain detectors + phase-vocoder: NSDF/YIN want
+        // the *periods*, and a Hann taper roughly halves the effective period
+        // count — enough to drop low/inharmonic clarity below the gate. (The
+        // strobe-phase single-bin DFT gets a windowed copy below, for clean phase.)
+        let frame = recent(window)
 
         guard let det = PitchDetector.detect(
             frame, sampleRate: sampleRate, range: Self.searchRange, method: method
@@ -129,9 +134,12 @@ public final class PitchPipeline {
         }
 
         // Strobe phase against the reference (string-lock target or nearest note).
+        // Window a copy here to suppress spectral leakage from neighbouring partials.
+        var phaseFrame = frame
+        applyHann(&phaseFrame)
         let reference = (targetNote ?? nearest).frequency(a4: a4)
         let phase = StrobePhase.phase(
-            frame, referenceFrequency: reference, sampleRate: sampleRate, globalStart: frameStart
+            phaseFrame, referenceFrequency: reference, sampleRate: sampleRate, globalStart: frameStart
         ) ?? 0
 
         // Sustain gate + confidence.
@@ -198,9 +206,9 @@ public final class PitchPipeline {
         case "high": return f0 < 235 ? AnalysisConfig.band(forFrequency: f0) : .high
         case "mid":
             if f0 >= 265 { return .high }
-            if f0 < 75 { return .low }
+            if f0 < 110 { return .low }
             return .mid
-        case "low": return f0 >= 90 ? AnalysisConfig.band(forFrequency: f0) : .low
+        case "low": return f0 >= 130 ? AnalysisConfig.band(forFrequency: f0) : .low
         default: return AnalysisConfig.band(forFrequency: f0)   // acquire → settle
         }
     }

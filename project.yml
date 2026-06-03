@@ -48,3 +48,16 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
         # macOS native app needs the hardened runtime for distribution.
         ENABLE_HARDENED_RUNTIME: YES
+
+# Shared scheme so `xcodebuild -scheme LUMA` works headlessly in CI.
+schemes:
+  LUMA:
+    build:
+      targets:
+        LUMA: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    archive:
+      config: Release

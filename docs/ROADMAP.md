@@ -44,9 +44,19 @@ accuracy, so worth doing well.
 
 ### Polish / first-run (DESIGN §10, EXPERIENCE §10)
 - [ ] Bundle **Chakra Petch + JetBrains Mono** (OFL) — currently falling back to
-      SF Pro / SF Mono (see `Packages/LumaDesignSystem/.../Resources/Fonts/`, BUILD.md).
-- [ ] Real **app icon** drawn from the strobe language — placeholder today.
-- [ ] **Cold open** straight into the breathing strobe (no splash screen).
+      SF Pro / SF Mono. The registration *plumbing is done* (`LumaFonts.registerIfNeeded`
+      auto-registers any `.ttf`/`.otf` in the package `Fonts/` bundle, SF fallback
+      otherwise); this is now purely a **license-gated binary drop-in** — confirm
+      the OFL version and add the files + `OFL.txt` (see `Resources/Fonts/README.md`).
+- [x] Real **app icon** drawn from the strobe language — a glowing mint tuned ring
+      + central lock column on the canvas (the in-tune moment), generated
+      reproducibly by `Tools/make_app_icon.py` (pure-stdlib PNG, no deps): iOS 1024
+      full-bleed + every macOS size on the squircle, legible to 16pt.
+- [x] **Cold open** straight into the breathing strobe (no splash). Release ships
+      the *single focused screen* (`RootView` → `LiveTunerScreen`; the strobe lab +
+      design gallery are now DEBUG-only); the iOS launch screen is tinted to the
+      canvas (`LaunchCanvas` = `lumaBg`, light/dark) so there's no white flash into
+      the strobe. Theme (System/Dark/Light) moved to Settings → Appearance.
 
 ---
 

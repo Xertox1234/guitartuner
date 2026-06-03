@@ -125,9 +125,9 @@ public struct TunerScreenStatic: View {
             VStack(spacing: 0) {
                 ScreenTop(source: $source)
 
-                // Hero field — note stack over the field wash.
+                // Hero field — note stack over the Aurora strobe (Plan 03).
                 ZStack {
-                    FieldWash()
+                    StrobeField(input: StrobeInput(cents: cents ?? 0, locked: locked), idle: cents == nil)
                     VStack(spacing: 0) {
                         NoteReadout(note: note, octave: octave, locked: locked, dimmed: cents == nil)
                         if let cents {

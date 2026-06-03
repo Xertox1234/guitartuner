@@ -30,6 +30,23 @@ oscillator. On pitch it stands still; off pitch it advances at the beat rate
 between readings (a true strobe). The app maps `PitchReading → StrobeInput` and
 renders with `AuroraStrobe(phaseScroll: true)`.
 
+## Reference tone & string-lock helpers (output, not analysis)
+
+Two small, pure additions support the app's Tuner UX (Plan 04) without touching the
+capture/analysis path:
+
+- **`ToneSynth`** — a phase-continuous additive synthesizer for the **reference
+  tone** (DESIGN §2.7). Gentle harmonic stack (not a harsh sine), gain glides so
+  on/off/retune never click, and the fundamental phase is held across calls and
+  frequency changes. It's pure DSP (no audio engine), so the app wraps it in an
+  `AVAudioSourceNode`; CI tests it headlessly like the rest of the engine.
+- **`Note.cents(of:a4:)`** — signed cents of an arbitrary frequency *against a
+  specific note*, so the **string-lock** UI can judge a reading relative to the
+  targeted string (the robust path for low B/E) rather than the chromatic nearest.
+
+Both share the engine's A4 calibration via `Pitch`/`Note`, and neither does any
+networking — the reference tone is synthesized on-device.
+
 ## Pipeline
 
 ```

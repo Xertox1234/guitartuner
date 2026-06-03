@@ -24,6 +24,15 @@ public struct Note: Sendable, Equatable, Hashable, CustomStringConvertible {
     public func frequency(a4: Double = Pitch.standardA4) -> Double {
         Pitch.frequency(midi: midi, a4: a4)
     }
+
+    /// Signed cents of an arbitrary `frequency` measured **against this note**
+    /// (negative = flat, positive = sharp), at a given A4. The string-lock UX uses
+    /// this to judge a reading against the *targeted* string rather than the
+    /// chromatic nearest note (DESIGN §2.4). Returns `0` for non-positive input.
+    public func cents(of frequency: Double, a4: Double = Pitch.standardA4) -> Double {
+        guard frequency > 0 else { return 0 }
+        return 1200 * log2(frequency / self.frequency(a4: a4))
+    }
 }
 
 /// Pure pitch math: MIDI ⇄ frequency and frequency → (nearest note, signed

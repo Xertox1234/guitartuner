@@ -51,6 +51,19 @@ final class NoteTests: XCTestCase {
         XCTAssertNil(Pitch.nearest(frequency: -10))
     }
 
+    func testCentsRelativeToTargetNote() {
+        let a4 = Note(midi: 69)
+        XCTAssertEqual(a4.cents(of: 440), 0, accuracy: 1e-6)
+        XCTAssertEqual(a4.cents(of: 440 * pow(2, 10.0 / 1200)), 10, accuracy: 1e-6)   // sharp
+        XCTAssertEqual(a4.cents(of: 440 * pow(2, -25.0 / 1200)), -25, accuracy: 1e-6) // flat
+        // Scales with the A4 reference (432 Hz reads as in-tune A4 at A4 = 432).
+        XCTAssertEqual(Note(midi: 69).cents(of: 432, a4: 432), 0, accuracy: 1e-6)
+        // 5-string low B target judged against a slightly sharp reading.
+        let b0 = Note(midi: 23)
+        XCTAssertGreaterThan(b0.cents(of: b0.frequency() * 1.01), 0)
+        XCTAssertEqual(b0.cents(of: 0), 0)   // non-positive input is guarded
+    }
+
     func testReadingLock() {
         let inTune = PitchReading(frequency: 440, note: Note(midi: 69), cents: 1.5,
                                   confidence: 0.95, phase: 0, timestamp: 0)

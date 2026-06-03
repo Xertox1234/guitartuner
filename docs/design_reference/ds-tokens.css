@@ -1,0 +1,164 @@
+/* ============================================================
+   LUMA · Tuner Design System — Tokens
+   Dark-first, luminous. Boldness from glowing light on a dark field.
+   ============================================================ */
+
+/* ---- Fonts ---- */
+/* Display: mechanical/technical (Chakra Petch). Numerals: tabular mono
+   (JetBrains Mono). UI: system sans (Dynamic Type feel). */
+
+:root {
+  /* ===== TYPE ===== */
+  --font-display: "Chakra Petch", "SF Pro Display", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  --font-ui: -apple-system, "SF Pro Text", system-ui, sans-serif;
+
+  /* Type scale (px) — UI labels through the hero note */
+  --fs-micro: 11px;
+  --fs-cap:   12px;
+  --fs-label: 13px;
+  --fs-body:  15px;
+  --fs-lg:    17px;
+  --fs-xl:    20px;
+  --fs-2xl:   24px;
+  --fs-3xl:   32px;
+  --fs-4xl:   44px;
+  --fs-num:   56px;   /* cents / hz big readouts */
+  --fs-5xl:   72px;
+  --fs-note:  168px;  /* the hero note name (iPhone) */
+
+  --tracking-wide: 0.18em;
+  --tracking-mono: 0.04em;
+
+  /* ===== SPACING (4pt) ===== */
+  --s-1: 2px;  --s-2: 4px;  --s-3: 8px;  --s-4: 12px;
+  --s-5: 16px; --s-6: 20px; --s-7: 24px; --s-8: 32px;
+  --s-9: 40px; --s-10: 48px; --s-11: 64px; --s-12: 80px;
+
+  /* ===== RADIUS ===== */
+  --r-1: 8px; --r-2: 12px; --r-3: 16px; --r-4: 20px;
+  --r-5: 28px; --r-6: 40px; --r-full: 9999px;
+
+  /* ===== COLOR — DARK (default) ===== */
+  --bg:        #0A0B10;   /* near-black cool canvas */
+  --bg-grad:   #0D0F18;
+  --surface:   #14161F;   /* edge chrome, low-emphasis */
+  --surface-2: #1B1E2A;
+  --surface-3: #242838;
+  --ink:       #EEF1F8;   /* primary text */
+  --dim:       #8E94A6;   /* secondary text */
+  --faint:     #565C70;   /* tertiary / disabled */
+  --line:      rgba(255,255,255,0.07);
+  --line-2:    rgba(255,255,255,0.13);
+
+  /* Error coding — never color alone; paired with motion + sign */
+  --flat:      #4D8BFF;   /* FLAT = cool · electric blue */
+  --flat-2:    #8A6BFF;   /* cyan-violet companion */
+  --sharp:     #FFA53C;   /* SHARP = warm · amber */
+  --sharp-2:   #FF6A4D;   /* coral companion */
+
+  /* SACRED — used ONLY for the locked / in-tune state */
+  --in-tune:   #28F0C0;   /* vivid green-cyan — the brand */
+  --in-tune-2: #16C8A0;
+
+  /* the brand glow color stays luminous mint in both themes */
+  --brand-glow: #28F0C0;
+
+  /* glow hue — set per-state by components (defaults dim) */
+  --glow: var(--flat);
+
+  --scrim: rgba(6,7,11,0.72);
+}
+
+/* ===== COLOR — LIGHT (polished) ===== */
+[data-theme="light"] {
+  --bg:        #E7EAF1;
+  --bg-grad:   #EEF1F7;
+  --surface:   #FFFFFF;
+  --surface-2: #F3F5FB;
+  --surface-3: #E7EBF4;
+  --ink:       #0D0F16;
+  --dim:       #565D6E;
+  --faint:     #9AA1B2;
+  --line:      rgba(13,15,22,0.09);
+  --line-2:    rgba(13,15,22,0.16);
+
+  --flat:      #2E6BFF;
+  --flat-2:    #6B4DFF;
+  --sharp:     #D9760F;
+  --sharp-2:   #DF4226;
+
+  --in-tune:   #07A07C;   /* deepened so it reads on white */
+  --in-tune-2: #0A8E70;
+  --brand-glow:#1FD9AC;
+
+  --scrim: rgba(231,234,241,0.7);
+}
+
+/* ============================================================
+   GLOW / BLOOM elevation — additive luminosity, NOT drop shadows.
+   Each level layers a tight core glow + a soft outer bloom in the
+   currently-active hue (--glow). Apply via class; set --glow inline.
+   ============================================================ */
+.bloom-1 { filter: drop-shadow(0 0 4px color-mix(in oklab, var(--glow) 55%, transparent)); }
+.bloom-2 {
+  filter:
+    drop-shadow(0 0 6px color-mix(in oklab, var(--glow) 60%, transparent))
+    drop-shadow(0 0 16px color-mix(in oklab, var(--glow) 30%, transparent));
+}
+.bloom-3 {
+  filter:
+    drop-shadow(0 0 8px color-mix(in oklab, var(--glow) 70%, transparent))
+    drop-shadow(0 0 24px color-mix(in oklab, var(--glow) 40%, transparent))
+    drop-shadow(0 0 56px color-mix(in oklab, var(--glow) 22%, transparent));
+}
+.bloom-text {
+  text-shadow:
+    0 0 12px color-mix(in oklab, var(--glow) 45%, transparent),
+    0 0 40px color-mix(in oklab, var(--glow) 25%, transparent);
+}
+
+/* Soft radial wash used behind hero fields */
+.field-wash {
+  background:
+    radial-gradient(60% 50% at 50% 42%, color-mix(in oklab, var(--glow) 16%, transparent), transparent 72%);
+}
+
+/* ============================================================
+   Base + helpers
+   ============================================================ */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-mono); }
+.tnum { font-variant-numeric: tabular-nums; }
+.disp { font-family: var(--font-display); }
+.ui   { font-family: var(--font-ui); }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* Edge chrome buttons — low emphasis */
+.chip {
+  font-family: var(--font-mono);
+  font-size: var(--fs-cap);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border: 1px solid var(--line-2);
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  border-radius: var(--r-full);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: color 160ms, border-color 160ms, background 160ms;
+}
+.chip:hover { color: var(--ink); border-color: var(--line-2); }
+.chip[data-on="true"] {
+  color: var(--ink);
+  border-color: color-mix(in oklab, var(--ink) 30%, transparent);
+}

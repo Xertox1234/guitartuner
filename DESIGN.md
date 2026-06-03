@@ -1,4 +1,4 @@
-# Tuner (working title) — Design Document
+# LUMA — Design Document
 
 A pro-grade, privacy-first guitar & bass tuner for **iPhone, iPad, and Mac**.
 
@@ -37,7 +37,10 @@ calmer than the free options.
 
 1. **Real-time pitch detection** from a wired DI / audio-interface input (auto-preferred
    when present), with the built-in mic as fallback.
-2. **Strobe display** as the primary readout — Metal-rendered, buttery at 120 fps.
+2. **Strobe display** as the primary readout — Metal-rendered, buttery at 120 fps. Two
+   selectable styles (**Aurora** default / **Radial** in Settings) and a first-class
+   reduced-motion gauge. An **optional oscilloscope** (live waveform) is available as a
+   secondary scope view.
 3. **Chromatic auto-detect** — identifies and shows the nearest note + cents offset, live.
 4. **Manual string-lock** — tap a string to judge only sharp/flat against that one target
    (the robustness path for low B/E on bass).
@@ -100,7 +103,8 @@ Guitar and higher notes stay snappy via overlapping analysis hops.
 
 > Visual experience is a co-equal pillar with accuracy. **Visual direction is locked:**
 > bold and stage-ready, dark-first (with a light mode), and a *modern reinterpretation* of
-> the strobe as the signature visual.
+> the strobe as the signature visual. The concrete tokens, components, and both strobe
+> concepts now live in the **[LUMA design system](docs/design_reference/DESIGN_SYSTEM.md)**.
 
 **Philosophy:** *bold, luminous, instantly legible.* High-contrast and high-energy — vivid
 accent light on a deep dark canvas, readable at a glance from across a dark stage or studio
@@ -192,10 +196,12 @@ email form is a **v2** addition; because it captures email *in-app*, v2 honestly
 
 ## 7. Open decisions (next up)
 
-- **Visual direction — LOCKED:** bold & stage-ready, dark-first (+ light mode), strobe as a
-  modern reinterpretation. Still to refine: the exact signature-strobe motion design and the
-  accent color / palette.
-- **App name** — currently unnamed.
+- **Visual direction — LOCKED & specified:** the full **LUMA design system** is now in hand
+  (Chakra Petch + JetBrains Mono; the dark/light palette; FLAT blue / SHARP amber / sacred
+  mint in-tune; glow-not-shadow elevation). Strobe decision: **ship both Aurora and Radial,
+  user-selectable** (Aurora default), plus the reduced-motion gauge. See
+  [`docs/design_reference/DESIGN_SYSTEM.md`](docs/design_reference/DESIGN_SYSTEM.md).
+- **App name — LOCKED: LUMA.**
 - **Exact deployment OS floor.**
 - **Final tuning-preset list** for v1.
 - **Email list (v2, in-app form — decided):** remaining choices are the ESP (e.g.
@@ -210,3 +216,7 @@ email form is a **v2** addition; because it captures email *in-app*, v2 honestly
 - **v2+:** affiliate Gear surface · opt-in email signup (in-app form) ·
   sweetened/just-intonation temperaments · metronome · tuning history — added only once the
   core is impeccable.
+
+**Build plans:** session-ready plans for the first three engineering workstreams — the DSP
+engine, the SwiftUI design-system scaffold, and the first strobe prototype — live in
+[`docs/plans/`](docs/plans/).

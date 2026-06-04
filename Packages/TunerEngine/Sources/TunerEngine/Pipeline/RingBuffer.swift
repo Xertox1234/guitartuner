@@ -1,5 +1,27 @@
 import Foundation
+#if canImport(os)
 import os
+#else
+/// Linux / non-Apple stand-in for the slice of `OSAllocatedUnfairLock` this file
+/// uses (`init(initialState:)` + `withLockUnchecked`). Backed by `NSLock` so the
+/// single-producer / single-consumer hand-off stays correctly serialised off
+/// Apple. The Apple build is untouched and still uses the real `os` primitive
+/// (with its priority donation); this fallback only needs to be *correct*, not
+/// real-time-optimal, because live capture never runs on these platforms — CI
+/// drives the ring from synthesized / file input on the same thread.
+final class OSAllocatedUnfairLock<State>: @unchecked Sendable {
+    private var state: State
+    private let lock = NSLock()
+
+    init(initialState: State) { self.state = initialState }
+
+    func withLockUnchecked<R>(_ body: (inout State) throws -> R) rethrows -> R {
+        lock.lock()
+        defer { lock.unlock() }
+        return try body(&state)
+    }
+}
+#endif
 
 /// Single-producer / single-consumer sample ring for the real-time hand-off. The
 /// audio tap (producer) only ever **copies samples in and bumps an index** — no

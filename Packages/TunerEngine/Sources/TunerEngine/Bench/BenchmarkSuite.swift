@@ -33,6 +33,8 @@ public enum BenchmarkSuite {
         public let worstAbsCents: Double
         public let bassAbsCents: Double
         public let bassWorstCents: Double
+        public let midAbsCents: Double
+        public let highAbsCents: Double
         public let lockMSMedian: Double
         public let stressOctaveErrors: Int    // octave errors across stress families
         public let stressWorstAbsCents: Double
@@ -170,6 +172,8 @@ public enum BenchmarkSuite {
         let pooled = ErrorStats.from(clean.flatMap { $0.errors })
         let lockPooled = ErrorStats.from(clean.flatMap { $0.lockErrors })
         let bassPooled = ErrorStats.from(clean.filter { bucket($0.trueFrequency) == bands[0] }.flatMap { $0.errors })
+        let midPooled = ErrorStats.from(clean.filter { bucket($0.trueFrequency) == bands[1] }.flatMap { $0.errors })
+        let highPooled = ErrorStats.from(clean.filter { bucket($0.trueFrequency) == bands[2] }.flatMap { $0.errors })
         let octRate = clean.isEmpty ? 0 : Double(clean.filter { $0.octaveError }.count) / Double(clean.count)
         let locks = clean.compactMap { $0.timeToLockMS }.sorted()
         let lockMedian = locks.isEmpty ? 0 : locks[locks.count / 2]
@@ -183,6 +187,8 @@ public enum BenchmarkSuite {
             worstAbsCents: pooled.maxAbs,
             bassAbsCents: bassPooled.meanAbs,
             bassWorstCents: bassPooled.maxAbs,
+            midAbsCents: midPooled.meanAbs,
+            highAbsCents: highPooled.meanAbs,
             lockMSMedian: lockMedian,
             stressOctaveErrors: stress.filter { $0.octaveError }.count,
             stressWorstAbsCents: stressWorst,

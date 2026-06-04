@@ -1,6 +1,6 @@
 # TunerEngine — measured accuracy
 
-_Generated 2026-06-04T10:51:35Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
+_Generated 2026-06-04T12:32:02Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
 
 > Regenerate: `swift run -c release --package-path Packages/TunerEngine Benchmark --out docs/benchmarks`. CI (macOS) regenerates this every build as an artifact; this committed copy is the published spec.
 
@@ -8,9 +8,9 @@ _Generated 2026-06-04T10:51:35Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Determi
 
 | Metric | Value |
 |---|---|
-| Mean abs cents error (clean) | **1.02¢** |
-| Jitter σ (clean, steady) | 2.60¢ |
-| **Held-note lock-window σ (clean)** | 2.74¢ |
+| Mean abs cents error (clean) | **0.77¢** |
+| Jitter σ (clean, steady) | 2.49¢ |
+| **Held-note lock-window σ (clean)** | 2.65¢ |
 | Worst-case abs error (clean) | 25.89¢ |
 | Octave-error rate (clean) | 0.00% |
 | Median time-to-lock (cold start) | 43 ms |
@@ -20,17 +20,17 @@ _Generated 2026-06-04T10:51:35Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Determi
 
 | Signal | n | mean ¢ | abs ¢ | σ ¢ | max ¢ |
 |---|---|---|---|---|---|
-| pure | 10525 | 0.01 | 0.55 | 1.48 | 15.49 |
-| harmonic | 10525 | -0.51 | 1.18 | 3.01 | 25.50 |
-| inharmonic | 10685 | 0.47 | 1.32 | 2.92 | 25.89 |
+| pure | 10525 | 0.01 | 0.42 | 1.46 | 15.49 |
+| harmonic | 10525 | -0.50 | 0.89 | 2.91 | 25.50 |
+| inharmonic | 10525 | 0.39 | 1.02 | 2.77 | 25.89 |
 
 ## By range (clean) — steady vs held-note lock window
 
 | Range | n | abs ¢ | σ ¢ | max ¢ | lock abs ¢ | lock σ ¢ |
 |---|---|---|---|---|---|---|
 | bass (<82 Hz) | 6762 | 2.98 | 5.33 | 25.89 | 3.03 | 5.35 |
-| mid (82–330 Hz) | 13561 | 0.70 | 1.15 | 9.52 | 0.68 | 1.09 |
-| high (>330 Hz) | 11412 | 0.23 | 0.40 | 4.91 | 0.23 | 0.37 |
+| mid (82–330 Hz) | 13401 | 0.23 | 0.36 | 3.55 | 0.22 | 0.35 |
+| high (>330 Hz) | 11412 | 0.11 | 0.13 | 0.64 | 0.11 | 0.14 |
 
 ## Stress cases (reported, not pooled into the headline)
 
@@ -40,17 +40,17 @@ Real-world realities the default model omits — the families P1–P3 must impro
 |---|---|---|---|---|---|---|
 | weak-fund | 348 | 12.28 | 15.16 | 15.24 | 44.29 | 0 |
 | missing-fund | 348 | 29.30 | 30.61 | 30.66 | 45.99 | 0 |
-| decay-glide | 704 | 4.55 | 3.82 | 1.76 | 15.18 | 0 |
-| vibrato | 617 | 13.85 | 16.03 | 15.96 | 27.46 | 0 |
+| decay-glide | 704 | 4.34 | 3.39 | 1.29 | 14.91 | 0 |
+| vibrato | 617 | 14.58 | 16.85 | 16.76 | 27.31 | 0 |
 
 ## Noise robustness (inharmonic, abs cents vs SNR)
 
 | SNR (dB) | n | abs ¢ | σ ¢ | lock σ ¢ | octave errors |
 |---|---|---|---|---|---|
-| 40 | 628 | 0.57 | 0.76 | 0.84 | 0 |
-| 20 | 628 | 0.57 | 0.76 | 0.83 | 0 |
-| 10 | 628 | 0.64 | 0.81 | 0.87 | 0 |
-| 5 | 628 | 0.77 | 1.04 | 1.14 | 0 |
+| 40 | 628 | 0.44 | 0.68 | 0.77 | 0 |
+| 20 | 628 | 0.43 | 0.69 | 0.77 | 0 |
+| 10 | 628 | 0.58 | 0.81 | 0.87 | 0 |
+| 5 | 628 | 0.83 | 1.12 | 1.19 | 0 |
 
 ## CRLB floor & efficiency (held E2, N=4096)
 

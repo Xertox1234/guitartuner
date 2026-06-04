@@ -1,8 +1,14 @@
 name: CI
 
+# MANUAL-ONLY. This workflow does NOT run on push or pull_request — it only runs
+# when you explicitly start it from the Actions tab ("Run workflow"), so it never
+# consumes GitHub Actions minutes on its own. Day-to-day verification is done
+# locally (swift test + the accuracy benchmark). When you do run it, the jobs are
+# cost-shaped: the pure-Swift engine on a 1x Linux runner, and the macOS runner
+# (SwiftUI design-system tests + Xcode app builds) only when you opt into it.
+#
+# To re-enable automatic runs later, add back `pull_request:` / `push:` triggers.
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -10,9 +16,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build & test (macOS)
+  # The engine is pure Swift + Foundation (no SwiftUI/AVFoundation needed for the
+  # headless pipeline), so it runs on a 1x Linux runner. This is where the DSP
+  # work is gated, so most PRs never touch a macOS runner at all.
+  engine:
+    name: Engine tests + accuracy benchmark (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test TunerEngine package
+        run: swift test --package-path Packages/TunerEngine
+
+      # Runs the accuracy harness (the published spec is pulled from this log) and
+      # fails on regressions (--ci): octave safety + the ratcheted P0/P1 gates.
+      - name: Run accuracy benchmark (+ CI gate)
+        run: |
+          swift run -c release --package-path Packages/TunerEngine Benchmark \
+            --compare --out docs/benchmarks --ci
+
+      - name: Upload benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accuracy-report
+          path: docs/benchmarks/
+          if-no-files-found: ignore
+
+  # SwiftUI needs macOS, so the design-system tests and the full app builds run
+  # here — but only on integration-branch merges and manual dispatch, NOT on every
+  # PR, to conserve macOS minutes. When a PR changes app/design-system code, run
+  # this on demand via the "Run workflow" (workflow_dispatch) button.
+  app:
+    name: Design system + app builds (macOS)
     runs-on: macos-14
+    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
 
@@ -31,26 +70,6 @@ jobs:
       # Compile + run the design-system unit tests (also type-checks all SwiftUI).
       - name: Test design-system package
         run: swift test --package-path Packages/LumaDesignSystem
-
-      # Compile + run the TunerEngine DSP tests (synthesized / file input — no
-      # audio device needed, so the pipeline + benchmark run headless in CI).
-      - name: Test TunerEngine package
-        run: swift test --package-path Packages/TunerEngine
-
-      # Run the accuracy benchmark: prints the measured report (the published
-      # spec is pulled from this log) and fails on gross regressions (--ci).
-      - name: Run accuracy benchmark
-        run: |
-          swift run -c release --package-path Packages/TunerEngine Benchmark \
-            --compare --out docs/benchmarks --ci
-
-      - name: Upload benchmark report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: accuracy-report
-          path: docs/benchmarks/
-          if-no-files-found: ignore
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -76,12 +95,3 @@ jobs:
             -scheme LUMA \
             -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO
-
-      # Echo the generated report to the log tail so the measured numbers are
-      # readable without artifact-host access (sandbox can't reach blob storage).
-      - name: Print accuracy report
-        if: always()
-        run: |
-          echo "===ACCURACY-MD-BEGIN==="
-          cat docs/benchmarks/accuracy.md || true
-          echo "===ACCURACY-MD-END==="

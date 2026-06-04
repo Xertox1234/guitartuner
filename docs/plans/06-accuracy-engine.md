@@ -350,9 +350,15 @@ them. Upgrade `BenchmarkSuite`/`CaseRunner`:
 - **Inharmonic truth is the model f0** (already correct) — and add a per‑partial check
   that B is recovered.
 - **New case families**: pluck‑envelope + decay‑glide (the `Synth.applyPluckEnvelope`
-  already exists), vibrato/FM, and lower SNRs (5 dB).
-- **Real‑DI fixtures**: a small set of recorded tuned‑string DIs as an out‑of‑CI
-  regression (CI stays synthetic/headless).
+  already exists), vibrato/FM, **a weak/missing‑fundamental bass stimulus** (attenuate or
+  drop the `k=1` partial — the real low‑B/E DI case the current ∝1/k model never exercises,
+  and the one the harmonic estimator is most likely to slip an octave on), and lower
+  SNRs (5 dB).
+- **Real‑DI fixture harness (lands in P0):** build the loader + scorer for a small set of
+  recorded tuned‑string DIs *now*, and validate **B recovery on real low E/B** before any
+  sub‑0.1 ¢ / ≤1 ¢ gate is trusted. The recorded audio runs as an **out‑of‑CI** regression
+  (CI itself stays synthetic/headless); the point is that the gates measure the *engine*,
+  not the synthesizer the P2 estimator is fit to.
 - **Tighten CI gates progressively** (`Benchmark --ci`): from today's `abs<10¢,
   octave=0` toward `core abs<0.1¢, σ<0.05¢ (lock), bass abs<1¢, octave=0` — each gate
   ratcheted only after the phase that earns it.
@@ -366,7 +372,7 @@ TDD: write the tightened benchmark assertion first, watch it fail, make it pass.
 
 | Phase | Lands | New files | Target it unlocks |
 |---|---|---|---|
-| **P0 Measure** | benchmark upgrade (§9), CRLB calc, glide/FM cases, σ/worst headline, efficiency column | `Bench/Crlb.swift`, extend `Bench/*` | can *see* sub‑0.1 ¢; gates ready |
+| **P0 Measure** | benchmark upgrade (§9), CRLB calc, glide/FM + **weak/missing‑fundamental bass** cases, **real‑DI fixture harness** (out‑of‑CI), σ/worst headline, efficiency column | `Bench/Crlb.swift`, `Bench/Fixtures.swift`, extend `Bench/*` | can *see* sub‑0.1 ¢ **on real strings, not just the synth**; gates ready |
 | **P1 Spectral + unbiased interp** | vDSP rFFT core; Candan‑2013/Gaussian‑log; window‑centred index; FFT‑based NSDF | `DSP/SpectralAnalyzer.swift`, `DSP/FrequencyInterpolator.swift` | core range 0.2–0.8 ¢ → **≤0.1 ¢**; cheaper |
 | **P2 Harmonic NLS + B (centrepiece)** | per‑partial refine, joint (f0,B) fit, Fisher fusion, residual octave guard | `DSP/HarmonicEstimator.swift`, `DSP/Inharmonicity.swift` | bass 2.96/25.7 ¢ → **≤1/≤3 ¢** |
 | **P3 Virtual‑strobe lock** | Tretter long‑window phase‑slope, multi‑partial, uncertainty out | `DSP/PhaseIntegrator.swift` (extends `StrobePhase`) | held‑note σ → **≤0.05 ¢**; ± precision in UI |
@@ -400,8 +406,10 @@ Settings surface. The strobe contract (`phase`) is unchanged — it just gets mo
 ## 12. Risks & mitigations
 - **Octave regression** → precision band clamped to ±50 ¢ of MPM; residual‑based guard;
   YIN vote; CI gate at 0 %. *(Highest‑priority invariant.)*
-- **Real strings ≠ the synthetic model** → P0 adds recorded‑DI fixtures; validate B
-  recovery on real low E/B before trusting the bass numbers.
+- **Real strings ≠ the synthetic model** → P0 adds the recorded‑DI fixture harness *and* a
+  weak/missing‑fundamental synthetic bass case; validate B recovery on real low E/B before
+  trusting the bass numbers (the P2 estimator is fit to the very model the synth generates,
+  so a clean recovery against the synth proves little on its own).
 - **Latency from long windows** → lock path is opportunistic (only when held); snappy
   path keeps today's ~43 ms acquisition; long FFTs are afforded by the vDSP core.
 - **Over‑claiming absolute accuracy** → §7 honesty spec; never print sub‑0.1 ¢ *absolute*
@@ -550,8 +558,11 @@ the diagnosis itself becomes a CI regression test.
 > `Packages/TunerEngine` benchmark (`Bench/*`, `docs/benchmarks/accuracy.md`). Implement
 > **Phase P0**: upgrade the accuracy benchmark to measure σ (jitter), worst‑case, and a
 > CRLB‑efficiency column at the sub‑0.1 ¢ level; add longer (2–3 s) stimuli with a
-> separate lock‑window score; add pluck‑envelope/decay‑glide, vibrato, and 5 dB SNR case
-> families; add a hand‑checked CRLB calculator (`Bench/Crlb.swift`) and the four §16
-> diagnosis probes as regression tests. Tighten the `--ci` gate only as far as today's
+> separate lock‑window score; add pluck‑envelope/decay‑glide, vibrato, **a weak/missing‑
+> fundamental bass stimulus (attenuated/dropped `k=1` — the real low‑string case the ∝1/k
+> model never exercises)**, and 5 dB SNR case families; add a hand‑checked CRLB calculator
+> (`Bench/Crlb.swift`), a **real‑DI fixture harness (`Bench/Fixtures.swift`: loader +
+> scorer, recorded audio out‑of‑CI)**, and the four §16 diagnosis probes as regression
+> tests. Tighten the `--ci` gate only as far as today's
 > numbers safely allow, and leave TODO gates for P1–P3. No engine behaviour change yet —
 > this phase only makes the wins *measurable*.

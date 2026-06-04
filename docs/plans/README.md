@@ -11,15 +11,21 @@ the specific plan, then build.
 - [`docs/design_reference/`](../design_reference/) — the raw design export (CSS/JSX + screenshots)
 - [`docs/ROADMAP.md`](../ROADMAP.md) — **the living backlog**: what's left, on-device checks, open decisions
 
-## The three workstreams
-| # | Plan | Depends on | Can start |
-|---|---|---|---|
-| 1 | [`TunerEngine` — DSP + benchmark](01-tuner-engine.md) | none | anytime (parallel) |
-| 2 | [SwiftUI design-system scaffold](02-swiftui-design-system.md) | none | anytime; natural base for #3 |
-| 3 | [First strobe prototype (Aurora)](03-strobe-prototype.md) | #2 ideally | after/with #2 |
+## The workstreams
+| # | Plan | Depends on | Can start | Status |
+|---|---|---|---|---|
+| 1 | [`TunerEngine` — DSP + benchmark](01-tuner-engine.md) | none | anytime (parallel) | shipped |
+| 2 | [SwiftUI design-system scaffold](02-swiftui-design-system.md) | none | anytime; base for #3 | shipped |
+| 3 | [First strobe prototype (Aurora)](03-strobe-prototype.md) | #2 ideally | after/with #2 | shipped |
+| 4 | Tuner UX (string-lock, presets, A4, tone, haptics) | #1–#3 | — | shipped |
+| 5 | Radial strobe + style toggle | #3 | — | shipped |
+| 6 | [**Project Strobe-Grade — the accuracy ceiling**](06-accuracy-engine.md) | #1 | now | **planned** |
 
-Suggested order: **#2 → #3** (the strobe wants the colour/type tokens), with **#1 in
-parallel** whenever. Each plan ends with a copy-paste **kickoff prompt** for its session.
+Suggested original order was **#2 → #3** (the strobe wants the colour/type tokens), with
+**#1 in parallel**. With v1's eight features shipped, **#6 is the flagship next push**:
+take Pillar I (accuracy — the product's reason to exist) to its physical ceiling, in
+benchmark-gated phases. Each plan ends with a copy-paste **kickoff prompt** for its
+session.
 
 ## Ground rules
 - These are **planning artifacts** — the actual Swift code is produced in each workstream's

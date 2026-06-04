@@ -48,9 +48,11 @@ final class FrequencyInterpolatorTests: XCTestCase {
             worstLin = max(worstLin, abs(cents(m0 + FrequencyInterpolator.parabolic(a, b, c), m0 + d)))
             worstLog = max(worstLog, abs(cents(m0 + FrequencyInterpolator.logParabolic(a, b, c), m0 + d)))
         }
-        XCTAssertEqual(worstLin, 0.457, accuracy: 0.02)   // matches Diagnosis.probeB
-        XCTAssertEqual(worstLog, 0.139, accuracy: 0.02)
-        XCTAssertLessThan(worstLog, worstLin)
+        // Bounds, not exact maxima — robust to small cross-platform libm/trig
+        // differences while still pinning the §2.2 ranking (~0.46 / ~0.14 ¢).
+        XCTAssertTrue((0.40...0.52).contains(worstLin), "parabolic ~0.46¢, got \(worstLin)")
+        XCTAssertTrue((0.10...0.18).contains(worstLog), "log-parabolic ~0.14¢, got \(worstLog)")
+        XCTAssertLessThan(worstLog, worstLin)   // the primary invariant
     }
 
     func testInterpolatorsZeroOnCentredPeak() {

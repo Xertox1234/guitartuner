@@ -25,15 +25,22 @@ enum SpectralAnalyzer {
 
     /// Off-grid single-bin DTFT `Σ_n frame[n]·e^{-j2π f n/fs}` (n from 0). Same
     /// convention as `StrobePhase.bin`; magnitudes and inter-bin phase ratios are
-    /// what the interpolators consume.
+    /// what the interpolators consume. Uses a **complex-oscillator recurrence**
+    /// (rotate the phasor by `−w` each sample) so there are no per-sample `cos`/
+    /// `sin` calls — `refineFundamental` evaluates several bins per frame on the
+    /// real-time hot path. The value is the direct sum to ~12 digits.
     static func dft(_ frame: [Float], frequency f: Double, sampleRate fs: Double) -> (re: Double, im: Double) {
         let w = 2 * Double.pi * f / fs
+        let cw = cos(w), sw = sin(w)
+        var cn = 1.0, sn = 0.0          // (cos wn, sin wn), n = 0
         var re = 0.0, im = 0.0
         for n in 0..<frame.count {
-            let a = w * Double(n)
-            let s = Double(frame[n])
-            re += s * cos(a)
-            im -= s * sin(a)
+            let x = Double(frame[n])
+            re += x * cn
+            im -= x * sn
+            let c2 = cn * cw - sn * sw  // advance to n+1
+            sn = sn * cw + cn * sw
+            cn = c2
         }
         return (re, im)
     }
@@ -58,17 +65,23 @@ enum SpectralAnalyzer {
         guard k >= 2, k <= N / 2 - 2 else { return f0 }   // 5-bin window valid, below Nyquist
         let df = fs / Double(N)
 
-        // Candan needs the rectangular transform; log-parabolic wants the Hann one.
-        var f2 = frame
+        // Candan needs the rectangular transform; log-parabolic wants the Hann
+        // one. Only the Hann path allocates a windowed buffer — the hot `.candan`
+        // path reads `frame` directly (no copy).
+        let source: [Float]
         if interp == .logParabolicHann {
+            var wf = frame
             let win = Windowing.hann(N)
-            for i in 0..<N { f2[i] *= win[i] }
+            for i in 0..<N { wf[i] *= win[i] }
+            source = wf
+        } else {
+            source = frame
         }
         // Complex bins k-2…k+2, then find the actual local-peak bin among k-1…k+1
         // (the rounded seed can sit a bin off the true peak near a boundary).
         var bins: [(re: Double, im: Double)] = []
         bins.reserveCapacity(5)
-        for j in (k - 2)...(k + 2) { bins.append(dft(f2, frequency: Double(j) * df, sampleRate: fs)) }
+        for j in (k - 2)...(k + 2) { bins.append(dft(source, frequency: Double(j) * df, sampleRate: fs)) }
         let mag2 = bins.map { $0.re * $0.re + $0.im * $0.im }
         var pi = 1
         for i in [2, 3] where mag2[i] > mag2[pi] { pi = i }

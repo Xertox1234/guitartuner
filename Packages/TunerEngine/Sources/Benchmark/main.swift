@@ -46,6 +46,15 @@ print("\n===BENCHMARK-CSV-BEGIN===")
 print(report.csv)
 print("===BENCHMARK-CSV-END===")
 
+// Optional real-DI fixtures (out-of-CI by design): score recorded WAVs through
+// the same CaseRunner as the synthetic bench. Skipped silently if the dir is
+// absent/empty, so CI stays synthetic/headless (Plan 06 §9).
+if let dir = arg("--fixtures") {
+    let results = Fixtures.run(directory: URL(fileURLWithPath: dir, isDirectory: true), method: method)
+    print(Fixtures.markdown(results))
+    FileHandle.standardError.write("fixtures scored: \(results.count)\n".data(using: .utf8)!)
+}
+
 // Optionally persist the artifacts.
 if let out = arg("--out") {
     let dir = URL(fileURLWithPath: out, isDirectory: true)

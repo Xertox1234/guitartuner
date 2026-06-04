@@ -44,7 +44,9 @@ if [ -x "$SWIFT_BIN/swift" ]; then
   exit 0
 fi
 
-# 1. Runtime libraries Swift needs (the Ubuntu apt mirrors are allowlisted).
+# 1. Runtime libraries + tools the install needs. curl (download) and python3
+#    (release resolution) are used below, so install them here too rather than
+#    assume a minimal base image has them. The Ubuntu apt mirrors are allowlisted.
 log "Installing OS dependencies via apt…"
 export DEBIAN_FRONTEND=noninteractive
 # Some containers carry extra third-party PPAs (e.g. deadsnakes, ondrej/php)
@@ -53,9 +55,10 @@ export DEBIAN_FRONTEND=noninteractive
 # package below) still refreshes — then install from it.
 $SUDO apt-get update -qq || log "apt update partial (some third-party repos unreachable) — continuing"
 if ! $SUDO apt-get install -y -qq --no-install-recommends \
-  binutils git gnupg2 libc6-dev libcurl4-openssl-dev libedit2 libgcc-s1 \
-  libncurses-dev libpython3-dev libsqlite3-0 libstdc++-13-dev libxml2-dev \
-  libz3-dev pkg-config tzdata unzip zlib1g-dev >/dev/null; then
+  binutils ca-certificates curl git gnupg2 libc6-dev libcurl4-openssl-dev \
+  libedit2 libgcc-13-dev libncurses-dev libpython3-dev libsqlite3-0 \
+  libstdc++-13-dev libxml2-dev libz3-dev pkg-config python3 tzdata unzip \
+  zlib1g-dev >/dev/null; then
   log "Some OS dependencies may not have installed; continuing anyway."
 fi
 

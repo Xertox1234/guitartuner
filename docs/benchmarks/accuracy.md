@@ -1,54 +1,79 @@
 # TunerEngine — measured accuracy
 
-_Generated 2026-06-03T18:20:02Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
+_Generated 2026-06-04T10:51:35Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
 
-> Measured on macOS CI (`swift run -c release Benchmark`) at commit `6414414` —
-> regenerate locally with `swift run -c release --package-path Packages/TunerEngine Benchmark --out docs/benchmarks`.
+> Regenerate: `swift run -c release --package-path Packages/TunerEngine Benchmark --out docs/benchmarks`. CI (macOS) regenerates this every build as an artifact; this committed copy is the published spec.
 
 ## Headline
 
 | Metric | Value |
 |---|---|
-| Mean abs cents error (clean) | **1.42¢** |
-| Jitter σ (clean) | 3.31¢ |
-| Worst-case abs error (clean) | 25.71¢ |
+| Mean abs cents error (clean) | **1.02¢** |
+| Jitter σ (clean, steady) | 2.60¢ |
+| **Held-note lock-window σ (clean)** | 2.74¢ |
+| Worst-case abs error (clean) | 25.89¢ |
 | Octave-error rate (clean) | 0.00% |
 | Median time-to-lock (cold start) | 43 ms |
-| Cases | 207 |
+| Clean cases / stress cases | 195 / 15 |
 
 ## By signal type (clean)
 
 | Signal | n | mean ¢ | abs ¢ | σ ¢ | max ¢ |
 |---|---|---|---|---|---|
-| pure | 2208 | 0.19 | 0.90 | 2.26 | 15.49 |
-| harmonic | 2208 | -0.90 | 1.65 | 3.75 | 24.74 |
-| inharmonic | 2236 | -0.21 | 1.70 | 3.61 | 25.71 |
+| pure | 10525 | 0.01 | 0.55 | 1.48 | 15.49 |
+| harmonic | 10525 | -0.51 | 1.18 | 3.01 | 25.50 |
+| inharmonic | 10685 | 0.47 | 1.32 | 2.92 | 25.89 |
 
-## By range (clean)
+## By range (clean) — steady vs held-note lock window
 
-| Range | n | abs ¢ | σ ¢ | max ¢ |
-|---|---|---|---|---|
-| bass (<82 Hz) | 2472 | 2.96 | 5.22 | 25.71 |
-| mid (82–330 Hz) | 2236 | 0.76 | 1.33 | 9.52 |
-| high (>330 Hz) | 1944 | 0.22 | 0.36 | 2.58 |
+| Range | n | abs ¢ | σ ¢ | max ¢ | lock abs ¢ | lock σ ¢ |
+|---|---|---|---|---|---|---|
+| bass (<82 Hz) | 6762 | 2.98 | 5.33 | 25.89 | 3.03 | 5.35 |
+| mid (82–330 Hz) | 13561 | 0.70 | 1.15 | 9.52 | 0.68 | 1.09 |
+| high (>330 Hz) | 11412 | 0.23 | 0.40 | 4.91 | 0.23 | 0.37 |
+
+## Stress cases (reported, not pooled into the headline)
+
+Real-world realities the default model omits — the families P1–P3 must improve. Today they run on the current engine as a baseline.
+
+| Family | n | abs ¢ | σ ¢ | lock σ ¢ | max ¢ | octave err |
+|---|---|---|---|---|---|---|
+| weak-fund | 348 | 12.28 | 15.16 | 15.24 | 44.29 | 0 |
+| missing-fund | 348 | 29.30 | 30.61 | 30.66 | 45.99 | 0 |
+| decay-glide | 704 | 4.55 | 3.82 | 1.76 | 15.18 | 0 |
+| vibrato | 617 | 13.85 | 16.03 | 15.96 | 27.46 | 0 |
 
 ## Noise robustness (inharmonic, abs cents vs SNR)
 
-| SNR (dB) | n | abs ¢ | σ ¢ | octave errors |
+| SNR (dB) | n | abs ¢ | σ ¢ | lock σ ¢ | octave errors |
+|---|---|---|---|---|---|
+| 40 | 628 | 0.57 | 0.76 | 0.84 | 0 |
+| 20 | 628 | 0.57 | 0.76 | 0.83 | 0 |
+| 10 | 628 | 0.64 | 0.81 | 0.87 | 0 |
+| 5 | 628 | 0.77 | 1.04 | 1.14 | 0 |
+
+## CRLB floor & efficiency (held E2, N=4096)
+
+Physical limit (single-tone vs harmonic, ∝1/k weight 6.45), and the measured held-note σ as a multiple of it. Today's σ sits far above the floor — that gap is the P2/P3 headroom, now visible.
+
+| SNR (dB) | CRLB σ single ¢ | CRLB σ harmonic ¢ | measured lock σ ¢ | σ / harmonic floor |
 |---|---|---|---|---|
-| 40 | 132 | 0.76 | 1.06 | 0 |
-| 20 | 132 | 0.74 | 1.07 | 0 |
-| 10 | 132 | 0.86 | 1.12 | 0 |
+| 40 | 0.0150 | 0.0059 | 0.281 | 48× |
+| 20 | 0.1500 | 0.0590 | 0.300 | 5.1× |
+| 10 | 0.4742 | 0.1867 | 0.412 | 2.2× |
+| 5 | 0.8433 | 0.3320 | 0.437 | 1.3× |
+
+_Absolute-pitch clock floor: a device sample clock off by N ppm reads `1200·log₂(1+N/10⁶)` ¢ sharp — 44 ppm ≈ 0.076¢, 100 ppm ≈ 0.173¢ (1 ¢ = 578 ppm). Relative/strobe tuning is clock-immune; absolute is clock-bound until calibrated (Plan 06 §3, §7; P4)._
 
 ## Octave safety on low strings (clean, 0¢)
 
 | Note | true Hz | abs ¢ | octave error |
 |---|---|---|---|
-| B0 | 30.87 | 11.53 | no |
-| E1 | 41.20 | 1.41 | no |
-| A1 | 55.00 | 2.03 | no |
-| D2 | 73.42 | 0.97 | no |
-| G2 | 98.00 | 0.55 | no |
+| B0 | 30.87 | 11.89 | no |
+| E1 | 41.20 | 1.48 | no |
+| A1 | 55.00 | 2.62 | no |
+| D2 | 73.42 | 1.30 | no |
+| G2 | 98.00 | 0.73 | no |
 
 ## Window / hop strategy (48 kHz)
 
@@ -61,13 +86,4 @@ _Generated 2026-06-03T18:20:02Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Determi
 
 ## Method
 
-Each case synthesizes ~0.6–1.2 s of tone at a known frequency, feeds it through a fresh `PitchPipeline` in ~10 ms blocks, and scores the **steady-state** readings (after 300 ms, skipping the acquisition transient). Cents error is signal-relative (`1200·log₂(estimate/true)`), not quantised to the nearest note. Time-to-lock is cold-start (first confident reading within ±5¢; the timestamp is the analysed window's centre); warm per-hop latency is the hop size above. Inharmonic tones use the stiff-string law `f_k = k·f0·√(1+B·k²)`, the case naive spectral-peak trackers fail. Numbers are reproducible via `swift run Benchmark`.
-
----
-
-### Reading the numbers
-
-- **No octave errors** anywhere across 207 cases (pure / harmonic / inharmonic, full range, plus SNR sweeps) — including 5-string **low B (30.87 Hz)**. This is the headline robustness result: MPM/NSDF tracks the fundamental, not the tallest partial.
-- **Sub-cent in the mid/high range** (abs 0.76¢ / 0.22¢), which covers most of the guitar. Worst-case error sits at the extreme-detuned **low bass** (~26¢ at ±50¢ on the lowest notes), where only ~2–3 periods fit the window — expected, and far from an octave.
-- **Noise-robust:** essentially unchanged from 40 dB down to **10 dB SNR** (abs ~0.8¢, zero octave errors), because the periodicity gate rides through broadband noise.
-- **Fast:** median cold-start lock at the first analysis window (~43 ms centre); the lowest strings settle later (longer window) as designed.
+Each case synthesizes ~2–2.6 s of tone at a known frequency, feeds it through a fresh `PitchPipeline` in ~10 ms blocks, and scores the **steady-state** readings (after 300 ms). The **lock window** scores only the later, held region (after 1.0 s) — where a strobe-grade tuner should drive σ to the noise floor; P3's phase-slope integrator is what earns it. Cents error is signal-relative (`1200·log₂(estimate/true)`), not quantised to the nearest note. Inharmonic tones use the stiff-string law `f_k = k·f0·√(1+B·k²)`. The CRLB is the Cramér–Rao floor (Rife–Boorstyn / Christensen); see `Bench/Crlb.swift`. Numbers are reproducible via `swift run Benchmark`.

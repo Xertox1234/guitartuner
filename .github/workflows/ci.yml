@@ -1,15 +1,14 @@
 name: CI
 
-# Cost-shaped CI. macOS runners bill at ~10x Linux, so the heavy day-to-day work
-# (the pure-Swift TunerEngine tests + the accuracy benchmark) runs on Linux, and
-# the macOS runner is reserved for what genuinely needs it (SwiftUI design-system
-# tests + the Xcode app builds) — and only on merges to the integration branch or
-# a manual dispatch, not on every PR push. PRs also no longer double-run (push +
-# pull_request); push only fires on the integration branch.
+# MANUAL-ONLY. This workflow does NOT run on push or pull_request — it only runs
+# when you explicitly start it from the Actions tab ("Run workflow"), so it never
+# consumes GitHub Actions minutes on its own. Day-to-day verification is done
+# locally (swift test + the accuracy benchmark). When you do run it, the jobs are
+# cost-shaped: the pure-Swift engine on a 1x Linux runner, and the macOS runner
+# (SwiftUI design-system tests + Xcode app builds) only when you opt into it.
+#
+# To re-enable automatic runs later, add back `pull_request:` / `push:` triggers.
 on:
-  pull_request:
-  push:
-    branches: [claude/peaceful-mccarthy-LNxPa]
   workflow_dispatch:
 
 concurrency:

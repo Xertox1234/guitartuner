@@ -115,12 +115,21 @@ public final class PitchPipeline {
 
         unvoicedStreak = 0
 
-        // Sub-cent: phase-vocoder refine when the previous frame lines up exactly
-        // one hop back with the same geometry (no band change / gap).
+        // Sub-cent refinement. The core range (≥120 Hz) uses the bias-corrected
+        // spectral estimate of the fundamental (Candan-2013, near-CRLB — Plan 06
+        // P1): it only sharpens within ±50¢ of the MPM fundamental, so octave
+        // safety is unchanged (MPM stays the authority). Bass keeps the
+        // phase-vocoder — its fundamental bin is too low for a clean single-frame
+        // spectral peak (the negative-frequency image leaks in); P2's harmonic
+        // comb is what earns the bass.
         var frequency = det.frequency
-        if let prev = prevFrame,
-           prevWindow == window, prevHop == config.hop,
-           prevFrameStart == frameStart - config.hop {
+        if det.frequency >= 120 {
+            frequency = SpectralAnalyzer.refineFundamental(
+                frame, near: det.frequency, sampleRate: sampleRate, interp: .candan, maxCents: 50
+            )
+        } else if let prev = prevFrame,
+                  prevWindow == window, prevHop == config.hop,
+                  prevFrameStart == frameStart - config.hop {
             frequency = StrobePhase.refineFrequency(
                 current: frame, previous: prev,
                 frequency: det.frequency, sampleRate: sampleRate, hop: config.hop

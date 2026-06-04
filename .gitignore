@@ -12,3 +12,8 @@ build/
 .build/
 .swiftpm/
 Package.resolved
+
+# Benchmark CSV is regenerated each run (the committed accuracy.md is the spec).
+docs/benchmarks/accuracy.csv
+# Stray output if the benchmark is run from inside the package dir.
+Packages/*/docs/

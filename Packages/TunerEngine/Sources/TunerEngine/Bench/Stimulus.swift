@@ -60,9 +60,16 @@ public enum Synth {
     /// An **inharmonic** string tone: partial k sits at
     /// `k·f0·√(1 + B·k²)` (the stiff-string law), amplitude ∝ 1/k. `B` is the
     /// inharmonicity coefficient (~1e-4 plain guitar, larger for wound bass).
+    ///
+    /// `fundamentalLevel` scales **only** the k=1 partial (after the ∝1/k
+    /// normalisation): 1.0 is the usual strong fundamental, ~0.15 a *weak* one,
+    /// 0.0 a *missing* one. Real low B/E DI often has little or no energy at the
+    /// fundamental — the case the default ∝1/k model never exercises and the one
+    /// most likely to slip an octave (Plan 06 §9, §12).
     public static func inharmonicString(
         fundamental f0: Double, sampleRate: Double, seconds: Double,
-        partials: Int = 10, inharmonicity B: Double = 3e-4, amplitude: Double = 0.5
+        partials: Int = 10, inharmonicity B: Double = 3e-4, amplitude: Double = 0.5,
+        fundamentalLevel: Double = 1
     ) -> [Float] {
         let n = Int(seconds * sampleRate)
         var out = [Float](repeating: 0, count: n)
@@ -72,7 +79,7 @@ public enum Synth {
             let fk = Double(k) * f0 * (1 + B * Double(k * k)).squareRoot()
             guard fk < sampleRate / 2 else { break }
             let w = 2 * Double.pi * fk / sampleRate
-            let a = amplitude / Double(k) / norm
+            let a = amplitude / Double(k) / norm * (k == 1 ? fundamentalLevel : 1)
             for i in 0..<n { out[i] += Float(a * sin(w * Double(i))) }
         }
         return out
@@ -92,6 +99,66 @@ public enum Synth {
             else { env = exp(-(t - attack) / decayTau) }
             signal[i] = Float(Double(signal[i]) * env)
         }
+    }
+
+    /// A **vibrato** tone: a harmonic comb whose pitch is sinusoidally modulated
+    /// `±depthCents` at `rateHz`. The true pitch for scoring is the **centre**
+    /// `centerFrequency` (the modulation is symmetric in cents, so it averages
+    /// out). Tests that the tracker follows FM without biasing the held reading
+    /// or losing the octave (Plan 06 §9). Phase is integrated per sample.
+    public static func vibrato(
+        centerFrequency f0: Double, sampleRate fs: Double, seconds: Double,
+        depthCents: Double = 30, rateHz: Double = 5.5, partials: Int = 6, amplitude: Double = 0.5
+    ) -> [Float] {
+        let n = Int(seconds * fs)
+        var out = [Float](repeating: 0, count: n)
+        var norm = 0.0
+        for k in 1...partials { norm += 1.0 / Double(k) }
+        for k in 1...partials {
+            guard Double(k) * f0 < fs / 2 else { break }
+            let a = amplitude / Double(k) / norm
+            var phase = 0.0
+            for i in 0..<n {
+                let t = Double(i) / fs
+                let fInst = Double(k) * f0 * pow(2, (depthCents / 1200) * sin(2 * Double.pi * rateHz * t))
+                out[i] += Float(a * sin(phase))
+                phase += 2 * Double.pi * fInst / fs
+            }
+        }
+        return out
+    }
+
+    /// A **decay-glide** tone: a stiff-string pluck whose pitch starts
+    /// `glideCents` sharp and relaxes to `settledFrequency` with time-constant
+    /// `glideTau` (the real pitch-glide-on-decay that reads sharp at the attack,
+    /// 2–5 ¢ typical, more on a bad string). The true pitch for scoring is the
+    /// **settled** frequency — so the engine must measure the settled region, not
+    /// the onset (Plan 06 §3, §7.2). A pluck amplitude envelope is applied.
+    public static func decayGlide(
+        settledFrequency f0: Double, sampleRate fs: Double, seconds: Double,
+        glideCents: Double = 20, glideTau: Double = 0.6,
+        partials: Int = 10, inharmonicity B: Double = 3e-4, amplitude: Double = 0.5,
+        attack: Double = 0.005, decayTau: Double = 1.5
+    ) -> [Float] {
+        let n = Int(seconds * fs)
+        var out = [Float](repeating: 0, count: n)
+        var norm = 0.0
+        for k in 1...partials { norm += 1.0 / Double(k) }
+        for k in 1...partials {
+            let stiff = (1 + B * Double(k * k)).squareRoot()
+            guard Double(k) * f0 * stiff < fs / 2 else { break }
+            let a = amplitude / Double(k) / norm
+            var phase = 0.0
+            for i in 0..<n {
+                let t = Double(i) / fs
+                let glide = pow(2, (glideCents / 1200) * exp(-t / glideTau))   // → 1 as t grows
+                let fInst = Double(k) * f0 * stiff * glide
+                out[i] += Float(a * sin(phase))
+                phase += 2 * Double.pi * fInst / fs
+            }
+        }
+        applyPluckEnvelope(&out, sampleRate: fs, attack: attack, decayTau: decayTau)
+        return out
     }
 
     /// Mix white noise into a copy of `signal` to hit a target SNR (dB), measured

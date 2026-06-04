@@ -37,6 +37,7 @@ public enum Crlb {
     }
 
     /// `Σ A_k²·k²` for partial amplitudes `amplitudes` (index 0 ⇒ partial 1).
+    /// Pair this with a **per-partial** SNR (the probe-C convention).
     public static func harmonicWeight(amplitudes: [Double]) -> Double {
         var s = 0.0
         for (i, a) in amplitudes.enumerated() {
@@ -44,6 +45,17 @@ public enum Crlb {
             s += a * a * k * k
         }
         return s
+    }
+
+    /// `Σ p_k·k²` with `p_k = A_k²/Σ A_j²` — the *normalised* harmonic weight to
+    /// pair with a **total** SNR (the `Synth.addNoise` convention, where SNR is
+    /// total signal power ÷ noise power). Equals `harmonicWeight / Σ A_k²`.
+    /// For ∝1/k partials this is ~6.5, not the ~38× an equal-amplitude reading
+    /// implies — the honest realistic harmonic gain.
+    public static func normalizedHarmonicWeight(amplitudes: [Double]) -> Double {
+        let denom = amplitudes.reduce(0) { $0 + $1 * $1 }
+        guard denom > 0 else { return 0 }
+        return harmonicWeight(amplitudes: amplitudes) / denom
     }
 
     /// Convert a frequency std-dev (Hz) at `f0` into cents.

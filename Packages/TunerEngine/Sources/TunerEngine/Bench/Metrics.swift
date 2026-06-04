@@ -36,10 +36,12 @@ public struct CaseResult: Sendable {
     public let centsTarget: Double   // intended detune
     public let snrDB: Double
     public let readings: Int
-    public let stats: ErrorStats     // steady-state cents error vs truth
+    public let stats: ErrorStats     // steady-state cents error vs truth (after the attack)
     public let octaveError: Bool
     public let timeToLockMS: Double? // nil if never locked
     public let errors: [Double]      // steady-state cents errors (for pooling)
+    public let lockStats: ErrorStats // error over the *held* lock window only (later, settled)
+    public let lockErrors: [Double]  // lock-window cents errors (for pooling)
 }
 
 /// Runs one stimulus through a fresh pipeline and scores it. Shared by the
@@ -49,6 +51,10 @@ public enum CaseRunner {
 
     /// - lockTolerance: cents window counted as "locked" for time-to-lock.
     /// - steadyStateStart: ignore readings before this (skip the attack/acquire).
+    /// - lockWindowStart: start of the *held-note* lock window — a later, settled
+    ///   region scored separately from acquisition, where a strobe-grade tuner
+    ///   should drive σ to the noise floor (Plan 06 §9; P3 lands the integrator
+    ///   that earns it). Requires stimuli longer than this to be meaningful.
     public static func run(
         signal: [Float],
         sampleRate: Double,
@@ -59,7 +65,8 @@ public enum CaseRunner {
         method: DetectionMethod,
         a4: Double = Pitch.standardA4,
         lockTolerance: Double = 5,
-        steadyStateStart: TimeInterval = 0.30
+        steadyStateStart: TimeInterval = 0.30,
+        lockWindowStart: TimeInterval = 1.0
     ) -> CaseResult {
         let pipeline = PitchPipeline(sampleRate: sampleRate, a4: a4, method: method)
 
@@ -89,11 +96,17 @@ public enum CaseRunner {
         // Octave error: any steady reading more than a quartertone×6 (600¢) off.
         let octaveError = errors.contains { abs($0) > 600 }
 
+        // Lock window: the later, held-note region (empty for short stimuli).
+        let lockReadings = readings.filter { $0.timestamp >= lockWindowStart }
+        let lockErrors = lockReadings.map { ErrorStats.centsError(estimate: $0.frequency, truth: trueFrequency) }
+        let lockStats = ErrorStats.from(lockErrors)
+
         return CaseResult(
             category: category, note: noteLabel(trueFrequency, a4: a4),
             trueFrequency: trueFrequency, centsTarget: centsTarget, snrDB: snrDB,
             readings: steady.count, stats: stats,
-            octaveError: octaveError, timeToLockMS: timeToLock, errors: errors
+            octaveError: octaveError, timeToLockMS: timeToLock, errors: errors,
+            lockStats: lockStats, lockErrors: lockErrors
         )
     }
 

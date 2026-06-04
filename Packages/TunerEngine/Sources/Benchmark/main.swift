@@ -55,17 +55,37 @@ if let out = arg("--out") {
     FileHandle.standardError.write("wrote accuracy.md + accuracy.csv to \(out)\n".data(using: .utf8)!)
 }
 
-// CI sanity gate: catch gross regressions (octave errors on clean tones, wild
-// error, or a stuck lock) without being flaky on tight tolerances.
+// CI gate. Hard invariants must always hold; the soft gates are ratcheted to
+// today's measured numbers + margin and tightened only as the phase that earns
+// them lands (Plan 06 §9, §10). They are intentionally loose enough not to flake
+// on platform float differences (macOS vDSP vs the scalar fallback).
 if flag("--ci") {
     let s = report.summary
     var failures: [String] = []
-    if s.octaveErrorRate > 0 { failures.append("octave-error rate \(s.octaveErrorRate * 100)% > 0") }
-    if s.cleanAbsCents > 10 { failures.append("clean abs error \(s.cleanAbsCents)¢ > 10") }
-    if s.lockMSMedian > 350 { failures.append("median lock \(s.lockMSMedian)ms > 350") }
+
+    // Hard invariants — never regress.
+    if s.octaveErrorRate > 0 { failures.append("clean octave-error rate \(s.octaveErrorRate * 100)% > 0") }
+    if s.stressOctaveErrors > 0 { failures.append("stress octave errors \(s.stressOctaveErrors) > 0 (weak/missing-fund/vibrato must hold the octave)") }
+
+    // Non-regression gates (today's numbers in comments).
+    if s.cleanAbsCents > 2.0 { failures.append("clean abs \(s.cleanAbsCents)¢ > 2.0") }     // today ~1.0¢
+    if s.worstAbsCents > 30 { failures.append("worst abs \(s.worstAbsCents)¢ > 30") }       // today ~25.9¢ (bass physics)
+    if s.bassAbsCents > 4.0 { failures.append("bass abs \(s.bassAbsCents)¢ > 4.0") }        // today ~3.0¢
+    if s.lockSigma > 4.0 { failures.append("lock σ \(s.lockSigma)¢ > 4.0") }                // today ~2.7¢
+    if s.lockMSMedian > 350 { failures.append("median lock \(s.lockMSMedian)ms > 350") }    // today 43 ms
+
+    // TODO gates, unlocked phase-by-phase (assert-ready, kept off until earned):
+    //   P1 (spectral + unbiased interp): mid/high abs < 0.1¢
+    //   P2 (harmonic NLS + B):           bass abs < 1¢, worst < 3¢, missing-fund abs < 5¢
+    //   P3 (virtual-strobe lock):        lock σ < 0.05¢
+    //   P4 (clock calibration):          absolute-pitch honesty copy + calibration flow
+
     if !failures.isEmpty {
         FileHandle.standardError.write(("BENCHMARK CI FAIL: " + failures.joined(separator: "; ") + "\n").data(using: .utf8)!)
         exit(1)
     }
-    FileHandle.standardError.write("benchmark CI gate passed\n".data(using: .utf8)!)
+    let pass = "benchmark CI gate passed (clean abs \(String(format: "%.2f", s.cleanAbsCents))¢, "
+        + "lock σ \(String(format: "%.2f", s.lockSigma))¢, bass abs \(String(format: "%.2f", s.bassAbsCents))¢, "
+        + "worst \(String(format: "%.2f", s.worstAbsCents))¢, octave \(s.octaveErrorRate * 100)% / stress \(s.stressOctaveErrors))\n"
+    FileHandle.standardError.write(pass.data(using: .utf8)!)
 }

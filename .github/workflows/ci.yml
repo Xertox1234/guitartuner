@@ -1,14 +1,13 @@
 name: CI
 
-# MANUAL-ONLY. This workflow does NOT run on push or pull_request — it only runs
-# when you explicitly start it from the Actions tab ("Run workflow"), so it never
-# consumes GitHub Actions minutes on its own. Day-to-day verification is done
-# locally (swift test + the accuracy benchmark). When you do run it, the jobs are
-# cost-shaped: the pure-Swift engine on a 1x Linux runner, and the macOS runner
-# (SwiftUI design-system tests + Xcode app builds) only when you opt into it.
-#
-# To re-enable automatic runs later, add back `pull_request:` / `push:` triggers.
+# Auto-runs on push and pull_request (plus manual dispatch). This is free because
+# the repo is public — GitHub Actions, including the 10x macOS runners, bills
+# nothing for public repositories. The jobs are still cost-shaped out of habit:
+# the pure-Swift engine on a 1x Linux runner, and the macOS runner (SwiftUI
+# design-system tests + Xcode app builds) for the full app verification.
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -45,13 +44,11 @@ jobs:
           if-no-files-found: ignore
 
   # SwiftUI needs macOS, so the design-system tests and the full app builds run
-  # here — but only on integration-branch merges and manual dispatch, NOT on every
-  # PR, to conserve macOS minutes. When a PR changes app/design-system code, run
-  # this on demand via the "Run workflow" (workflow_dispatch) button.
+  # here on macos-14. Now that the repo is public, macOS minutes are free, so this
+  # runs on every push and PR alongside the Linux engine job.
   app:
     name: Design system + app builds (macOS)
     runs-on: macos-14
-    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
 

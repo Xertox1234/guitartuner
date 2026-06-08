@@ -112,5 +112,9 @@ Scale (px): `11 · 12 · 13 · 15 · 17 · 20 · 24 · 32 · 44 · 56 (num) · 7
 | Status | Files |
 |---|---|
 | **Canonical (LUMA)** | `ds-tokens.css`, `ds-components.css`, `tuner-ui.jsx`, `strobe-core/aurora/radial/reduced.jsx`, `foundations.jsx`, `Tuner Design System.html` |
-| **Mined (oscilloscope only)** | `styles.css`, `visualizer.jsx`, `oscilloscope.jsx`, `tuner.jsx`, `ios-frame.jsx` — alternate "modular-synth" exploration; superseded by LUMA except the live scope, which we restyle. |
-| **Reference** | `screenshots/` — iteration history & final states. |
+| **Reference** | `screenshots/` — the canonical LUMA concept boards (`phones-a/b`, `check-01/02`). |
+
+> The earlier "modular-synth / stomp-box" exploration (`styles.css`, `visualizer.jsx`,
+> `oscilloscope.jsx`, `tuner.jsx`, `ios-frame.jsx`, `index.html`) was removed once
+> superseded by LUMA; its one carried-over idea, the live oscilloscope, now lives as
+> [`Components/Oscilloscope.swift`](../../Packages/LumaDesignSystem/Sources/LumaDesignSystem/Components/Oscilloscope.swift) in LUMA tokens.

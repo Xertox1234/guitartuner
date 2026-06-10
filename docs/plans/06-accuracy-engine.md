@@ -113,8 +113,8 @@ completes ~70 — and frequency precision scales with cycles observed. The **Cra
 lower bound** (Rife–Boorstyn; harmonic form Christensen/Nielsen) makes this exact:
 
 ```
-single sinusoid:   var(f̂) ≥ 6·fs² / ( (2π)²·SNR·N(N²−1) )
-harmonic (P part.): var(f̂0) ≥ 6·fs² / ( (2π)²·SNR·N(N²−1)·Σ A_k² k² )
+single sinusoid:   var(f̂) ≥ 12·fs² / ( (2π)²·SNR·N(N²−1) )
+harmonic (P part.): var(f̂0) ≥ 12·fs² / ( (2π)²·SNR·N(N²−1)·Σ A_k² k² )
 ```
 
 The `Σ A_k² k²` term — dominated by the high partials — is the whole game. Hand‑
@@ -122,11 +122,11 @@ computed for our worst case (N=4096, 48 kHz, 82 Hz, 40 dB SNR):
 
 | Estimator | CRLB floor |
 |---|---|
-| Single‑fundamental | 0.0150 ¢ |
-| Harmonic, P=10 | 0.00076 ¢ |
-| Harmonic, P=20 + window‑centred index | ~0.00007 ¢ |
+| Single‑fundamental | 0.0212 ¢ |
+| Harmonic, P=10 | 0.00108 ¢ |
+| Harmonic, P=20 + window‑centred index | ~0.0001 ¢ |
 
-**The noise floor is ~0.01 ¢ — two orders of magnitude below where we sit.** We are
+**The noise floor is ~0.02 ¢ — two orders of magnitude below where we sit.** We are
 nowhere near physics; we are limited by *which estimator we run*. (A free ~16× variance
 win, ≈4× in cents, comes purely from indexing the analysis window at its **centre**
 rather than its start — Nielsen et al. — a bookkeeping choice, not new compute.)

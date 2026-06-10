@@ -43,8 +43,8 @@ final class DiagnosisProbeTests: XCTestCase {
 
     func testProbeC_crlbAndClockFloor() {
         let c = Diagnosis.probeC()
-        XCTAssertEqual(c.crlbSingleCents, 0.0150, accuracy: 0.0003)
-        XCTAssertEqual(c.crlbHarmonic10Cents, 0.000765, accuracy: 2e-5)
+        XCTAssertEqual(c.crlbSingleCents, 0.0212, accuracy: 0.0003)
+        XCTAssertEqual(c.crlbHarmonic10Cents, 0.001081, accuracy: 2e-5)
         // Harmonic floor is ~√385 ≈ 19.6× below the single-tone floor.
         XCTAssertEqual(c.crlbSingleCents / c.crlbHarmonic10Cents, 385.0.squareRoot(), accuracy: 0.2)
         // Clock (ppm) floor — the absolute-accuracy limiter.

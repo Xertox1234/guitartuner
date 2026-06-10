@@ -19,15 +19,18 @@ public enum Crlb {
     public static func snrLinear(dB: Double) -> Double { pow(10, dB / 10) }
 
     /// `var(f̂)` for a single real sinusoid in white noise, in Hz²:
-    ///   `var(f̂) ≥ 6·fs² / ((2π)²·SNR·N(N²−1))`.
+    ///   `var(f̂) ≥ 12·fs² / ((2π)²·SNR·N(N²−1))`,  SNR = A²/(2σ²)
+    /// (Kay, *Fundamentals of Statistical Signal Processing* eq. 3.41, mapped
+    /// from cycles/sample to Hz). The constant is 12 for a **real** sinusoid
+    /// with the power-SNR convention; 6 belongs to the complex-exponential case.
     public static func frequencyVarianceSingle(sampleRate fs: Double, n: Int, snr: Double) -> Double {
         guard n > 1, snr > 0 else { return .infinity }
         let N = Double(n)
-        return 6 * fs * fs / (pow(2 * .pi, 2) * snr * N * (N * N - 1))
+        return 12 * fs * fs / (pow(2 * .pi, 2) * snr * N * (N * N - 1))
     }
 
     /// `var(f̂0)` for a harmonic tone, in Hz²:
-    ///   `var(f̂0) ≥ 6·fs² / ((2π)²·SNR·N(N²−1)·Σ A_k² k²)`.
+    ///   `var(f̂0) ≥ 12·fs² / ((2π)²·SNR·N(N²−1)·Σ A_k² k²)`.
     /// The `Σ A_k² k²` term — dominated by the high partials — is the whole game.
     public static func frequencyVarianceHarmonic(
         sampleRate fs: Double, n: Int, snr: Double, harmonicWeight: Double

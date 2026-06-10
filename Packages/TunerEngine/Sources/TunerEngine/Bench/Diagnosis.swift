@@ -125,7 +125,7 @@ public enum Diagnosis {
         var maxLin = 0.0, maxLog = 0.0
         for d in stride(from: -0.45, through: 0.45, by: 0.05) {
             let x = tone(d)
-            let a = mag(x, 199), b = mag(x, 200), c = mag(x, 201)
+            let a = mag(x, m0 - 1), b = mag(x, m0), c = mag(x, m0 + 1)
             let pLin = 0.5 * (a - c) / (a - 2 * b + c)
             let la = log(a), lb = log(b), lc = log(c), pLog = 0.5 * (la - lc) / (la - 2 * lb + lc)
             maxLin = max(maxLin, abs(cents((m0 + pLin) * fs / Double(N), (m0 + d) * fs / Double(N))))

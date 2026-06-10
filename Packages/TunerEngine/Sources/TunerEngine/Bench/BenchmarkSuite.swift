@@ -322,8 +322,10 @@ public enum BenchmarkSuite {
         let W = Crlb.normalizedHarmonicWeight(amplitudes: amps)      // ≈ 6.45
         var md = "\n## CRLB floor & efficiency (held E2, N=4096)\n\n"
         md += "Physical limit (single-tone vs harmonic, ∝1/k weight \(f2(W))), and the measured held-note "
-        md += "σ as a multiple of it. Today's σ sits far above the floor — that gap is the P2/P3 headroom, "
-        md += "now visible.\n\n"
+        md += "σ as a multiple of it. The quiet-signal gap to the floor is the P2/P3 headroom, now visible. "
+        md += "(The bound is per *single* N=4096 window; the measured lock σ comes after median+EMA "
+        md += "smoothing, which integrates across windows — so at very low SNR it can legitimately sit "
+        md += "below the single-window floor.)\n\n"
         md += "| SNR (dB) | CRLB σ single ¢ | CRLB σ harmonic ¢ | measured lock σ ¢ | σ / harmonic floor |\n"
         md += "|---|---|---|---|---|\n"
         for snr in noiseSNRs {

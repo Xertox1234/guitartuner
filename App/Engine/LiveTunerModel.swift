@@ -81,7 +81,7 @@ final class LiveTunerModel {
             status = "Listening"
             readTask = Task { @MainActor [weak self] in
                 guard let self else { return }
-                for await reading in self.engine.readings {
+                for await reading in await self.engine.readings {
                     self.apply(reading)
                 }
             }

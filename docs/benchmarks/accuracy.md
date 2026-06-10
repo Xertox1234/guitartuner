@@ -1,6 +1,6 @@
 # TunerEngine — measured accuracy
 
-_Generated 2026-06-04T12:32:02Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
+_Generated 2026-06-10T12:34:21Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
 
 > Regenerate: `swift run -c release --package-path Packages/TunerEngine Benchmark --out docs/benchmarks`. CI (macOS) regenerates this every build as an artifact; this committed copy is the published spec.
 
@@ -54,14 +54,14 @@ Real-world realities the default model omits — the families P1–P3 must impro
 
 ## CRLB floor & efficiency (held E2, N=4096)
 
-Physical limit (single-tone vs harmonic, ∝1/k weight 6.45), and the measured held-note σ as a multiple of it. Today's σ sits far above the floor — that gap is the P2/P3 headroom, now visible.
+Physical limit (single-tone vs harmonic, ∝1/k weight 6.45), and the measured held-note σ as a multiple of it. The quiet-signal gap to the floor is the P2/P3 headroom, now visible. (The bound is per *single* N=4096 window; the measured lock σ comes after median+EMA smoothing, which integrates across windows — so at very low SNR it can legitimately sit below the single-window floor.)
 
 | SNR (dB) | CRLB σ single ¢ | CRLB σ harmonic ¢ | measured lock σ ¢ | σ / harmonic floor |
 |---|---|---|---|---|
-| 40 | 0.0150 | 0.0059 | 0.281 | 48× |
-| 20 | 0.1500 | 0.0590 | 0.300 | 5.1× |
-| 10 | 0.4742 | 0.1867 | 0.412 | 2.2× |
-| 5 | 0.8433 | 0.3320 | 0.437 | 1.3× |
+| 40 | 0.0212 | 0.0083 | 0.281 | 34× |
+| 20 | 0.2121 | 0.0835 | 0.300 | 3.6× |
+| 10 | 0.6706 | 0.2640 | 0.412 | 1.6× |
+| 5 | 1.1926 | 0.4695 | 0.437 | 0.9× |
 
 _Absolute-pitch clock floor: a device sample clock off by N ppm reads `1200·log₂(1+N/10⁶)` ¢ sharp — 44 ppm ≈ 0.076¢, 100 ppm ≈ 0.173¢ (1 ¢ = 578 ppm). Relative/strobe tuning is clock-immune; absolute is clock-bound until calibrated (Plan 06 §3, §7; P4)._
 

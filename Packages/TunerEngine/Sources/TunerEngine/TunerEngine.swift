@@ -32,11 +32,27 @@ public actor TunerEngine {
 
     // MARK: Output
 
-    /// The live stream of readings. Single-consumer; created once per engine.
-    public nonisolated var readings: AsyncStream<PitchReading> { stream }
+    /// The live stream of readings. Each access mints an **independent** stream,
+    /// so a consumer task being cancelled (e.g. the app's stop button tearing
+    /// down its `for await` loop) only ends *that* stream — the engine keeps
+    /// emitting to everyone else, and a later `start()` + fresh `readings`
+    /// resumes cleanly. (A single shared `AsyncStream` is finished forever the
+    /// first time its consumer is cancelled.)
+    public var readings: AsyncStream<PitchReading> {
+        AsyncStream(PitchReading.self, bufferingPolicy: .bufferingNewest(8)) { cont in
+            let id = UUID()
+            continuations[id] = cont
+            cont.onTermination = { [weak self] _ in
+                Task { await self?.removeContinuation(id) }
+            }
+        }
+    }
 
-    private let stream: AsyncStream<PitchReading>
-    private let continuation: AsyncStream<PitchReading>.Continuation
+    private var continuations: [UUID: AsyncStream<PitchReading>.Continuation] = [:]
+
+    private func removeContinuation(_ id: UUID) {
+        continuations[id] = nil
+    }
 
     // MARK: State
 
@@ -59,8 +75,6 @@ public actor TunerEngine {
         self.inputPreference = inputPreference
         self.method = method
         self.targetNote = targetNote
-        (self.stream, self.continuation) = AsyncStream.makeStream(
-            of: PitchReading.self, bufferingPolicy: .bufferingNewest(8))
     }
 
     // MARK: Lifecycle
@@ -138,7 +152,7 @@ public actor TunerEngine {
                 let samples = ring.read()
                 if !samples.isEmpty {
                     for reading in pipeline.process(samples) {
-                        continuation.yield(reading)
+                        for cont in continuations.values { cont.yield(reading) }
                     }
                 }
             }

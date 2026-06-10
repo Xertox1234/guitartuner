@@ -93,7 +93,8 @@ public enum CaseRunner {
         let steady = readings.filter { $0.timestamp >= steadyStateStart }
         let errors = steady.map { ErrorStats.centsError(estimate: $0.frequency, truth: trueFrequency) }
         let stats = ErrorStats.from(errors)
-        // Octave error: any steady reading more than a quartertone×6 (600¢) off.
+        // Octave error: any steady reading more than a tritone (600¢) off —
+        // halfway to the octave, so a true octave slip (±1200¢) always trips it.
         let octaveError = errors.contains { abs($0) > 600 }
 
         // Lock window: the later, held-note region (empty for short stimuli).

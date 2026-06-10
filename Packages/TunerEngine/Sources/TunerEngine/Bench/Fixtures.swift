@@ -136,6 +136,9 @@ public enum Fixtures {
         }
 
         guard channels > 0, sampleRate > 0, dataStart >= 0, (format == 1 || format == 3) else { return nil }
+        // Only the (format, bits) pairs `sample()` can decode — anything else
+        // (8-bit PCM, float64, …) must fail loudly, not decode as silence.
+        guard (format == 1 && (bits == 16 || bits == 24 || bits == 32)) || (format == 3 && bits == 32) else { return nil }
         let bytes = bits / 8
         guard bytes > 0 else { return nil }
         let frames = dataSize / (bytes * channels)

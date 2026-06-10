@@ -14,6 +14,10 @@ import Foundation
 ///   readings — this *is* the true-strobe signal (DESIGN §3, EXPERIENCE §2).
 /// - `timestamp`: seconds, monotonic from the engine's audio clock (the time of
 ///   the analysed window's centre).
+/// - `inharmonicityB`: estimated string stiffness coefficient B in the model
+///   `fₙ = n·f0·√(1+B·n²)` (Plan 06 §5.3). `nil` for mid/high range readings
+///   and while the harmonic fit has not yet converged. Non-nil only when the P2
+///   harmonic estimator ran successfully on this reading (bass, f0 < 120 Hz).
 public struct PitchReading: Sendable, Equatable {
     public let frequency: Double
     public let note: Note
@@ -21,6 +25,7 @@ public struct PitchReading: Sendable, Equatable {
     public let confidence: Double
     public let phase: Double
     public let timestamp: TimeInterval
+    public let inharmonicityB: Double?
 
     public init(
         frequency: Double,
@@ -28,7 +33,8 @@ public struct PitchReading: Sendable, Equatable {
         cents: Double,
         confidence: Double,
         phase: Double,
-        timestamp: TimeInterval
+        timestamp: TimeInterval,
+        inharmonicityB: Double? = nil
     ) {
         self.frequency = frequency
         self.note = note
@@ -36,6 +42,7 @@ public struct PitchReading: Sendable, Equatable {
         self.confidence = confidence
         self.phase = phase
         self.timestamp = timestamp
+        self.inharmonicityB = inharmonicityB
     }
 
     /// `true` when within the in-tune window (±`lockCents`) and confident enough

@@ -64,18 +64,18 @@ accuracy, so worth doing well.
 ## Accuracy ceiling — Pillar I (Plan 06, the flagship next push)
 
 > Accuracy is the product's reason to exist (DESIGN §1, §3). v1 already measures
-> **1.42 ¢ mean / 0 % octave errors**; [`docs/plans/06-accuracy-engine.md`](plans/06-accuracy-engine.md)
+> **0.77 ¢ mean / 0 % octave errors** (after P0+P1); [`docs/plans/06-accuracy-engine.md`](plans/06-accuracy-engine.md)
 > is the fully-researched plan to take it to the physical ceiling — **strobe-grade
 > in the core range, ≤1 ¢ on the low strings, sub-0.05 ¢ on a held note** — and to be
 > honest about the sample-clock floor. Benchmark-gated, in phases.
 
-- [ ] **P0 — Make it measurable.** Upgrade the benchmark: σ/worst-case headline,
+- [x] **P0 — Make it measurable.** Upgraded benchmark: σ/worst-case headline,
       CRLB-efficiency column, 2–3 s stimuli + lock-window score, pluck/decay-glide +
       vibrato + 5 dB cases, a hand-checked CRLB calculator, the §16 diagnosis probes as
-      regression tests. *(Do first — "measure, don't guess.")*
-- [ ] **P1 — Spectral core + unbiased interpolation.** vDSP rFFT core (retires the
+      regression tests. Real-DI fixture harness (WAV loader + scorer). *(Done.)*
+- [x] **P1 — Spectral core + unbiased interpolation.** vDSP rFFT core (retires the
       O(N·maxLag) autocorrelation), Candan-2013 / Gaussian-log peak interpolation,
-      window-centred index. Target: core range **≤0.1 ¢**.
+      window-centred index. Mid/high: **≤0.23 ¢ abs**. *(Done — mean 1.42 ¢ → 0.77 ¢.)*
 - [ ] **P2 — Harmonic NLS + joint inharmonicity B (centrepiece).** Per-partial refine,
       `(f_n/n)²` (f0,B) fit, Fisher (k²·SNR) fusion, residual octave guard. Target: bass
       **≤1 ¢ (worst ≤3 ¢)**, octave rate held at 0 %.

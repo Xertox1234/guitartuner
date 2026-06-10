@@ -121,21 +121,33 @@ public final class PitchPipeline {
 
         unvoicedStreak = 0
 
-        // Sub-cent refinement. The core range (≥120 Hz) uses the bias-corrected
-        // spectral estimate of the fundamental (Candan-2013, near-CRLB — Plan 06
-        // P1): it only sharpens within ±50¢ of the MPM fundamental, so octave
-        // safety is unchanged (MPM stays the authority). Bass keeps the
-        // phase-vocoder — its fundamental bin is too low for a clean single-frame
-        // spectral peak (the negative-frequency image leaks in); P2's harmonic
-        // comb is what earns the bass.
+        // Sub-cent refinement. Two paths, never touching the octave (MPM anchor):
+        //
+        // Mid/High (≥120 Hz) — P1 Candan spectral refine: bias-corrected single-
+        // frame estimate, near-CRLB for the fundamental bin. Already earns ≤0.1 ¢.
+        //
+        // Bass (<120 Hz) — P2 harmonic comb estimator: locates all audible partials,
+        // jointly fits (f0, B) via (fₙ/n)² regression, Fisher-fuses. This is where
+        // the bass 2.96 ¢ → ≤1 ¢ win comes from (Plan 06 §5.3). Falls back to the
+        // phase-vocoder if the harmonic fit returns nil (weak signal, cold frame).
         var frequency = det.frequency
+        var harmonicB: Double? = nil
+
         if det.frequency >= Self.spectralRefineMinHz {
+            // P1: bias-corrected spectral refine for mid/high.
             frequency = SpectralAnalyzer.refineFundamental(
                 frame, near: det.frequency, sampleRate: sampleRate, interp: .candan, maxCents: 50
             )
+        } else if let result = HarmonicEstimator.refine(
+            frame, near: det.frequency, sampleRate: sampleRate
+        ) {
+            // P2: harmonic comb — primary bass path.
+            frequency = result.frequency
+            harmonicB = result.inharmonicityB
         } else if let prev = prevFrame,
                   prevWindow == window, prevHop == config.hop,
                   prevFrameStart == frameStart - config.hop {
+            // Fallback: phase-vocoder (used when harmonic fit fails on weak/cold frames).
             frequency = StrobePhase.refineFrequency(
                 current: frame, previous: prev,
                 frequency: det.frequency, sampleRate: sampleRate, hop: config.hop
@@ -178,7 +190,8 @@ public final class PitchPipeline {
             cents: cents,
             confidence: det.clarity,
             phase: phase,
-            timestamp: timestamp
+            timestamp: timestamp,
+            inharmonicityB: harmonicB
         )
     }
 

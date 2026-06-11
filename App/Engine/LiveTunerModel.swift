@@ -204,7 +204,7 @@ final class LiveTunerModel {
             frequency = r.frequency
             confidence = r.confidence
             strobeInput = StrobeInput(cents: c, phase: r.phase, locked: locked)
-            handleLock(locked)
+            handleLock(locked, noteFreq: target.frequency(a4: a4))
         } else {
             // Chromatic nearest-note.
             note = r.note.name
@@ -213,15 +213,18 @@ final class LiveTunerModel {
             frequency = r.frequency
             confidence = r.confidence
             strobeInput = r.strobeInput()
-            handleLock(r.isLocked(lockCents: LumaMusic.lockCents))
+            handleLock(r.isLocked(lockCents: LumaMusic.lockCents), noteFreq: r.note.frequency(a4: a4))
         }
         lastUpdate = Date()
     }
 
-    /// Fire the in-tune haptic on the rising edge into lock (the visual bloom is
-    /// driven by the readouts' `locked` state).
-    private func handleLock(_ locked: Bool) {
-        if locked, !wasLocked, hapticsEnabled { haptics.tap() }
+    /// Fire the in-tune haptic and confirmation ping on the rising edge into lock
+    /// (the visual bloom is driven by the readouts' `locked` state).
+    private func handleLock(_ locked: Bool, noteFreq: Double) {
+        if locked, !wasLocked {
+            if hapticsEnabled { haptics.tap() }
+            if !toneOn { tone.ping(frequency: noteFreq) }
+        }
         wasLocked = locked
     }
 

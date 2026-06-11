@@ -18,14 +18,17 @@ final class ToneGenerator {
     #if canImport(AVFoundation)
     private let engine = AVAudioEngine()
     private let renderer: ToneRenderer
+    private let pinger: PingRenderer
     private let sampleRate: Double = 48_000
     private var sourceNode: AVAudioSourceNode?
+    private var pingNode: AVAudioSourceNode?
     private var started = false
     #endif
 
     init() {
         #if canImport(AVFoundation)
         renderer = ToneRenderer(synth: ToneSynth(sampleRate: 48_000))
+        pinger = PingRenderer(sampleRate: 48_000)
         #endif
     }
 
@@ -42,6 +45,14 @@ final class ToneGenerator {
     func setFrequency(_ frequency: Double) {
         #if canImport(AVFoundation)
         renderer.update(frequency: frequency, gain: nil)
+        #endif
+    }
+
+    /// Play a brief confirmation ping at `frequency` Hz on the lock rising edge.
+    func ping(frequency: Double) {
+        #if canImport(AVFoundation)
+        pinger.trigger(frequency: frequency)
+        start()
         #endif
     }
 
@@ -65,6 +76,14 @@ final class ToneGenerator {
         sourceNode = node
         engine.attach(node)
         engine.connect(node, to: engine.mainMixerNode, format: format)
+
+        let ping = AVAudioSourceNode(format: format) { [pinger] _, _, frameCount, ablPtr in
+            pinger.render(frameCount: Int(frameCount), into: ablPtr)
+            return noErr
+        }
+        pingNode = ping
+        engine.attach(ping)
+        engine.connect(ping, to: engine.mainMixerNode, format: format)
 
         #if os(iOS)
         // Play alongside live capture: a play-and-record session in measurement mode
@@ -117,6 +136,53 @@ private final class ToneRenderer: @unchecked Sendable {
         synth.render(into: UnsafeMutableBufferPointer(start: ptr, count: frameCount))
 
         // Duplicate to any additional channels the graph hands us (mono source).
+        for i in 1..<buffers.count where buffers[i].mData != nil {
+            buffers[i].mData!.assumingMemoryBound(to: Float.self).update(from: ptr, count: frameCount)
+        }
+    }
+}
+
+/// Single-shot confirmation tone: fast attack, ~300 ms hold, then glides to silence.
+/// Triggered from the main actor; rendered on the audio thread under an NSLock.
+private final class PingRenderer: @unchecked Sendable {
+    private var synth: ToneSynth
+    private let lock = NSLock()
+    private var pendingFrequency: Double = 440
+    private var pendingGain: Double = 0
+    private var holdFramesLeft: Int = 0
+    private let holdFrames: Int = Int(0.3 * 48_000)
+    private let level: Double = 0.28
+
+    init(sampleRate: Double) {
+        synth = ToneSynth(sampleRate: sampleRate, attackTime: 0.012)
+    }
+
+    func trigger(frequency: Double) {
+        lock.lock()
+        pendingFrequency = frequency
+        pendingGain = level
+        holdFramesLeft = holdFrames
+        lock.unlock()
+    }
+
+    func render(frameCount: Int, into ablPtr: UnsafeMutablePointer<AudioBufferList>) {
+        lock.lock()
+        if holdFramesLeft > 0 {
+            holdFramesLeft -= frameCount
+            if holdFramesLeft <= 0 { holdFramesLeft = 0; pendingGain = 0 }
+        }
+        let f = pendingFrequency
+        let g = pendingGain
+        lock.unlock()
+
+        synth.frequency = f
+        synth.targetGain = g
+
+        let buffers = UnsafeMutableAudioBufferListPointer(ablPtr)
+        guard let first = buffers.first, let base = first.mData else { return }
+        let ptr = base.assumingMemoryBound(to: Float.self)
+        synth.render(into: UnsafeMutableBufferPointer(start: ptr, count: frameCount))
+
         for i in 1..<buffers.count where buffers[i].mData != nil {
             buffers[i].mData!.assumingMemoryBound(to: Float.self).update(from: ptr, count: frameCount)
         }

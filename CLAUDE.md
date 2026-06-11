@@ -53,11 +53,11 @@ open Packages/LumaDesignSystem/Package.swift
 
 | Metric | Result |
 |--------|--------|
-| Mean abs cents error (clean) | 1.42 ¢ |
-| Mid/high range | 0.2–0.8 ¢ |
-| Low bass (≤ ~98 Hz) | ~3 ¢ |
+| Mean abs cents error (clean) | 0.23 ¢ |
+| Mid/high range | 0.11–0.15 ¢ |
+| Low bass (< 82 Hz) | 0.59 ¢ (worst case 5.81 ¢) |
 | Octave-error rate | **0.00%** (207 cases incl. 5-string low B) |
-| Noise robustness | ~0.8 ¢ at 10 dB SNR, 0 octave errors |
+| Noise robustness | ~0.5 ¢ at 10 dB SNR, 0 octave errors |
 | Time-to-lock | ~43 ms median; ~100–150 ms for lowest bass strings (physics, not a bug) |
 
 ## Workflow Standards

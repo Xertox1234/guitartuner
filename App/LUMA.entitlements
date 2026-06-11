@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- macOS distribution: App Sandbox is required for the Mac App Store, and the
+	     audio-input entitlement is what lets a sandboxed (or hardened-runtime
+	     notarized) build open the microphone. iOS ignores these keys — mic access
+	     there is governed by NSMicrophoneUsageDescription alone. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+</dict>
+</plist>

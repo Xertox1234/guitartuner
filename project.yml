@@ -18,6 +18,7 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""  # TODO: set your Team ID (e.g. ABC123XYZ), then run: xcodegen generate
 
 packages:
   LumaDesignSystem:

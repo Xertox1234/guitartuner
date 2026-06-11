@@ -17,6 +17,8 @@ struct SettingsView: View {
     @AppStorage("useMetalStrobe") private var useMetalStrobe = false
     /// Manual light/dark/system override, shared with `RootView` via the same key.
     @AppStorage("theme") private var themeRaw = LumaTheme.dark.rawValue
+    /// Persisted strobe colour palette (Aurora default); shared with `LiveTunerScreen` via the same key.
+    @AppStorage("strobePalette") private var palette: LumaPalette = .aurora
 
     var body: some View {
         NavigationStack {
@@ -45,11 +47,20 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Appearance") {
+                Section {
                     Picker("Theme", selection: $themeRaw) {
                         ForEach(LumaTheme.allCases) { Text($0.label).tag($0.rawValue) }
                     }
                     .pickerStyle(.segmented)
+
+                    Picker("Palette", selection: $palette) {
+                        ForEach(LumaPalette.allCases) { Text($0.label).tag($0) }
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("Theme controls the app surface; Palette tints the strobe.")
                 }
 
                 Section {

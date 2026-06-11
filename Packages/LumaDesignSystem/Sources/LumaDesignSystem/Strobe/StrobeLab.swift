@@ -12,6 +12,7 @@ public struct StrobeLab: View {
     @State private var scheme: ColorScheme = .dark
     @State private var reduceMotion = false
     @State private var style: StrobeStyle = .aurora
+    @State private var palette: LumaPalette = .aurora
     @State private var useMetal = false
 
     // Physics tick, off the view-update path (advancing @Observable inside body
@@ -33,6 +34,7 @@ public struct StrobeLab: View {
             }
         }
         .lumaGlow(state)
+        .lumaPalette(palette)
         .environment(\.colorScheme, scheme)
         .foregroundStyle(Color.lumaInk)
         .onReceive(physics) { _ in sim.advance(to: CACurrentMediaTime()) }
@@ -101,6 +103,14 @@ public struct StrobeLab: View {
                 .toggleStyle(.switch)
                 .tint(.lumaInTune)
                 .fixedSize()
+            }
+
+            HStack(spacing: Space.s3) {
+                Text("PALETTE").font(LumaFont.mono(10)).foregroundStyle(Color.lumaDim)
+                Picker("Palette", selection: $palette) {
+                    ForEach(LumaPalette.allCases) { Text($0.label).tag($0) }
+                }
+                .labelsHidden()
             }
 
             HStack {

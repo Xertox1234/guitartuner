@@ -17,6 +17,7 @@ public struct MetalStrobe: View {
     var phaseScroll: Bool
 
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.lumaPalette) private var palette
 
     public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, phaseScroll: Bool = false) {
         self.input = input
@@ -27,7 +28,7 @@ public struct MetalStrobe: View {
 
     public var body: some View {
         #if canImport(MetalKit)
-        MetalStrobeView(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll, scheme: scheme)
+        MetalStrobeView(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll, scheme: scheme, palette: palette)
             .accessibilityHidden(true)
         #else
         // No Metal available (non-Apple) — fall back to the Canvas hero.
@@ -55,6 +56,7 @@ struct MetalStrobeView: StrobeMetalRepresentable {
     var animated: Bool
     var phaseScroll: Bool
     var scheme: ColorScheme
+    var palette: LumaPalette
 
     func makeCoordinator() -> StrobeRenderer? { StrobeRenderer.make(scheme: scheme) }
 
@@ -79,6 +81,7 @@ struct MetalStrobeView: StrobeMetalRepresentable {
         renderer.idle = idle
         renderer.animated = animated
         renderer.phaseScroll = phaseScroll
+        renderer.palette = palette
         renderer.update(scheme: scheme, view: view)
     }
 
@@ -122,6 +125,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
     var idle = false
     var animated = true
     var phaseScroll = false
+    var palette: LumaPalette = .aurora
     private var scheme: ColorScheme
 
     // Integrated clock (mirrors AuroraClock).
@@ -193,7 +197,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
     }
 
     private func makeUniforms(size: CGSize) -> StrobeUniforms {
-        let pal = StrobePalette.resolve(scheme)
+        let pal = StrobePalette.resolve(scheme, palette: palette)
         let now = CACurrentMediaTime()
         var dt = 0.0
         if lastTime != 0 { dt = min(0.05, now - lastTime) }

@@ -26,6 +26,8 @@ struct LiveTunerScreen: View {
     @AppStorage("showScope") private var showScope = false
     /// Opt-in Metal hero renderer for the Aurora field (experimental; validate on-device).
     @AppStorage("useMetalStrobe") private var useMetalStrobe = false
+    /// Persisted strobe colour palette (Aurora default); shared with Settings via the same key.
+    @AppStorage("strobePalette") private var palette: LumaPalette = .aurora
 
     private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
 
@@ -65,6 +67,7 @@ struct LiveTunerScreen: View {
                 .zIndex(1)
             }
         }
+        .lumaPalette(palette)
         .lumaGlow(state)
         .foregroundStyle(Color.lumaInk)
         .task { await model.start() }
@@ -87,15 +90,29 @@ struct LiveTunerScreen: View {
         HStack {
             Brand()
             Spacer()
-            InputSource(source: inputBinding)
-            EdgeIconButton(systemImage: "arrow.up.left.and.arrow.down.right",
-                           accessibilityLabel: "Stage Mode") {
-                withAnimation(.easeInOut(duration: 0.3)) { stageMode = true }
+            HStack(spacing: Space.s3) {
+                InputSource(source: inputBinding)
+                EdgeIconButton(systemImage: "arrow.up.left.and.arrow.down.right",
+                               accessibilityLabel: "Stage Mode") {
+                    withAnimation(.easeInOut(duration: 0.3)) { stageMode = true }
+                }
+                SettingsButton { showSettings = true }
             }
-            SettingsButton { showSettings = true }
         }
         .padding(.horizontal, Space.s6)
         .padding(.top, Space.s5)
+        .padding(.bottom, Space.s4)
+        .background(
+            LinearGradient(
+                stops: [
+                    .init(color: Color.lumaBg.opacity(0.65), location: 0),
+                    .init(color: .clear, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(edges: .top)
+        )
     }
 
     // MARK: Readouts (reused Plan 02 components)

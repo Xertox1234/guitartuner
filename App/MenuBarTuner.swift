@@ -11,6 +11,8 @@ struct MenuBarTuner: View {
     @Bindable var model: LiveTunerModel
     /// Shared with the live screen + Settings via the same key.
     @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
+    /// Shared with the live screen + Settings via the same key.
+    @AppStorage("strobePalette") private var palette: LumaPalette = .aurora
 
     private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
 
@@ -18,6 +20,7 @@ struct MenuBarTuner: View {
         VStack(spacing: Space.s4) {
             StrobeField(input: model.strobeInput, idle: model.idle,
                         style: strobeStyle, phaseScroll: true)
+                .lumaPalette(palette)
                 .frame(width: 132, height: 132)
                 .clipShape(Circle())
                 .allowsHitTesting(false)

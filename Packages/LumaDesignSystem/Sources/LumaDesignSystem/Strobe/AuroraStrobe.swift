@@ -35,6 +35,7 @@ public struct AuroraStrobe: View {
     var phaseScroll: Bool
 
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.lumaPalette) private var palette
     @State private var clock = AuroraClock()
 
     public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, ribbonCount: Int = 13, phaseScroll: Bool = false) {
@@ -62,7 +63,7 @@ public struct AuroraStrobe: View {
     }
 
     private func draw(_ ctx: inout GraphicsContext, _ size: CGSize, time: Double) {
-        let pal = StrobePalette.resolve(scheme)
+        let pal = StrobePalette.resolve(scheme, palette: palette)
         let light = scheme == .light
         let w = size.width, h = size.height
         guard w > 1, h > 1 else { return }

@@ -38,7 +38,6 @@ struct LiveTunerScreen: View {
 
     var body: some View {
         ZStack {
-            ScreenBackground()
             StrobeField(input: model.strobeInput, idle: model.idle, style: strobeStyle,
                         phaseScroll: true, useMetalRenderer: useMetalStrobe)
             VStack(spacing: 0) {
@@ -67,6 +66,8 @@ struct LiveTunerScreen: View {
                 .zIndex(1)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background { ScreenBackground() }
         .lumaPalette(palette)
         .lumaGlow(state)
         .foregroundStyle(Color.lumaInk)
@@ -191,6 +192,8 @@ struct LiveTunerScreen: View {
 
 #if DEBUG
 #Preview("Live Tuner — dark") {
-    LiveTunerScreen(model: LiveTunerModel()).preferredColorScheme(.dark)
+    LiveTunerScreen(model: LiveTunerModel())
+        .frame(width: 440, height: 720)
+        .preferredColorScheme(.dark)
 }
 #endif

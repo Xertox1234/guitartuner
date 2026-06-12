@@ -18,7 +18,7 @@ struct LumaApp: App {
             RootView(model: model)
         }
         #if os(macOS)
-        .defaultSize(width: 440, height: 900)
+        .defaultSize(width: 440, height: 720)
         .windowResizability(.contentSize)
         #endif
 

@@ -32,8 +32,16 @@ final class ToneGenerator {
         #endif
     }
 
-    /// Sound (or silence) the tone at `frequency` Hz. The first activation lazily
-    /// starts the output engine; deactivation glides to silence.
+    /// Pre-warm the output engine so the first `ping` or `setActive` call does not
+    /// trigger a lazy `AVAudioSession.setCategory` change while capture is live.
+    /// Call this before `TunerEngine.start()`.
+    func prepare() {
+        #if canImport(AVFoundation)
+        start()
+        #endif
+    }
+
+    /// Sound (or silence) the tone at `frequency` Hz.
     func setActive(_ active: Bool, frequency: Double) {
         #if canImport(AVFoundation)
         renderer.update(frequency: frequency, gain: active ? level : 0)

@@ -60,10 +60,7 @@ final class LiveTunerModel {
     @ObservationIgnored private var readTask: Task<Void, Never>?
     @ObservationIgnored private var watchdog: Task<Void, Never>?
     @ObservationIgnored private var lastUpdate = Date.distantPast
-    @ObservationIgnored private var wasLocked = false
-
-    /// Confidence floor for declaring a lock (matches `PitchReading.isLocked`).
-    private let minLockConfidence = 0.9
+    @ObservationIgnored private var lockGate = LockGate()
 
     // MARK: - Lifecycle
 
@@ -72,6 +69,7 @@ final class LiveTunerModel {
     func start() async {
         guard !running else { return }
         haptics.prepare()
+        tone.prepare()
         do {
             await engine.setA4(a4)
             await engine.setInputPreference(inputKind == .mic ? .mic : .auto)
@@ -98,7 +96,7 @@ final class LiveTunerModel {
         readTask?.cancel(); readTask = nil
         watchdog?.cancel(); watchdog = nil
         cents = nil
-        wasLocked = false
+        lockGate.reset()
         status = "Stopped"
         let e = engine                      // capture the actor, not self
         Task { await e.stop() }
@@ -125,6 +123,7 @@ final class LiveTunerModel {
     /// chromatic until you switch to `.lock`.
     func selectString(_ idx: Int) {
         activeIdx = idx
+        lockGate.reset()
         updateTarget()
         updateTone()
     }
@@ -195,9 +194,13 @@ final class LiveTunerModel {
     private func apply(_ r: PitchReading) {
         if mode == .lock, let target = targetNote {
             // Judge only the targeted string: cents relative to it, phase already
-            // referenced to it by the engine.
+            // referenced to it by the engine. Bass strings (f0 < 120 Hz) have
+            // lower NSDF clarity (~0.75–0.85) than mid/high strings (~0.95), so
+            // the confidence floor is relaxed for them. Octave errors can't cause
+            // a false lock here because a wrong octave lands far outside lockCents.
             let c = target.cents(of: r.frequency, a4: a4)
-            let locked = abs(c) <= LumaMusic.lockCents && r.confidence >= minLockConfidence
+            let minConf = r.frequency < 120 ? 0.75 : 0.9
+            let locked = abs(c) <= LumaMusic.lockCents && r.confidence >= minConf
             note = target.name
             octave = target.octave
             cents = c
@@ -218,14 +221,12 @@ final class LiveTunerModel {
         lastUpdate = Date()
     }
 
-    /// Fire the in-tune haptic and confirmation ping on the rising edge into lock
-    /// (the visual bloom is driven by the readouts' `locked` state).
+    /// Fire the in-tune haptic and confirmation ping on the rising edge into lock.
+    /// The visual bloom is driven by the readouts' `locked` state independently.
     private func handleLock(_ locked: Bool, noteFreq: Double) {
-        if locked, !wasLocked {
-            if hapticsEnabled { haptics.tap() }
-            if !toneOn { tone.ping(frequency: noteFreq) }
-        }
-        wasLocked = locked
+        let (haptic, ping) = lockGate.step(locked: locked)
+        if haptic, hapticsEnabled { haptics.tap() }
+        if ping, !toneOn { tone.ping(frequency: noteFreq) }
     }
 
     /// Fade to idle when readings stop arriving (note released / silence), so the
@@ -237,7 +238,7 @@ final class LiveTunerModel {
                 guard let self else { return }
                 if self.running, Date().timeIntervalSince(self.lastUpdate) > 0.35 {
                     self.cents = nil
-                    self.wasLocked = false
+                    self.lockGate.reset()
                 }
             }
         }

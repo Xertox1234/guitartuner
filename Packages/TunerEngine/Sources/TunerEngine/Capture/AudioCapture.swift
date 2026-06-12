@@ -90,7 +90,11 @@ final class AudioCapture: @unchecked Sendable {
     private func configureSession(preference: InputPreference) throws {
         let session = AVAudioSession.sharedInstance()
         // `.measurement` disables AGC / signal processing for a clean analysis path.
-        try session.setCategory(.record, mode: .measurement, options: [.allowBluetooth])
+        // `.playAndRecord` is used even when the tone is off so the session is
+        // already output-capable when the confirmation ping or reference tone starts —
+        // avoids a live category change that would interrupt the capture tap on iOS.
+        try session.setCategory(.playAndRecord, mode: .measurement,
+                                options: [.allowBluetooth, .defaultToSpeaker])
         try session.setPreferredSampleRate(48_000)
         try session.setActive(true)
 

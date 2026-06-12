@@ -120,7 +120,42 @@ Add a one-liner at the top:
 - YYYY-MM-DD: [short description] → docs/solutions/<category>/<filename>.md
 ```
 
-## Step 7 — Commit
+## Step 7a — Adversarial verify before writing
+
+Before writing the solution file, dispatch the domain-appropriate specialist agent to validate the finding:
+
+| Domain(s) from Step 1 | Agent to consult |
+|-----------------------|-----------------|
+| `dsp`, `pipeline`, `capture` | `dsp-specialist` |
+| `strobe` | `strobe-specialist` |
+| `swiftui`, `design-system` | `swiftui-specialist` |
+| `testing` | `testing-specialist` |
+
+Ask the agent: "Is this finding genuine and non-obvious? Is the proposed solution correct? Is there a simpler explanation or existing pattern that already handles this?"
+
+If the agent refutes the finding → skip writing the solution file. The finding is either obvious from the code, already covered by a rules file, or the fix is wrong.
+
+If the agent confirms → proceed.
+
+## Step 7b — Overlap check against existing solutions
+
+Before writing a new solution file:
+
+```bash
+grep -r "tags:" docs/solutions/ | grep "<domain>"
+```
+
+Also scan by symptom or title similarity. If a solution with ≥2 matching tags and a similar `applies_to` glob already exists → update that file instead of creating a duplicate. Add a `## YYYY-MM-DD update` section to the existing file.
+
+## Step 7c — Update agent files if a domain pattern changed
+
+If the finding reveals a new constraint that every future reviewer of this domain should know:
+- Append a terse note to the relevant specialist agent in `.claude/agents/<domain>-specialist.md`
+- Add it to the review checklist section
+
+Only do this for structural patterns (algorithm constraints, API behaviors, invariants), not for bug fixes specific to one file.
+
+## Step 7d — Commit
 
 ```bash
 git add docs/solutions/ docs/rules/ docs/LEARNINGS.md

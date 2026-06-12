@@ -3,13 +3,17 @@
 # Per-session dedup: full rules on first edit in a domain, one-liner pointer on repeat.
 # Output: JSON {"additionalContext": "..."} or silent exit 0.
 
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # shellcheck source=lib/domain-map.sh
 source "$SCRIPT_DIR/lib/domain-map.sh"
+
+domain_tag_pattern() {
+  printf '\\b%s\\b' "$1"
+}
 
 # Read stdin once
 INPUT=$(cat)
@@ -24,11 +28,17 @@ esac
 FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)
 [[ -z "$FILE_PATH" ]] && exit 0
 
-SESSION="${CLAUDE_SESSION_ID:-}"
+SESSION=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || echo "")
 
 # Resolve domains for this file
 DOMAINS_RAW=$(get_domains "$FILE_PATH")
 [[ -z "$DOMAINS_RAW" ]] && exit 0
+
+# Sort domains by priority rank before processing
+DOMAINS_SORTED=$(while IFS= read -r d; do
+  [[ -z "$d" ]] && continue
+  printf '%s\t%s\n' "$(domain_rank "$d")" "$d"
+done <<< "$DOMAINS_RAW" | sort -n | cut -f2)
 
 # Preamble — always included
 PREAMBLE="LUMA editing standards:
@@ -45,14 +55,17 @@ SOLUTIONS_BODY=""
 SOLUTIONS_PER_DOMAIN=4
 BYTE_CAP=9000
 
+DEDUP=1
+{ [ -z "$SESSION" ] || [ "${LUMA_PATTERN_INJECT_NO_DEDUP:-0}" = "1" ]; } && DEDUP=0
+DEDUP_STATE="/tmp/luma-pattern-inject-${SESSION}"
+
 while IFS= read -r domain; do
   [[ -z "$domain" ]] && continue
 
   RULES_FILE="$PROJECT_DIR/docs/rules/${domain}.md"
-  DEDUP_KEY="/tmp/luma-injected-${SESSION}-${domain}"
 
   # Per-session dedup
-  if [[ -n "$SESSION" && -f "$DEDUP_KEY" && -z "${LUMA_PATTERN_INJECT_NO_DEDUP:-}" ]]; then
+  if [ "$DEDUP" = "1" ] && grep -qxF "$domain" "$DEDUP_STATE" 2>/dev/null; then
     RULES_BODY="${RULES_BODY}
 [${domain} rules already injected this session — see docs/rules/${domain}.md]"
     continue
@@ -63,29 +76,58 @@ while IFS= read -r domain; do
 
 --- ${domain} rules ---
 $(cat "$RULES_FILE")"
-    if [[ -n "$SESSION" ]]; then
-      touch "$DEDUP_KEY" 2>/dev/null || true
-    fi
+    [ "$DEDUP" = "1" ] && printf '%s\n' "$domain" >> "$DEDUP_STATE"
   fi
 
   # Recent solution references for this domain (path + title only)
   SOLUTIONS_DIR="$PROJECT_DIR/docs/solutions"
   if [[ -d "$SOLUTIONS_DIR" ]]; then
-    count=0
+    TAG_PATTERN=$(domain_tag_pattern "$domain")
+    MATCHES=$(grep -rl --include='*.md' -E "^tags:.*${TAG_PATTERN}" \
+      "$SOLUTIONS_DIR" 2>/dev/null \
+      | grep -v '/README\.md' \
+      | sed "s|.*\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)\.md\$|\1 &|" \
+      | sort -r \
+      | cut -d' ' -f2- \
+      | head -n "$SOLUTIONS_PER_DOMAIN")
+
+    if [ -n "$MATCHES" ]; then
+      _FILE_REL="${FILE_PATH#$PROJECT_DIR/}"
+      _NL=$'\n'
+      _PRIORITY=""
+      _FALLBACK=""
+      while IFS= read -r _sol; do
+        [ -n "$_sol" ] || continue
+        _PATS=$(grep -m1 '^applies_to:' "$_sol" 2>/dev/null \
+          | grep -oE '"[^"]+"' | tr -d '"' || true)
+        _MATCHED=false
+        if [ -n "$_PATS" ]; then
+          while IFS= read -r _pat; do
+            [ -n "$_pat" ] || continue
+            # shellcheck disable=SC2254
+            [[ "$_FILE_REL" == $_pat ]] && { _MATCHED=true; break; }
+          done <<< "$_PATS"
+        fi
+        if [ "$_MATCHED" = true ]; then
+          _PRIORITY="${_PRIORITY:+$_PRIORITY$_NL}$_sol"
+        else
+          _FALLBACK="${_FALLBACK:+$_FALLBACK$_NL}$_sol"
+        fi
+      done <<< "$MATCHES"
+      MATCHES=$(printf '%s\n%s\n' "$_PRIORITY" "$_FALLBACK" \
+        | grep -v '^$' | head -n "$SOLUTIONS_PER_DOMAIN")
+    fi
+
     while IFS= read -r sol_file; do
-      [[ "$count" -ge "$SOLUTIONS_PER_DOMAIN" ]] && break
       [[ -f "$sol_file" ]] || continue
-      if grep -q "\b${domain}\b" "$sol_file" 2>/dev/null; then
-        title=$(grep '^title:' "$sol_file" 2>/dev/null | head -1 | \
-          sed 's/^title:[[:space:]]*//' | tr -d '"')
-        rel="${sol_file#"$PROJECT_DIR/"}"
-        SOLUTIONS_BODY="${SOLUTIONS_BODY}- ${rel}: ${title}
+      title=$(grep '^title:' "$sol_file" 2>/dev/null | head -1 | \
+        sed 's/^title:[[:space:]]*//' | tr -d '"')
+      rel="${sol_file#"$PROJECT_DIR/"}"
+      SOLUTIONS_BODY="${SOLUTIONS_BODY}- ${rel}: ${title}
 "
-        count=$((count + 1))
-      fi
-    done < <(find "$SOLUTIONS_DIR" -name '*.md' ! -name 'README.md' 2>/dev/null | sort -r | head -40)
+    done <<< "$MATCHES"
   fi
-done <<< "$DOMAINS_RAW"
+done <<< "$DOMAINS_SORTED"
 
 # Assemble
 CONTEXT="$PREAMBLE"
@@ -99,11 +141,18 @@ ${SOLUTIONS_BODY}"
 fi
 
 # Spill overflow to temp file if over byte cap
-if [[ ${#CONTEXT} -gt $BYTE_CAP ]]; then
+TMPFILE=$(mktemp)
+trap 'rm -f "$TMPFILE"' EXIT
+printf '%s\n' "$CONTEXT" > "$TMPFILE"
+CONTEXT_SIZE=$(wc -c < "$TMPFILE")
+if [ "$CONTEXT_SIZE" -gt "$BYTE_CAP" ]; then
   OVERFLOW="/tmp/luma-injection-context.md"
-  printf '%s\n' "$CONTEXT" > "$OVERFLOW"
-  CONTEXT="${CONTEXT:0:$BYTE_CAP}
-[...truncated — full context at $OVERFLOW]"
+  cp "$TMPFILE" "$OVERFLOW"
+  head -c $((BYTE_CAP - 200)) "$TMPFILE" > "${TMPFILE}.trunc"
+  mv "${TMPFILE}.trunc" "$TMPFILE"
+  printf '\n\n[TRUNCATED — %d bytes total. Full context at %s]\n' \
+    "$CONTEXT_SIZE" "$OVERFLOW" >> "$TMPFILE"
+  CONTEXT=$(cat "$TMPFILE")
 fi
 
 jq -n --arg ctx "$CONTEXT" '{"additionalContext": $ctx}'

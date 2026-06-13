@@ -28,6 +28,7 @@ struct LiveTunerScreen: View {
     @AppStorage("useMetalStrobe") private var useMetalStrobe = false
     /// Persisted strobe colour palette (Aurora default); shared with Settings via the same key.
     @AppStorage("strobePalette") private var palette: LumaPalette = .aurora
+    @Environment(\.openURL) private var openURL
 
     private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
 
@@ -163,6 +164,15 @@ struct LiveTunerScreen: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity)
+
+            // Mic access denied is otherwise a dead end — deep-link to the
+            // system's privacy pane so re-granting is one tap away.
+            if model.permissionDenied, let url = microphoneSettingsURL {
+                Button("Open Settings") { openURL(url) }
+                    .font(LumaFont.mono(11))
+                    .buttonStyle(.bordered)
+                    .tint(.lumaInTune)
+            }
         }
         .padding(Space.s5)
         .background(Color.lumaSurface.opacity(0.55),
@@ -171,6 +181,18 @@ struct LiveTunerScreen: View {
             .stroke(Color.lumaLine, lineWidth: 1))
         .padding(.horizontal, Space.s5)
         .padding(.bottom, Space.s5)
+    }
+
+    /// Where to send the user to re-grant mic access: the app's own page in
+    /// Settings on iOS, the Privacy → Microphone pane on macOS.
+    private var microphoneSettingsURL: URL? {
+        #if os(iOS)
+        URL(string: UIApplication.openSettingsURLString)
+        #elseif os(macOS)
+        URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+        #else
+        nil
+        #endif
     }
 
     /// The tone toggle names the string it will sound, e.g. `Tone · A2`.

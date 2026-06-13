@@ -29,6 +29,8 @@ final class LiveTunerModel {
     private(set) var confidence: Double = 0
     private(set) var running = false
     private(set) var status: String = "Tap Start to listen"
+    /// Mic access was denied/restricted — the screen offers a System Settings link.
+    private(set) var permissionDenied = false
 
     // MARK: Targeting / tuning
     private(set) var instrument: Instrument = .guitar
@@ -76,6 +78,7 @@ final class LiveTunerModel {
             await engine.setTargetNote(targetNote)
             try await engine.start()
             running = true
+            permissionDenied = false
             status = "Listening"
             readTask = Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -86,6 +89,7 @@ final class LiveTunerModel {
             startWatchdog()
         } catch {
             running = false
+            permissionDenied = (error as? TunerEngineError) == .microphonePermissionDenied
             status = (error as? TunerEngineError)?.errorDescription
                 ?? "Live audio unavailable: \(error.localizedDescription)"
         }

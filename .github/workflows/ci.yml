@@ -1,14 +1,11 @@
 name: CI
 
-# MANUAL-ONLY. This workflow does NOT run on push or pull_request — it only runs
-# when you explicitly start it from the Actions tab ("Run workflow"), so it never
-# consumes GitHub Actions minutes on its own. Day-to-day verification is done
-# locally (swift test + the accuracy benchmark). When you do run it, the jobs are
-# cost-shaped: the pure-Swift engine on a 1x Linux runner, and the macOS runner
-# (SwiftUI design-system tests + Xcode app builds) only when you opt into it.
-#
-# To re-enable automatic runs later, add back `pull_request:` / `push:` triggers.
+# Runs on every push and PR (the repo is public, so Actions minutes are free).
+# The pure-Swift engine work is gated on a fast Linux runner; the macOS runner
+# carries the SwiftUI design-system tests + full Xcode app builds in parallel.
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -17,8 +14,7 @@ concurrency:
 
 jobs:
   # The engine is pure Swift + Foundation (no SwiftUI/AVFoundation needed for the
-  # headless pipeline), so it runs on a 1x Linux runner. This is where the DSP
-  # work is gated, so most PRs never touch a macOS runner at all.
+  # headless pipeline), so it runs on a 1x Linux runner for the fastest DSP gate.
   engine:
     name: Engine tests + accuracy benchmark (Linux)
     runs-on: ubuntu-latest
@@ -30,7 +26,7 @@ jobs:
         run: swift test --package-path Packages/TunerEngine
 
       # Runs the accuracy harness (the published spec is pulled from this log) and
-      # fails on regressions (--ci): octave safety + the ratcheted P0/P1 gates.
+      # fails on regressions (--ci): octave safety + the ratcheted accuracy gates.
       - name: Run accuracy benchmark (+ CI gate)
         run: |
           swift run -c release --package-path Packages/TunerEngine Benchmark \
@@ -44,14 +40,19 @@ jobs:
           path: docs/benchmarks/
           if-no-files-found: ignore
 
-  # SwiftUI needs macOS, so the design-system tests and the full app builds run
-  # here — but only on integration-branch merges and manual dispatch, NOT on every
-  # PR, to conserve macOS minutes. When a PR changes app/design-system code, run
-  # this on demand via the "Run workflow" (workflow_dispatch) button.
+      # Echo the generated report to the log tail so the measured numbers are
+      # readable without artifact-host access (sandbox can't reach blob storage).
+      - name: Print accuracy report
+        if: always()
+        run: |
+          echo "===ACCURACY-MD-BEGIN==="
+          cat docs/benchmarks/accuracy.md || true
+          echo "===ACCURACY-MD-END==="
+
+  # SwiftUI needs macOS, so the design-system tests and the full app builds run here.
   app:
     name: Design system + app builds (macOS)
     runs-on: macos-14
-    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
 

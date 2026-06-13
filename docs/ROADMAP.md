@@ -64,7 +64,7 @@ accuracy, so worth doing well.
 ## Accuracy ceiling — Pillar I (Plan 06, the flagship next push)
 
 > Accuracy is the product's reason to exist (DESIGN §1, §3). v1 already measures
-> **0.77 ¢ mean / 0 % octave errors** (after P0+P1); [`docs/plans/06-accuracy-engine.md`](plans/06-accuracy-engine.md)
+> **0.23 ¢ mean / 0 % octave errors** (after P0–P2 comb); [`docs/plans/06-accuracy-engine.md`](plans/06-accuracy-engine.md)
 > is the fully-researched plan to take it to the physical ceiling — **strobe-grade
 > in the core range, ≤1 ¢ on the low strings, sub-0.05 ¢ on a held note** — and to be
 > honest about the sample-clock floor. Benchmark-gated, in phases.
@@ -76,9 +76,12 @@ accuracy, so worth doing well.
 - [x] **P1 — Spectral core + unbiased interpolation.** vDSP rFFT core (retires the
       O(N·maxLag) autocorrelation), Candan-2013 / Gaussian-log peak interpolation,
       window-centred index. Mid/high: **≤0.23 ¢ abs**. *(Done — mean 1.42 ¢ → 0.77 ¢.)*
-- [ ] **P2 — Harmonic NLS + joint inharmonicity B (centrepiece).** Per-partial refine,
-      `(f_n/n)²` (f0,B) fit, Fisher (k²·SNR) fusion, residual octave guard. Target: bass
-      **≤1 ¢ (worst ≤3 ¢)**, octave rate held at 0 %.
+- [x] **P2 — Harmonic comb + joint inharmonicity B (centrepiece).** Multi-partial
+      (f0, B) stiff-string WLS (`HarmonicEstimator` + `Inharmonicity`), Fisher-weighted,
+      replaces phase-vocoder for bass (<120 Hz). Measured: bass **2.98 ¢ → 0.59 ¢**
+      (B0 11.89 ¢ → 1.49 ¢), clean mean **0.77 ¢ → 0.23 ¢**, octave rate held at 0 %.
+- [ ] **P2 residual — bass worst-case gate.** The ≤1 ¢ bass mean target is met but
+      the **worst ≤3 ¢** target is not (max 5.81 ¢ today). Chase the tail cases.
 - [ ] **P3 — Virtual-strobe lock.** Tretter long-window phase-slope, multi-partial, with
       an uncertainty readout. Target: held-note **σ ≤0.05 ¢**; "LOCKED ±0.0X ¢" in UI.
 - [ ] **P4 — Honesty & calibration.** True-rate plumbing, optional sample-rate (ppm)
@@ -101,8 +104,10 @@ hardware. Track a real-device pass:
       analysis path. *(Flagged during Plan 04.)*
 - [ ] **Core Haptics** lock tap on iPhone / iPad (and that it's a clean no-op
       elsewhere).
-- [ ] Permission prompts + entitlements: `NSMicrophoneUsageDescription` (present),
-      macOS `com.apple.security.device.audio-input` for a sandboxed/notarized build.
+- [ ] Permission prompts + entitlements: `NSMicrophoneUsageDescription` (present)
+      and `App/LUMA.entitlements` (App Sandbox + audio-input, wired via
+      `CODE_SIGN_ENTITLEMENTS`) — confirm the prompt + grant flow and the
+      mic-denied "Open Settings" deep link on real iOS and macOS builds.
 - [ ] **Metal hero (`StrobeRenderer`)** — confirm the GPU path matches Aurora's look
       and holds **120 fps** on a ProMotion panel (Strobe lab fps readout), the
       light/dark blends read right, and Settings → Display "Metal renderer" swaps

@@ -35,6 +35,7 @@ targets:
       - path: App
         excludes:
           - "Info.plist"
+          - "LUMA.entitlements"
     dependencies:
       - package: LumaDesignSystem
         product: LumaDesignSystem
@@ -54,6 +55,8 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
         # macOS native app needs the hardened runtime for distribution.
         ENABLE_HARDENED_RUNTIME: YES
+        # App Sandbox + audio-input (macOS App Store / notarization); see the file.
+        CODE_SIGN_ENTITLEMENTS: App/LUMA.entitlements
 
 # Shared scheme so `xcodebuild -scheme LUMA` works headlessly in CI.
 schemes:

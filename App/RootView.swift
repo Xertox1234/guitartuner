@@ -21,17 +21,11 @@ enum LumaTheme: String, CaseIterable, Identifiable {
     }
 }
 
-/// Root of the app.
-///
-/// **Release** ships a *single focused screen* (EXPERIENCE §3): the live tuner,
-/// cold-opening straight into the breathing strobe — *the attract state is the
-/// intro* (§10), no splash. **Debug** wraps that in a development `TabView` that
-/// also surfaces the interactive strobe lab (Plan 03) and the design-system
-/// gallery for previews/QA. Theme (light/dark/system) is applied here and picked
-/// in Settings (release) or the gallery toolbar (debug) — same `@AppStorage` key.
 struct RootView: View {
-    /// The shared live tuner, owned by `LumaApp` (also drives the menu-bar strobe).
     var model: LiveTunerModel
+    var accountModel: AccountModel
+    var cardStore: TuningCardStore
+    var gearStore: GearStoreModel
     @AppStorage("theme") private var themeRaw = LumaTheme.dark.rawValue
     private var theme: LumaTheme { LumaTheme(rawValue: themeRaw) ?? .dark }
 
@@ -41,17 +35,13 @@ struct RootView: View {
             .preferredColorScheme(theme.colorScheme)
     }
 
-    /// The shipping face is just the live tuner so cold open lands on the
-    /// full-bleed breathing strobe; the lab + gallery are debug-only scaffolding.
     @ViewBuilder private var shell: some View {
         #if DEBUG
         TabView {
-            LiveTunerScreen(model: model)
+            LiveTunerScreen(model: model, accountModel: accountModel, cardStore: cardStore, gearStore: gearStore)
                 .tabItem { Label("Tuner", systemImage: "tuningfork") }
-
             StrobeLab()
                 .tabItem { Label("Strobe", systemImage: "waveform") }
-
             NavigationStack {
                 DesignSystemGallery()
                     .navigationTitle("Design System")
@@ -63,7 +53,7 @@ struct RootView: View {
             .tabItem { Label("Design", systemImage: "paintpalette") }
         }
         #else
-        LiveTunerScreen(model: model)
+        LiveTunerScreen(model: model, accountModel: accountModel, cardStore: cardStore, gearStore: gearStore)
         #endif
     }
 
@@ -84,6 +74,6 @@ struct RootView: View {
 
 #if DEBUG
 #Preview {
-    RootView(model: LiveTunerModel())
+    RootView(model: LiveTunerModel(), accountModel: AccountModel(), cardStore: TuningCardStore(), gearStore: GearStoreModel())
 }
 #endif

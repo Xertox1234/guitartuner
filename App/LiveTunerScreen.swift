@@ -16,6 +16,10 @@ import UIKit
 struct LiveTunerScreen: View {
     /// Shared with the menu-bar strobe; owned by `LumaApp`.
     @Bindable var model: LiveTunerModel
+    var accountModel: AccountModel
+    var cardStore: TuningCardStore
+    var gearStore: GearStoreModel
+    @State private var drawerDetent: PresentationDetent = .height(80)
     @State private var showSettings = false
     /// Full-screen, max-contrast Stage Mode (EXPERIENCE §8).
     @State private var stageMode = false
@@ -76,6 +80,22 @@ struct LiveTunerScreen: View {
         .onChange(of: stageMode) { _, active in setStageHold(active) }
         .onDisappear { setStageHold(false); model.stop() }
         .sheet(isPresented: $showSettings) { SettingsView(model: model) }
+        #if os(iOS)
+        .sheet(isPresented: .constant(true)) {
+            BottomDrawer(
+                model: model,
+                cardStore: cardStore,
+                accountModel: accountModel,
+                gearStore: gearStore,
+                detent: $drawerDetent
+            )
+            .presentationDetents([.height(80), .medium, .fraction(0.9)], selection: $drawerDetent)
+            .presentationBackgroundInteraction(.enabled(upThrough: .height(80)))
+            .interactiveDismissDisabled()
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(16)
+        }
+        #endif
     }
 
     /// Keep the screen awake while Stage Mode is up (a propped-on-the-amp prop
@@ -214,7 +234,7 @@ struct LiveTunerScreen: View {
 
 #if DEBUG
 #Preview("Live Tuner — dark") {
-    LiveTunerScreen(model: LiveTunerModel())
+    LiveTunerScreen(model: LiveTunerModel(), accountModel: AccountModel(), cardStore: TuningCardStore(), gearStore: GearStoreModel())
         .frame(width: 440, height: 720)
         .preferredColorScheme(.dark)
 }

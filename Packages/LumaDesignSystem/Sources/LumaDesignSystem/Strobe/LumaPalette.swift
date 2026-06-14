@@ -6,7 +6,7 @@ import Foundation
 ///
 /// Mirrors `StrobeStyle`: `String`-raw, `CaseIterable`, persisted via
 /// `@AppStorage("strobePalette")`.
-public enum LumaPalette: String, CaseIterable, Identifiable, Sendable {
+public enum LumaPalette: String, CaseIterable, Codable, Identifiable, Sendable {
     case aurora
     case amber
     case neon

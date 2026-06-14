@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.music</string>
 	<!-- Forward-looking: the tuner engine (Plan 01) reads the mic. Audio is
 	     processed entirely on-device and is never recorded, stored, or sent. -->
 	<key>NSMicrophoneUsageDescription</key>

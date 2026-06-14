@@ -3,7 +3,7 @@ import Foundation
 /// One string of a tuning. `idx` numbers strings high→low in the conventional
 /// sense (6 = lowest-pitched guitar string), but they render **left→right,
 /// low→high**. Mirrors `TUNINGS` in `docs/design_reference/strobe-core.jsx`.
-public struct GuitarString: Identifiable, Hashable, Sendable {
+public struct GuitarString: Identifiable, Codable, Hashable, Sendable {
     public let idx: Int
     public let midi: Int
     public let note: String
@@ -31,7 +31,7 @@ public struct Tuning: Identifiable, Hashable, Sendable {
     }
 }
 
-public enum Instrument: String, CaseIterable, Identifiable, Sendable {
+public enum Instrument: String, CaseIterable, Codable, Identifiable, Sendable {
     case guitar, bass
     public var id: String { rawValue }
 }

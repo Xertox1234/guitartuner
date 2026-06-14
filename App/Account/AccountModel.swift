@@ -5,7 +5,6 @@ import AuthenticationServices
 final class AccountModel {
     var isSignedIn: Bool
     var isLoading = false
-    var error: String?  // reserved for background error surfacing; callers use throws today
 
     let api: LumaAPI
 
@@ -18,12 +17,14 @@ final class AccountModel {
     // MARK: - Email + password
 
     func register(email: String, password: String) async throws {
-        isLoading = true; defer { isLoading = false }
+        isLoading = true
+        defer { isLoading = false }
         let _: MessageResponse = try await api.post("auth/register", body: RegisterRequest(email: email, password: password))
     }
 
     func login(email: String, password: String) async throws {
-        isLoading = true; defer { isLoading = false }
+        isLoading = true
+        defer { isLoading = false }
         let response: TokenResponse = try await api.post("auth/login", body: LoginRequest(email: email, password: password))
         await api.setJWT(response.token)
         isSignedIn = true
@@ -36,7 +37,8 @@ final class AccountModel {
               let token = String(data: tokenData, encoding: .utf8) else {
             throw LumaAPIError.server("No identity token from Apple", 0)
         }
-        isLoading = true; defer { isLoading = false }
+        isLoading = true
+        defer { isLoading = false }
         let response: TokenResponse = try await api.post("auth/apple", body: AppleAuthRequest(identityToken: token))
         await api.setJWT(response.token)
         isSignedIn = true

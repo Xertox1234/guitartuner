@@ -1,6 +1,5 @@
 import SwiftUI
 import LumaDesignSystem
-import TunerEngine
 
 /// The Settings sheet: reference calibration (A4), instrument + tuning preset, the
 /// in-tune haptic toggle, and the privacy note. A native `Form` so Dynamic Type and

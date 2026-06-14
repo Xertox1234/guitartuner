@@ -13,20 +13,23 @@ final class TuningCardStore {
     init(api: LumaAPI = LumaAPI()) {
         self.api = api
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        self.cacheURL = support.appendingPathComponent("luma_tuning_cards.json")
+        self.cacheURL = support.appending(component: "luma_tuning_cards.json")
         self.cards = loadCache()
     }
 
     // MARK: - Actions
 
     func fetch() async {
-        isLoading = true; defer { isLoading = false }
+        isLoading = true
+        defer { isLoading = false }
         do {
             let response: CardsResponse = try await api.get("tunings")
             cards = response.cards
             persistCache()
         } catch {
-            self.error = error.localizedDescription
+            if cards.isEmpty {
+                self.error = error.localizedDescription
+            }
         }
     }
 

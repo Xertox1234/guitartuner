@@ -11,7 +11,6 @@ struct AccountSheet: View {
     @State private var isRegistering = true
     @State private var showVerificationStep = false
     @State private var marketingOptIn = false
-    @State private var marketingEmail = ""
     @State private var errorMessage: String?
 
     var body: some View {
@@ -62,7 +61,7 @@ struct AccountSheet: View {
                     .textContentType(isRegistering ? .newPassword : .password)
             }
 
-            if let err = errorMessage ?? accountModel.error {
+            if let err = errorMessage {
                 Section {
                     Text(err).foregroundStyle(.red).font(.caption)
                 }

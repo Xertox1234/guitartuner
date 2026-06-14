@@ -77,11 +77,11 @@ actor LumaAPI {
     private func makeRequest<B: Encodable>(
         method: String, path: String, body: B?, token: String?
     ) -> URLRequest {
-        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        var req = URLRequest(url: baseURL.appending(component: path))
         req.httpMethod = method
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body, !(body is EmptyBody) {
-            req.httpBody = try? JSONEncoder().encode(body)
+            req.httpBody = try! JSONEncoder().encode(body)
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         return req
@@ -94,7 +94,7 @@ actor LumaAPI {
 
     private func refreshToken() async throws -> String? {
         guard let current = jwt else { return nil }
-        var req = URLRequest(url: baseURL.appendingPathComponent("auth/refresh"))
+        var req = URLRequest(url: baseURL.appending(component: "auth/refresh"))
         req.httpMethod = "POST"
         req.setValue("Bearer \(current)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: req)

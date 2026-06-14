@@ -90,7 +90,7 @@ struct StringCell: View {
         )
         .shadow(color: locked ? tuneColor.opacity(0.30) : .clear, radius: 9)
         .scaleEffect(active || locked ? 1.0 : 0.95)
-        .animation(.spring(response: 0.28, dampingFraction: 0.52), value: active)
+        .animation(.spring(response: 0.28, dampingFraction: 0.52), value: active || locked)
         .accessibilityLabel("String \(string.idx), \(string.note)\(string.octave)")
         .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
     }

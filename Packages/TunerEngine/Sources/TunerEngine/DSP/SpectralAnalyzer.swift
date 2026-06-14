@@ -24,6 +24,12 @@ enum SpectralAnalyzer {
         /// Log-parabolic on a **Hann**-window magnitude — robust at low bins
         /// (the window suppresses image leakage), ~0.14 ¢ worst case.
         case logParabolicHann
+        /// Log-parabolic on an already-Hann-windowed frame supplied by the caller.
+        /// Use when the caller pre-computes one windowed copy shared across many
+        /// `refineFundamental` calls (e.g. `HarmonicEstimator` partial loop) to
+        /// avoid re-windowing N samples per partial. Semantically identical to
+        /// `.logParabolicHann` but skips the internal Hann multiply.
+        case logParabolicPreHanned
     }
 
     /// Off-grid single-bin DTFT `Σ_n frame[n]·e^{-j2π f n/fs}` (n from 0). Same
@@ -68,9 +74,9 @@ enum SpectralAnalyzer {
         guard k >= 2, k <= N / 2 - 2 else { return f0 }   // 5-bin window valid, below Nyquist
         let df = fs / Double(N)
 
-        // Candan needs the rectangular transform; log-parabolic wants the Hann
-        // one. Only the Hann path allocates a windowed buffer — the hot `.candan`
-        // path reads `frame` directly (no copy).
+        // Candan needs the rectangular transform; log-parabolic wants Hann.
+        // `.logParabolicHann` windows internally (one allocation per call).
+        // `.logParabolicPreHanned` skips the multiply — caller owns the copy.
         let source: [Float]
         if interp == .logParabolicHann {
             var wf = frame
@@ -82,7 +88,7 @@ enum SpectralAnalyzer {
             #endif
             source = wf
         } else {
-            source = frame
+            source = frame  // both .candan and .logParabolicPreHanned read raw/pre-hanned frame
         }
         // Complex bins k-2…k+2, then find the actual local-peak bin among k-1…k+1
         // (the rounded seed can sit a bin off the true peak near a boundary).
@@ -96,8 +102,10 @@ enum SpectralAnalyzer {
 
         let delta: Double
         switch interp {
-        case .candan:           delta = FrequencyInterpolator.candan(bins[pi - 1], bins[pi], bins[pi + 1], n: N)
-        case .logParabolicHann: delta = FrequencyInterpolator.logParabolic(mag2[pi - 1], mag2[pi], mag2[pi + 1])
+        case .candan:
+            delta = FrequencyInterpolator.candan(bins[pi - 1], bins[pi], bins[pi + 1], n: N)
+        case .logParabolicHann, .logParabolicPreHanned:
+            delta = FrequencyInterpolator.logParabolic(mag2[pi - 1], mag2[pi], mag2[pi + 1])
         }
 
         let refined = (Double(k - 2 + pi) + delta) * df

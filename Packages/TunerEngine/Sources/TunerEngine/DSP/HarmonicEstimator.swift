@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(Accelerate)
+import Accelerate
+#endif
 
 /// Inharmonic-comb fundamental estimator — Plan 06 P2 centrepiece.
 ///
@@ -51,8 +54,8 @@ enum HarmonicEstimator {
     ///
     /// - Parameters:
     ///   - frame:       Pre-processed (DC-blocked, high-passed) analysis window.
-    ///                  **Not** Hann-windowed — `SpectralAnalyzer.refineFundamental`
-    ///                  applies its own window internally.
+    ///                  Not pre-windowed — `refine` applies Hann internally once
+    ///                  and passes the result to `refineFundamental` as needed.
     ///   - f0:          MPM's octave-safe fundamental (Hz). Search anchor; the
     ///                  result is clamped within `maxF0ShiftCents` of this value.
     ///   - sampleRate:  Capture sample rate (Hz).
@@ -78,6 +81,20 @@ enum HarmonicEstimator {
         // frequency information (Fisher weight ∝ n²·SNR) so the loss is minor.
         let binSpacing = sampleRate / Double(frame.count)
 
+        // Pre-compute one Hann-windowed copy of the frame, shared across all
+        // partial refinements below. At very low bass (partial spacing ~2.6 bins)
+        // Candan (rectangular window) and log-parabolic (Hann window) accumulate
+        // opposite-signed inter-partial leakage biases (~+2.3¢ vs ~-2.4¢ for B0).
+        // Averaging per-partial cancels most of the systematic offset.
+        // One allocation here vs one per partial in logParabolicHann.
+        var hannFrame = frame
+        let win = Windowing.hann(frame.count)
+        #if canImport(Accelerate)
+        vDSP_vmul(hannFrame, 1, win, 1, &hannFrame, 1, vDSP_Length(frame.count))
+        #else
+        for i in 0..<hannFrame.count { hannFrame[i] *= win[i] }
+        #endif
+
         var collected: [(n: Int, freq: Double, mag: Double)] = []
         collected.reserveCapacity(maxPartials)
 
@@ -86,15 +103,11 @@ enum HarmonicEstimator {
             guard fPred < nyquist * 0.95 else { break }
             guard fPred / binSpacing >= minBin else { continue }
 
-            // Average Candan (rectangular-window) and log-parabolic (Hann-window)
-            // estimates. At very low bass (partial spacing ~2.7 bins) the two methods
-            // have opposite-signed leakage biases that mostly cancel at the midpoint,
-            // reducing the systematic f0 offset without increasing variance.
             let fCandan = SpectralAnalyzer.refineFundamental(
                 frame, near: fPred, sampleRate: sampleRate, interp: .candan, maxCents: 50
             )
             let fHann = SpectralAnalyzer.refineFundamental(
-                frame, near: fPred, sampleRate: sampleRate, interp: .logParabolicHann, maxCents: 50
+                hannFrame, near: fPred, sampleRate: sampleRate, interp: .logParabolicPreHanned, maxCents: 50
             )
             let fRef = (fCandan + fHann) * 0.5
             let mag = SpectralAnalyzer.magnitude(frame, frequency: fRef, sampleRate: sampleRate)

@@ -23,6 +23,10 @@ export async function verifyPassword(password: string, stored: string): Promise<
   const bits = await crypto.subtle.deriveBits(
     { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' }, key, 256
   )
-  const computed = btoa(String.fromCharCode(...new Uint8Array(bits)))
-  return computed === hashB64
+  const computed = new Uint8Array(bits)
+  const expected = Uint8Array.from(atob(hashB64), c => c.charCodeAt(0))
+  if (computed.length !== expected.length) return false
+  let diff = 0
+  for (let i = 0; i < computed.length; i++) diff |= computed[i] ^ expected[i]
+  return diff === 0
 }

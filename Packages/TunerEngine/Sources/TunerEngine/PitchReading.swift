@@ -45,10 +45,14 @@ public struct PitchReading: Sendable, Equatable {
         self.inharmonicityB = inharmonicityB
     }
 
+    /// Confidence floor for mid/high strings (f0 ≥ 120 Hz). Bass uses a lower
+    /// per-band value in the app layer (see PitchReadingStrobe.minLockConfidence).
+    public static let defaultLockConfidence: Double = 0.9
+
     /// `true` when within the in-tune window (±`lockCents`) and confident enough
     /// to trust. Mirrors the design system's ±3¢ lock so the strobe's freeze and
     /// the engine agree.
-    public func isLocked(lockCents: Double = 3.0, minConfidence: Double = 0.9) -> Bool {
+    public func isLocked(lockCents: Double = 3.0, minConfidence: Double = Self.defaultLockConfidence) -> Bool {
         abs(cents) <= lockCents && confidence >= minConfidence
     }
 }

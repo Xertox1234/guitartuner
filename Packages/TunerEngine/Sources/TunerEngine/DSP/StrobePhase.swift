@@ -20,16 +20,21 @@ import Foundation
 /// frequency error, so `f_inst = f + fs·princarg(Δφ − 2π·f·hop/fs)/(2π·hop)`.
 enum StrobePhase {
 
-    /// Complex single-bin DFT `Σ_k frame[k]·e^{-jθk}`, θ = 2π·f·k/fs. (Local: the
-    /// k index starts at 0; the global sample offset is folded in separately.)
+    /// Complex single-bin DFT `Σ_k frame[k]·e^{-jθk}`, θ = 2π·f·k/fs. Uses a
+    /// complex-oscillator recurrence (same as SpectralAnalyzer.dft) — two cos/sin
+    /// calls at setup, then multiply-adds, no per-sample transcendentals.
     static func bin(_ frame: [Float], frequency f: Double, sampleRate fs: Double) -> (re: Double, im: Double) {
         let w = 2 * Double.pi * f / fs
+        let cw = cos(w), sw = sin(w)
+        var cn = 1.0, sn = 0.0          // (cos wk, sin wk), k = 0
         var re = 0.0, im = 0.0
         for k in 0..<frame.count {
-            let a = w * Double(k)
-            let s = Double(frame[k])
-            re += s * cos(a)
-            im -= s * sin(a)
+            let x = Double(frame[k])
+            re += x * cn
+            im -= x * sn
+            let c2 = cn * cw - sn * sw  // advance phasor to k+1
+            sn = sn * cw + cn * sw
+            cn = c2
         }
         return (re, im)
     }

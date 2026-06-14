@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(Accelerate)
+import Accelerate
+#endif
 
 /// The capture-agnostic DSP pipeline: push samples (from live audio, a file, or a
 /// synthesizer), get `PitchReading`s. Synchronous and deterministic — **this** is
@@ -222,21 +225,30 @@ public final class PitchPipeline {
     }
 
     private func applyHann(_ frame: inout [Float]) {
+        let n = frame.count
         let w: [Float]
-        if let cached = hannCache[frame.count] { w = cached }
-        else { w = Windowing.hann(frame.count); hannCache[frame.count] = w }
+        if let cached = hannCache[n] { w = cached }
+        else { w = Windowing.hann(n); hannCache[n] = w }
+        #if canImport(Accelerate)
+        vDSP_vmul(frame, 1, w, 1, &frame, 1, vDSP_Length(n))
+        #else
         for i in frame.indices { frame[i] *= w[i] }
+        #endif
     }
 
     /// Band selection with hysteresis so we don't chatter at the boundaries.
     private func nextConfig(for f0: Double) -> AnalysisConfig {
+        let hmLo = AnalysisConfig.highMidHz - AnalysisConfig.highMidHysteresis  // 235
+        let hmHi = AnalysisConfig.highMidHz + AnalysisConfig.highMidHysteresis  // 265
+        let mlLo = AnalysisConfig.midLowHz  - AnalysisConfig.midLowHysteresis   // 110
+        let mlHi = AnalysisConfig.midLowHz  + AnalysisConfig.midLowHysteresis   // 130
         switch config.label {
-        case "high": return f0 < 235 ? AnalysisConfig.band(forFrequency: f0) : .high
+        case "high": return f0 < hmLo ? AnalysisConfig.band(forFrequency: f0) : .high
         case "mid":
-            if f0 >= 265 { return .high }
-            if f0 < 110 { return .low }
+            if f0 >= hmHi { return .high }
+            if f0 < mlLo  { return .low }
             return .mid
-        case "low": return f0 >= 130 ? AnalysisConfig.band(forFrequency: f0) : .low
+        case "low": return f0 >= mlHi ? AnalysisConfig.band(forFrequency: f0) : .low
         default: return AnalysisConfig.band(forFrequency: f0)   // acquire → settle
         }
     }

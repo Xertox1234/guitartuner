@@ -11,7 +11,7 @@ extension PitchReading {
     /// Per-frequency confidence floor: bass strings (f0 < 120 Hz) top out at
     /// ~0.75–0.85 NSDF clarity; mid/high strings reach ~0.95. Single source of
     /// truth for both the strobe lock gate and the lock-mode confidence check.
-    var minLockConfidence: Double { frequency < 120 ? 0.75 : 0.9 }
+    var minLockConfidence: Double { frequency < 120 ? 0.75 : PitchReading.defaultLockConfidence }
 
     /// Map a reading to the strobe's render contract.
     func strobeInput(lockCents: Double = LumaMusic.lockCents) -> StrobeInput {

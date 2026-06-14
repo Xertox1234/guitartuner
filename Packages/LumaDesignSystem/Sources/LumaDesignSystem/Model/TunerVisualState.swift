@@ -9,7 +9,9 @@ public enum TunerVisualState: String, CaseIterable, Sendable {
     case sharp  // above pitch — tune down
     case tune   // locked / in tune — the sacred state
 
-    /// Glow hue for the field + bloom (`--glow`).
+    /// Glow hue for the field + bloom (`--glow`). Non-tune states return fixed
+    /// design-token colours; for the tune state use `glow(palette:scheme:)` to
+    /// get the palette-resolved hue.
     public var glow: Color {
         switch self {
         case .tune: .lumaInTune
@@ -17,6 +19,13 @@ public enum TunerVisualState: String, CaseIterable, Sendable {
         case .sharp: .lumaSharp
         case .idle: .lumaFaint
         }
+    }
+
+    /// Palette-resolved glow hue. Returns the palette's tune colour for `.tune`;
+    /// for all other states falls back to the fixed design-token colour.
+    public func glow(palette: LumaPalette, scheme: ColorScheme) -> Color {
+        guard self == .tune else { return glow }
+        return Color(StrobePalette.resolve(scheme, palette: palette).tune, opacity: 1)
     }
 
     /// Accent colour for the readouts (note/cents/state line).

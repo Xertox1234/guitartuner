@@ -27,6 +27,7 @@ public struct Oscilloscope: View {
     var active: Bool
 
     @State private var clock = ScopeClock()
+    @Environment(\.lumaGlow) private var envGlow
 
     public init(freq: Double, cents: Double, state: TunerVisualState, active: Bool) {
         self.freq = freq
@@ -36,15 +37,18 @@ public struct Oscilloscope: View {
     }
 
     public var body: some View {
+        let stateGlow = state == .tune ? envGlow : state.glow
         TimelineView(.animation(paused: !active)) { timeline in
             Canvas { context, size in
-                draw(&context, size, time: timeline.date.timeIntervalSinceReferenceDate)
+                draw(&context, size,
+                     time: timeline.date.timeIntervalSinceReferenceDate,
+                     stateGlow: stateGlow)
             }
         }
         .accessibilityHidden(true)
     }
 
-    private func draw(_ ctx: inout GraphicsContext, _ size: CGSize, time: Double) {
+    private func draw(_ ctx: inout GraphicsContext, _ size: CGSize, time: Double, stateGlow: Color) {
         let w = Double(size.width), h = Double(size.height)
         guard w > 1, h > 1 else { return }
         let mid = h / 2
@@ -56,7 +60,7 @@ public struct Oscilloscope: View {
         clock.phase += dt * ScopeMath.visualRate(freq: freq) * 2 * .pi
         let phase = clock.phase
 
-        let accent: Color = active ? state.glow : .lumaFaint
+        let accent: Color = active ? stateGlow : .lumaFaint
 
         // centre baseline
         var center = Path()

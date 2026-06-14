@@ -1,0 +1,21 @@
+{
+  "name": "luma-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "hono": "^4.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.0",
+    "@cloudflare/workers-types": "^4.20240725.0",
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.0",
+    "wrangler": "^3.65.0"
+  }
+}

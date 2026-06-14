@@ -66,4 +66,12 @@ struct LumaPaletteTests {
         let pal = StrobePalette.resolve(.dark, palette: .crimson)
         #expect(pal.tune == RGB(hex: 0x3DD992))
     }
+
+    // A case rename silently falls back to .aurora for existing users. This catches it.
+    @Test func rawValueRoundTripForAppStorage() {
+        for palette in LumaPalette.allCases {
+            #expect(LumaPalette(rawValue: palette.rawValue) == palette)
+        }
+        #expect(LumaPalette(rawValue: "nonexistent") == nil)
+    }
 }

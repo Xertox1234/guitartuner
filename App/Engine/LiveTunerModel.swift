@@ -59,16 +59,16 @@ final class LiveTunerModel {
 
     @ObservationIgnored private let engine = TunerEngine()
     @ObservationIgnored private let tone = ToneGenerator()
-
-    init() {
-        // didSet not called during init; engine.setA4 is called on start().
-        self.a4 = storedA4
-    }
     @ObservationIgnored private let haptics = LockHaptics()
     @ObservationIgnored private var readTask: Task<Void, Never>?
     @ObservationIgnored private var watchdog: Task<Void, Never>?
     @ObservationIgnored private var lastUpdate = Date.distantPast
     @ObservationIgnored private var lockGate = LockGate()
+
+    init() {
+        // didSet not called during init; engine.setA4 is called on start().
+        self.a4 = storedA4
+    }
 
     // MARK: - Lifecycle
 

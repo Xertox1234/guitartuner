@@ -6,7 +6,7 @@ export async function sendVerificationEmail(
   apiKey: string
 ): Promise<void> {
   const deepLink = `lumatuner://verify?token=${encodeURIComponent(verifyToken)}`
-  await fetch(`${RESEND}/emails`, {
+  const res = await fetch(`${RESEND}/emails`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -16,6 +16,7 @@ export async function sendVerificationEmail(
       html: `<p>Tap to verify: <a href="${deepLink}">Verify Email</a></p><p>Token: <code>${verifyToken}</code></p>`,
     }),
   })
+  if (!res.ok) throw new Error(`Resend error: ${res.status}`)
 }
 
 export async function subscribeToMarketing(
@@ -23,11 +24,12 @@ export async function subscribeToMarketing(
   audienceId: string,
   apiKey: string
 ): Promise<void> {
-  await fetch(`${RESEND}/audiences/${audienceId}/contacts`, {
+  const res = await fetch(`${RESEND}/audiences/${audienceId}/contacts`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, unsubscribed: false }),
   })
+  if (!res.ok) throw new Error(`Resend error: ${res.status}`)
 }
 
 export async function unsubscribeFromMarketing(
@@ -35,9 +37,10 @@ export async function unsubscribeFromMarketing(
   audienceId: string,
   apiKey: string
 ): Promise<void> {
-  await fetch(`${RESEND}/audiences/${audienceId}/contacts`, {
+  const res = await fetch(`${RESEND}/audiences/${audienceId}/contacts`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, unsubscribed: true }),
   })
+  if (!res.ok) throw new Error(`Resend error: ${res.status}`)
 }

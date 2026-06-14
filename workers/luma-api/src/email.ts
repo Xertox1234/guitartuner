@@ -14,9 +14,8 @@ emailRoutes.post('/subscribe', async (c) => {
     .bind(userId).first<Pick<UserRow, 'id' | 'email'>>()
   if (!user) return jsonError('User not found', 404)
 
-  const body = await c.req.json<{ email?: string }>().catch(() => ({}))
-  const email = body.email ?? user.email
-  if (!email) return jsonError('Email required (Apple users must provide real email for marketing)', 400)
+  const email = user.email
+  if (!email) return jsonError('No email on record — Apple users cannot subscribe to marketing without a verified email address', 400)
 
   await c.env.DB.prepare('UPDATE users SET marketing_opt_in = 1 WHERE id = ?').bind(userId).run()
   await subscribeToMarketing(email, c.env.RESEND_AUDIENCE_ID, c.env.RESEND_API_KEY)

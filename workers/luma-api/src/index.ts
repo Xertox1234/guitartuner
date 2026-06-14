@@ -11,4 +11,8 @@ app.route('/tunings', tuningRoutes)
 app.route('/store', storeRoutes)
 app.route('/email', emailRoutes)
 
+app.onError((_err, c) => {
+  return c.json({ error: 'Internal error' }, 500)
+})
+
 export default app

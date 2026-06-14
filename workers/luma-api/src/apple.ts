@@ -46,8 +46,13 @@ export async function validateAppleToken(
   if (payload.aud !== bundleId) return null
   if (payload.exp < Math.floor(Date.now() / 1000)) return null
 
-  const keys = await getAppleKeys()
-  const jwk = keys.find(k => k.kid === header.kid)
+  let keys = await getAppleKeys()
+  let jwk = keys.find(k => k.kid === header.kid)
+  if (!jwk) {
+    jwksCache = null
+    keys = await getAppleKeys()
+    jwk = keys.find(k => k.kid === header.kid)
+  }
   if (!jwk) return null
 
   const key = await crypto.subtle.importKey(

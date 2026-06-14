@@ -14,14 +14,24 @@ authRoutes.post('/register', async (c) => {
   if (!email || !password || password.length < 8) {
     return jsonError('Valid email and password (8+ chars) required', 400)
   }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return jsonError('Valid email address required', 400)
+  }
   const existing = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()
   if (existing) return jsonError('An account with this email exists — sign in instead', 409)
 
   const id = randomUUID()
   const hash = await hashPassword(password)
-  await c.env.DB.prepare(
-    'INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)'
-  ).bind(id, email, hash).run()
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)'
+    ).bind(id, email, hash).run()
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('UNIQUE constraint failed')) {
+      return jsonError('An account with this email exists — sign in instead', 409)
+    }
+    throw e
+  }
 
   const verifyToken = await sign(
     { sub: id, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600 },

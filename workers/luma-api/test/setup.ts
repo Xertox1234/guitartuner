@@ -1,5 +1,16 @@
-import { beforeAll } from 'vitest'
+import { beforeAll, vi } from 'vitest'
 import { env, applyD1Migrations } from 'cloudflare:test'
+
+// Intercept all Resend API calls so tests never make real HTTP requests.
+// This also ensures sendVerificationEmail's res.ok check doesn't throw.
+const originalFetch = globalThis.fetch
+globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+  if (url.startsWith('https://api.resend.com')) {
+    return new Response(JSON.stringify({ id: 'test' }), { status: 200 })
+  }
+  return originalFetch(input, init)
+}) as typeof fetch
 
 const migrations = [
   {

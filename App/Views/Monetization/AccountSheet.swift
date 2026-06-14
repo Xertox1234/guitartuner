@@ -46,7 +46,7 @@ struct AccountSheet: View {
                 } onCompletion: { result in
                     handleAppleResult(result)
                 }
-                .signInWithAppleButtonStyle(.whiteOutline)
+                .signInWithAppleButtonStyle(.black)
                 .frame(height: 44)
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }

@@ -107,7 +107,13 @@ struct BottomDrawer: View {
                     .onTapGesture { loadCard(card) }
                     .contextMenu {
                         Button(role: .destructive) {
-                            Task { try? await cardStore.delete(card) }
+                            Task {
+                                do {
+                                    try await cardStore.delete(card)
+                                } catch {
+                                    cardStore.error = error.localizedDescription
+                                }
+                            }
                         } label: {
                             Label("Delete", systemImage: "trash")
                         }

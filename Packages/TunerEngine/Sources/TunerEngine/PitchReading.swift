@@ -49,10 +49,15 @@ public struct PitchReading: Sendable, Equatable {
     /// per-band value in the app layer (see PitchReadingStrobe.minLockConfidence).
     public static let defaultLockConfidence: Double = 0.9
 
+    /// In-tune window half-width in cents. Matches LumaDesignSystem.LumaMusic.lockCents
+    /// (both are 3.0); the two packages can't share a constant directly (no cross-dep),
+    /// so LUMATests asserts equality as a coupling guard.
+    public static let lockCents: Double = 3.0
+
     /// `true` when within the in-tune window (±`lockCents`) and confident enough
     /// to trust. Mirrors the design system's ±3¢ lock so the strobe's freeze and
     /// the engine agree.
-    public func isLocked(lockCents: Double = 3.0, minConfidence: Double = Self.defaultLockConfidence) -> Bool {
+    public func isLocked(lockCents: Double = Self.lockCents, minConfidence: Double = Self.defaultLockConfidence) -> Bool {
         abs(cents) <= lockCents && confidence >= minConfidence
     }
 }

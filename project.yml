@@ -58,14 +58,31 @@ targets:
         # App Sandbox + audio-input (macOS App Store / notarization); see the file.
         CODE_SIGN_ENTITLEMENTS: App/LUMA.entitlements
 
+  LUMATests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: LUMA/Tests
+    dependencies:
+      - target: LUMA
+    settings:
+      base:
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/LUMA.app/Contents/MacOS/LUMA
+        BUNDLE_LOADER: $(TEST_HOST)
+        GENERATE_INFOPLIST_FILE: YES
+
 # Shared scheme so `xcodebuild -scheme LUMA` works headlessly in CI.
 schemes:
   LUMA:
     build:
       targets:
         LUMA: all
+        LUMATests: [testing]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - LUMATests
     profile:
       config: Release
     archive:

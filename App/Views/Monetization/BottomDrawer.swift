@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 import LumaDesignSystem
 
@@ -243,3 +244,4 @@ private func paletteColor(_ palette: LumaPalette) -> Color {
     case .crimson: return Color(hue: 0.0, saturation: 0.8, brightness: 0.85)
     }
 }
+#endif

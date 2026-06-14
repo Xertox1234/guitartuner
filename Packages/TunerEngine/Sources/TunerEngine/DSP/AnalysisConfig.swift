@@ -45,11 +45,20 @@ public struct AnalysisConfig: Sendable, Equatable {
     /// recent samples so every band can be evaluated from one rolling buffer.
     public static let maxWindow = 4096
 
+    /// Band-transition centre frequencies (Hz). Hysteresis is applied around each.
+    public static let highMidHz: Double = 250
+    public static let midLowHz:  Double = 120
+
+    /// ±Hysteresis window around each boundary. Prevents chattering when f0 hovers
+    /// at a band edge. Derived thresholds in PitchPipeline.nextConfig must use these.
+    public static let highMidHysteresis: Double = 15
+    public static let midLowHysteresis:  Double = 10
+
     /// Choose the band for a known fundamental. Hysteresis is applied by the
     /// caller (it nudges the boundaries) to avoid chattering at the edges.
     public static func band(forFrequency f0: Double) -> AnalysisConfig {
-        if f0 >= 250 { return .high }
-        if f0 >= 120 { return .mid }
+        if f0 >= highMidHz { return .high }
+        if f0 >= midLowHz  { return .mid }
         return .low
     }
 }

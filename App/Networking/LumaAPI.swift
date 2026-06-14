@@ -44,7 +44,7 @@ actor LumaAPI {
     private func perform<B: Encodable, T: Decodable>(
         method: String, path: String, body: B?
     ) async throws -> T {
-        var req = makeRequest(method: method, path: path, body: body, token: jwt)
+        var req = try makeRequest(method: method, path: path, body: body, token: jwt)
         let (data, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse else {
             throw LumaAPIError.server("Invalid response", 0)
@@ -56,7 +56,7 @@ actor LumaAPI {
                 throw LumaAPIError.unauthorized
             }
             setJWT(refreshed)
-            req = makeRequest(method: method, path: path, body: body, token: refreshed)
+            req = try makeRequest(method: method, path: path, body: body, token: refreshed)
             let (data2, response2) = try await session.data(for: req)
             guard let http2 = response2 as? HTTPURLResponse,
                   (200...299).contains(http2.statusCode) else {
@@ -76,12 +76,12 @@ actor LumaAPI {
 
     private func makeRequest<B: Encodable>(
         method: String, path: String, body: B?, token: String?
-    ) -> URLRequest {
-        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+    ) throws -> URLRequest {
+        var req = URLRequest(url: baseURL.appending(component: path))
         req.httpMethod = method
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body, !(body is EmptyBody) {
-            req.httpBody = try? JSONEncoder().encode(body)
+            req.httpBody = try JSONEncoder().encode(body)
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         return req
@@ -94,7 +94,7 @@ actor LumaAPI {
 
     private func refreshToken() async throws -> String? {
         guard let current = jwt else { return nil }
-        var req = URLRequest(url: baseURL.appendingPathComponent("auth/refresh"))
+        var req = URLRequest(url: baseURL.appending(component: "auth/refresh"))
         req.httpMethod = "POST"
         req.setValue("Bearer \(current)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: req)

@@ -2,21 +2,18 @@
 severity: medium
 audit: 2026-06-12-full
 finding: M2
+status: closed
+closed: 2026-06-14
 ---
 
 # M2 — Lock Bloom Color Diverges from Other Lock Affordances Under Non-Default Palettes
 
-Under non-aurora palettes (amber, neon, etc.), the strobe bloom adopts the palette's tune hue
-while every other lock affordance (`.lumaGlow`, `ReducedGauge` ring, `StringRow` lock indicator)
-remains fixed-mint. Only visible with a non-default palette active.
+**Decision (2026-06-14):** All lock affordances follow the palette everywhere.
 
-**Affected files:**
-- `LumaDesignSystem/Strobe/AuroraStrobe.swift` (line 139)
-- `LumaDesignSystem/Strobe/RadialStrobe.swift` (line 151)
-- `LumaDesignSystem/Strobe/MetalStrobe.swift` (`colTune` uniform)
-- `LumaDesignSystem/Components/StringRow.swift` (lock color)
-- `LUMA/App/LiveTunerScreen.swift` (`.lumaGlow`)
-
-**Decision needed:** Is the divergence intentional (strobe follows palette, chrome follows
-app theme), or should all lock affordances track the palette? If the latter, extend
-`LumaColor.tune` / `LumaGlow` to derive from `@Environment(\.lumaPalette)`.
+**Fix applied:**
+- `TunerVisualState.glow(palette:scheme:)` — new method returning palette-resolved tune colour
+- `LiveTunerScreen` — `.lumaGlow(state.glow(palette:scheme:))` sets the environment for all consumers
+- `NoteReadout` — reads `@Environment(\.lumaGlow)`; removed hardcoded `.lumaGlow(.lumaInTune)` override
+- `CentsReadout`, `StateLine` — use env glow for `.tune` state, fixed tokens for flat/sharp/idle
+- `Oscilloscope` — same pattern; glow passed into `draw` to avoid stale capture
+- `StringCell` — reads `@Environment(\.lumaPalette)` + `@Environment(\.colorScheme)`, resolves `tuneColor` via `StrobePalette.resolve`

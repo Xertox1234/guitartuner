@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// A row of selectable string cells for the current tuning, rendered low→high.
-/// A cell can be plain, active (selected), or locked (in tune → mint + glow).
-/// Mirrors `.stringrow` / `.string` / `StringRow` in the export.
+/// A cell can be plain, active (selected), or locked (in tune → palette tune colour
+/// + glow). Mirrors `.stringrow` / `.string` / `StringRow` in the export.
 public struct StringRow: View {
     let tuning: Tuning
     @Binding var activeIdx: Int?
@@ -46,14 +46,21 @@ struct StringCell: View {
     var active: Bool
     var locked: Bool
 
+    @Environment(\.lumaPalette) private var palette
+    @Environment(\.colorScheme) private var scheme
+
+    private var tuneColor: Color {
+        Color(StrobePalette.resolve(scheme, palette: palette).tune, opacity: 1)
+    }
+
     private var borderColor: Color {
-        if locked { return .lumaInTune }
+        if locked { return tuneColor }
         if active { return Color.lumaInk.opacity(0.4) }
         return .lumaLine2
     }
 
     private var fillColor: Color {
-        if locked { return Color.lumaInTune.opacity(0.16) }
+        if locked { return tuneColor.opacity(0.16) }
         if active { return Color.lumaSurface3.opacity(0.8) }
         return Color.lumaSurface.opacity(0.45)
     }
@@ -62,7 +69,7 @@ struct StringCell: View {
         VStack(spacing: 2) {
             Text(string.note)
                 .font(LumaFont.display(21, weight: .semibold))
-                .foregroundStyle(locked ? Color.lumaInTune : Color.lumaInk)
+                .foregroundStyle(locked ? tuneColor : Color.lumaInk)
             Text("\(string.octave)")
                 .font(LumaFont.mono(8.5))
                 .foregroundStyle(active || locked ? Color.lumaDim : Color.lumaFaint)
@@ -81,9 +88,9 @@ struct StringCell: View {
             RoundedRectangle(cornerRadius: Radius.r2, style: .continuous)
                 .stroke(borderColor, lineWidth: 1)
         )
-        .shadow(color: locked ? Color.lumaInTune.opacity(0.30) : .clear, radius: 9)
+        .shadow(color: locked ? tuneColor.opacity(0.30) : .clear, radius: 9)
         .scaleEffect(active || locked ? 1.0 : 0.95)
-        .animation(.spring(response: 0.28, dampingFraction: 0.52), value: active)
+        .animation(.spring(response: 0.28, dampingFraction: 0.52), value: active || locked)
         .accessibilityLabel("String \(string.idx), \(string.note)\(string.octave)")
         .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
     }

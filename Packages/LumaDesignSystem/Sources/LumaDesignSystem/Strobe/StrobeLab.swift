@@ -110,6 +110,7 @@ public struct StrobeLab: View {
                 Picker("Palette", selection: $palette) {
                     ForEach(LumaPalette.allCases) { Text($0.label).tag($0) }
                 }
+                .pickerStyle(.menu)
                 .labelsHidden()
             }
 

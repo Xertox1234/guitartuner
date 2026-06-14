@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(Accelerate)
+import Accelerate
+#endif
 
 /// The spectral core of the precision stack (Plan 06 §5.1). Provides an off-grid
 /// **single-bin DTFT** and a **bias-corrected fundamental refinement** that only
@@ -72,7 +75,11 @@ enum SpectralAnalyzer {
         if interp == .logParabolicHann {
             var wf = frame
             let win = Windowing.hann(N)
+            #if canImport(Accelerate)
+            vDSP_vmul(wf, 1, win, 1, &wf, 1, vDSP_Length(N))
+            #else
             for i in 0..<N { wf[i] *= win[i] }
+            #endif
             source = wf
         } else {
             source = frame

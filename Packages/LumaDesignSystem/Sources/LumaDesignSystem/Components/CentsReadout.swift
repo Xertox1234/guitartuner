@@ -25,6 +25,8 @@ public struct CentsReadout: View {
         }
     }
 
+    @Environment(\.lumaGlow) private var glow
+
     public var body: some View {
         HStack(spacing: 8) {
             Image(systemName: arrow ?? "arrowtriangle.up.fill")
@@ -37,7 +39,7 @@ public struct CentsReadout: View {
                 .font(LumaFont.mono(16))
                 .foregroundStyle(Color.lumaDim)
         }
-        .foregroundStyle(state.accent)
+        .foregroundStyle(state == .tune ? glow : state.accent)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(magnitude) cents \(state == .flat ? "flat" : state == .sharp ? "sharp" : "in tune")")
     }

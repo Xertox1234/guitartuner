@@ -42,11 +42,12 @@ final class LiveTunerModel {
 
     // MARK: Tone + feel
     var toneOn = false { didSet { updateTone() } }
-    var hapticsEnabled = true
+    @ObservationIgnored @AppStorage("hapticsEnabled") var hapticsEnabled = true
     private(set) var inputKind: InputKind = .di
 
     /// Adjustable reference pitch (430…450, default 440), shared by engine + tone.
     var a4: Double = 440 { didSet { applyA4() } }
+    @ObservationIgnored @AppStorage("a4Calibration") private var storedA4: Double = 440
 
     var idle: Bool { cents == nil }
 
@@ -63,6 +64,11 @@ final class LiveTunerModel {
     @ObservationIgnored private var watchdog: Task<Void, Never>?
     @ObservationIgnored private var lastUpdate = Date.distantPast
     @ObservationIgnored private var lockGate = LockGate()
+
+    init() {
+        // didSet not called during init; engine.setA4 is called on start().
+        self.a4 = storedA4
+    }
 
     // MARK: - Lifecycle
 
@@ -188,6 +194,7 @@ final class LiveTunerModel {
     private func applyA4() {
         let clamped = min(450, max(430, a4))
         if clamped != a4 { a4 = clamped }   // in-place clamp; doesn't re-fire didSet
+        storedA4 = clamped
         let e = engine
         Task { await e.setA4(clamped) }
         updateTone()                         // keep the tone on pitch

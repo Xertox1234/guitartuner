@@ -8,14 +8,18 @@ public struct ReducedGauge: View {
     var cents: Double
     var locked: Bool
 
+    @Environment(\.lumaPalette) private var palette
+    @Environment(\.colorScheme) private var scheme
+
     public init(cents: Double, locked: Bool) {
         self.cents = cents
         self.locked = locked
     }
 
     public var body: some View {
+        let tuneColor = Color(StrobePalette.resolve(scheme, palette: palette).tune, opacity: 1)
         Canvas { context, size in
-            draw(&context, size)
+            draw(&context, size, tuneColor: tuneColor)
         }
         .accessibilityElement()
         .accessibilityLabel("Tuning gauge")
@@ -28,7 +32,7 @@ public struct ReducedGauge: View {
         return cents < 0 ? "\(mag) cents flat" : "\(mag) cents sharp"
     }
 
-    private func draw(_ ctx: inout GraphicsContext, _ size: CGSize) {
+    private func draw(_ ctx: inout GraphicsContext, _ size: CGSize, tuneColor: Color) {
         // Fit the 220×220 viewBox from the export, then draw in those coordinates.
         let s = min(size.width, size.height) / 220
         guard s > 0 else { return }
@@ -38,7 +42,7 @@ public struct ReducedGauge: View {
         let cx = 110.0, cy = 124.0, R = 86.0
         let span = StrobeMath.gaugeSpan
         let a = StrobeMath.gaugeAngle(cents: cents)
-        let glow: Color = locked ? .lumaInTune
+        let glow: Color = locked ? tuneColor
             : (cents < -0.001 ? .lumaFlat : (cents > 0.001 ? .lumaSharp : .lumaInk))
 
         // track
@@ -65,7 +69,7 @@ public struct ReducedGauge: View {
             tick.move(to: p0)
             tick.addLine(to: p1)
             ctx.stroke(tick,
-                       with: .color(isCenter ? .lumaInTune : .lumaLine2),
+                       with: .color(isCenter ? tuneColor : .lumaLine2),
                        style: StrokeStyle(lineWidth: isCenter ? 2.4 : (major ? 1.6 : 1), lineCap: .round))
         }
 
@@ -89,10 +93,10 @@ public struct ReducedGauge: View {
         // lock ring
         if locked {
             ctx.drawLayer { layer in
-                layer.addFilter(.shadow(color: Color.lumaInTune.opacity(0.8), radius: 10))
+                layer.addFilter(.shadow(color: tuneColor.opacity(0.8), radius: 10))
                 let rr = R + 8
                 layer.stroke(Path(ellipseIn: CGRect(x: cx - rr, y: cy - rr, width: 2 * rr, height: 2 * rr)),
-                             with: .color(Color.lumaInTune.opacity(0.35)),
+                             with: .color(tuneColor.opacity(0.35)),
                              lineWidth: 1.5)
             }
         }

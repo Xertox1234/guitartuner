@@ -1,6 +1,5 @@
 import SwiftUI
 import LumaDesignSystem
-import TunerEngine
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -33,6 +32,7 @@ struct LiveTunerScreen: View {
     /// Persisted strobe colour palette (Aurora default); shared with Settings via the same key.
     @AppStorage("strobePalette") private var palette: LumaPalette = .aurora
     @Environment(\.openURL) private var openURL
+    @Environment(\.colorScheme) private var colorScheme
 
     private var state: TunerVisualState { TunerVisualState.from(cents: model.cents, locked: model.strobeInput.locked) }
 
@@ -74,7 +74,7 @@ struct LiveTunerScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background { ScreenBackground() }
         .lumaPalette(palette)
-        .lumaGlow(state)
+        .lumaGlow(state.glow(palette: palette, scheme: colorScheme))
         .foregroundStyle(Color.lumaInk)
         .task { await model.start() }
         .onChange(of: stageMode) { _, active in setStageHold(active) }

@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The hero note: a huge display letter, a smaller accidental, and a small mono
-/// octave. Locks to sacred mint with a text bloom when in tune; dims to 0.32 in
-/// the idle state. Mirrors `.note` / `NoteReadout` in the export.
+/// octave. Locks to the active palette's tune colour with a text bloom when in
+/// tune; dims to 0.32 in the idle state. Mirrors `.note` / `NoteReadout` in the
+/// export.
 public struct NoteReadout: View {
     let note: String
     let octave: Int
@@ -16,6 +17,8 @@ public struct NoteReadout: View {
         self.dimmed = dimmed
     }
 
+    @Environment(\.lumaGlow) private var glow
+
     private var parts: (letter: String, accidental: String) { LumaMusic.parts(note) }
 
     public var body: some View {
@@ -27,7 +30,6 @@ public struct NoteReadout: View {
             }
         }
         .opacity(dimmed ? 0.32 : 1)
-        .lumaGlow(.lumaInTune)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(note) \(octave)\(locked ? ", in tune" : "")")
     }
@@ -40,7 +42,7 @@ public struct NoteReadout: View {
             if !parts.accidental.isEmpty {
                 Text(parts.accidental)
                     .font(LumaFont.display(LumaFont.Size.note * 0.34))
-                    .foregroundStyle(locked ? Color.lumaInTune : Color.lumaDim)
+                    .foregroundStyle(locked ? glow : Color.lumaDim)
                     .padding(.top, LumaFont.Size.note * 0.10)
             }
             Text("\(octave)")
@@ -50,7 +52,7 @@ public struct NoteReadout: View {
                 .padding(.top, LumaFont.Size.note * 0.42)
                 .padding(.leading, 6)
         }
-        .foregroundStyle(locked ? Color.lumaInTune : Color.lumaInk)
+        .foregroundStyle(locked ? glow : Color.lumaInk)
         .animation(.easeInOut(duration: 0.36), value: locked)
     }
 }
@@ -61,6 +63,7 @@ private struct NoteReadoutGallery: View {
         VStack(spacing: 40) {
             NoteReadout(note: "A\u{266F}", octave: 2)
             NoteReadout(note: "E", octave: 4, locked: true)
+                .lumaGlow(.lumaInTune)
             NoteReadout(note: "D", octave: 3, dimmed: true)
         }
         .padding(40)

@@ -10,7 +10,10 @@ public struct StateLine: View {
         self.state = state
     }
 
+    @Environment(\.lumaGlow) private var glow
+
     public var body: some View {
+        let tuneGlow = state == .tune ? glow : state.glow
         HStack(spacing: 9) {
             Text(state.tag)
                 .font(LumaFont.mono(10))
@@ -18,12 +21,12 @@ public struct StateLine: View {
                 .textCase(.uppercase)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .overlay(Capsule().stroke(state.glow, lineWidth: 1))
+                .overlay(Capsule().stroke(tuneGlow, lineWidth: 1))
             Text(state.hint)
                 .font(.lumaStateHint)
                 .foregroundStyle(Color.lumaDim)
         }
-        .foregroundStyle(state.glow)
+        .foregroundStyle(tuneGlow)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(state.tag), \(state.hint)")
     }

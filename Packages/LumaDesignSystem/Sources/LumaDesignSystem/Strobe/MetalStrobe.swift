@@ -169,7 +169,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
     /// Match the drawable format + clear to the palette background.
     func configure(_ view: MTKView) {
         view.colorPixelFormat = .bgra8Unorm
-        let bg = StrobePalette.resolve(scheme).bg
+        let bg = StrobePalette.resolve(scheme, palette: palette).bg
         view.clearColor = MTLClearColor(red: bg.r, green: bg.g, blue: bg.b, alpha: 1)
     }
 

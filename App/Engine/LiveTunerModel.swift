@@ -198,13 +198,10 @@ final class LiveTunerModel {
     private func apply(_ r: PitchReading) {
         if mode == .lock, let target = targetNote {
             // Judge only the targeted string: cents relative to it, phase already
-            // referenced to it by the engine. Bass strings (f0 < 120 Hz) have
-            // lower NSDF clarity (~0.75–0.85) than mid/high strings (~0.95), so
-            // the confidence floor is relaxed for them. Octave errors can't cause
-            // a false lock here because a wrong octave lands far outside lockCents.
+            // referenced to it by the engine. Octave errors can't cause a false
+            // lock here because a wrong octave lands far outside lockCents.
             let c = target.cents(of: r.frequency, a4: a4)
-            let minConf = r.frequency < 120 ? 0.75 : 0.9
-            let locked = abs(c) <= LumaMusic.lockCents && r.confidence >= minConf
+            let locked = abs(c) <= LumaMusic.lockCents && r.confidence >= r.minLockConfidence
             note = target.name
             octave = target.octave
             cents = c

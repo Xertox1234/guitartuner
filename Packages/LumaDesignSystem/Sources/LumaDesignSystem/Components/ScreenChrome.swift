@@ -107,9 +107,9 @@ public struct TunerScreenStatic: View {
         _source = State(initialValue: source)
     }
 
-    private var state: TunerVisualState { TunerVisualState.from(cents: cents) }
+    private var locked: Bool { cents.map { abs($0) < LumaMusic.lockCents } ?? false }
+    private var state: TunerVisualState { TunerVisualState.from(cents: cents, locked: locked) }
     private var tuning: Tuning { Tunings.standard(for: instrument) }
-    private var locked: Bool { state == .tune }
     private var lockedIdx: Int? { (locked && mode == .lock) ? activeIdx : nil }
 
     private var displayedFreq: Double {

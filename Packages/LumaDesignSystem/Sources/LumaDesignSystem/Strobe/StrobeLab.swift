@@ -21,7 +21,7 @@ public struct StrobeLab: View {
 
     public init() {}
 
-    private var state: TunerVisualState { TunerVisualState.from(cents: sim.cents) }
+    private var state: TunerVisualState { TunerVisualState.from(cents: sim.cents, locked: sim.input.locked) }
 
     public var body: some View {
         ZStack {

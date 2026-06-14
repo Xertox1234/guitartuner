@@ -14,11 +14,11 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
-    DEVELOPMENT_TEAM: ""  # TODO: set your Team ID (e.g. ABC123XYZ), then run: xcodegen generate
+    DEVELOPMENT_TEAM: "3442937R38"
 
 packages:
   LumaDesignSystem:

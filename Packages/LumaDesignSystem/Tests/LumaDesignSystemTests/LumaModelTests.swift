@@ -77,7 +77,12 @@ final class LumaModelTests: XCTestCase {
         XCTAssertEqual(TunerVisualState.from(cents: nil), .idle)
         XCTAssertEqual(TunerVisualState.from(cents: -10), .flat)
         XCTAssertEqual(TunerVisualState.from(cents: 10), .sharp)
-        XCTAssertEqual(TunerVisualState.from(cents: 1), .tune)   // within ±3¢
-        XCTAssertEqual(TunerVisualState.from(cents: -2.9), .tune)
+        // Near-zero but not confidence-gated: uses cents direction, not .tune
+        XCTAssertEqual(TunerVisualState.from(cents: 1), .sharp)
+        XCTAssertEqual(TunerVisualState.from(cents: -2.9), .flat)
+        // locked: true → .tune regardless of magnitude
+        XCTAssertEqual(TunerVisualState.from(cents: 1, locked: true), .tune)
+        XCTAssertEqual(TunerVisualState.from(cents: -2.9, locked: true), .tune)
+        XCTAssertEqual(TunerVisualState.from(cents: -10, locked: true), .tune)
     }
 }

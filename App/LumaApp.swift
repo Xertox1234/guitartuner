@@ -3,19 +3,24 @@ import LumaDesignSystem
 
 @main
 struct LumaApp: App {
-    /// The single live tuner — one engine, one mic — shared by the main window and
-    /// the macOS menu-bar micro-strobe (EXPERIENCE §8: *same DSP, same look*).
     @State private var model = LiveTunerModel()
 
+    // Shared API actor — one JWT, one URLSession across all three models
+    @State private var accountModel: AccountModel
+    @State private var cardStore: TuningCardStore
+    @State private var gearStore: GearStoreModel
+
     init() {
-        // Register bundled Chakra Petch / JetBrains Mono if present;
-        // otherwise LumaFont falls back to SF Pro Display / SF Mono.
         LumaFonts.registerIfNeeded()
+        let api = LumaAPI()  // single instance shared by all three models
+        _accountModel = State(initialValue: AccountModel(api: api))
+        _cardStore    = State(initialValue: TuningCardStore(api: api))
+        _gearStore    = State(initialValue: GearStoreModel(api: api))
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView(model: model)
+            RootView(model: model, accountModel: accountModel, cardStore: cardStore, gearStore: gearStore)
         }
         #if os(macOS)
         .defaultSize(width: 440, height: 720)
@@ -23,7 +28,6 @@ struct LumaApp: App {
         #endif
 
         #if os(macOS)
-        // A tiny live ring for quick checks while recording, reusing the same model.
         MenuBarExtra {
             MenuBarTuner(model: model)
         } label: {

@@ -79,16 +79,17 @@ if flag("--ci") {
     // Non-regression gates (today's numbers in comments).
     if s.cleanAbsCents > 1.2 { failures.append("clean abs \(s.cleanAbsCents)¢ > 1.2") }     // P1: ~0.77¢
     if s.worstAbsCents > 30 { failures.append("worst abs \(s.worstAbsCents)¢ > 30") }       // ~25.9¢ (bass physics)
-    if s.bassAbsCents > 4.0 { failures.append("bass abs \(s.bassAbsCents)¢ > 4.0") }        // ~3.0¢
+    if s.bassAbsCents > 1.0 { failures.append("bass abs \(s.bassAbsCents)¢ > 1.0") }        // P2: ~0.51¢ (averaging candan+logParabolicHann nulls inter-partial leakage bias)
     // P1 earned these — the bias-corrected spectral refine on the core range.
     if s.highAbsCents > 0.2 { failures.append("high abs \(s.highAbsCents)¢ > 0.2") }        // P1: ~0.11¢
     if s.midAbsCents > 0.4 { failures.append("mid abs \(s.midAbsCents)¢ > 0.4") }           // P1: ~0.23¢
-    if s.lockSigma > 4.0 { failures.append("lock σ \(s.lockSigma)¢ > 4.0") }                // today ~2.6¢
+    if s.lockSigma > 4.0 { failures.append("lock σ \(s.lockSigma)¢ > 4.0") }                // today ~0.42¢
     if s.lockMSMedian > 350 { failures.append("median lock \(s.lockMSMedian)ms > 350") }    // today 43 ms
 
     // TODO gates, unlocked phase-by-phase (assert-ready, kept off until earned):
-    //   P2 (harmonic NLS + B):           bass abs < 1¢, worst < 3¢, missing-fund abs < 5¢;
-    //                                    mid abs < 0.1¢ (removes the inharmonic stiff offset)
+    //   P2 residual (N=4096 inter-partial leakage floor): worst < 3¢ needs larger analysis
+    //                                    window for very-low-bass (f0 < 40 Hz, ~2.6 bin spacing)
+    //   P2 mid:                          mid abs < 0.1¢ (removes the inharmonic stiff offset)
     //   P3 (virtual-strobe lock):        lock σ < 0.05¢
     //   P4 (clock calibration):          absolute-pitch honesty copy + calibration flow
 

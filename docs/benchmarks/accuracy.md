@@ -1,6 +1,6 @@
 # TunerEngine — measured accuracy
 
-_Generated 2026-06-10T19:53:36Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
+_Generated 2026-06-14T23:07:14Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
 
 > Regenerate: `swift run -c release --package-path Packages/TunerEngine Benchmark --out docs/benchmarks`. CI (macOS) regenerates this every build as an artifact; this committed copy is the published spec.
 
@@ -9,9 +9,9 @@ _Generated 2026-06-10T19:53:36Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Determi
 | Metric | Value |
 |---|---|
 | Mean abs cents error (clean) | **0.23¢** |
-| Jitter σ (clean, steady) | 0.50¢ |
-| **Held-note lock-window σ (clean)** | 0.51¢ |
-| Worst-case abs error (clean) | 5.81¢ |
+| Jitter σ (clean, steady) | 0.41¢ |
+| **Held-note lock-window σ (clean)** | 0.42¢ |
+| Worst-case abs error (clean) | 3.94¢ |
 | Octave-error rate (clean) | 0.00% |
 | Median time-to-lock (cold start) | 43 ms |
 | Clean cases / stress cases | 195 / 15 |
@@ -21,15 +21,15 @@ _Generated 2026-06-10T19:53:36Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Determi
 | Signal | n | mean ¢ | abs ¢ | σ ¢ | max ¢ |
 |---|---|---|---|---|---|
 | pure | 10525 | -0.00 | 0.07 | 0.19 | 1.61 |
-| harmonic | 10525 | 0.11 | 0.24 | 0.55 | 5.12 |
-| inharmonic | 10525 | 0.30 | 0.38 | 0.59 | 5.81 |
+| harmonic | 10525 | 0.02 | 0.27 | 0.53 | 3.94 |
+| inharmonic | 10525 | 0.21 | 0.34 | 0.41 | 3.46 |
 
 ## By range (clean) — steady vs held-note lock window
 
 | Range | n | abs ¢ | σ ¢ | max ¢ | lock abs ¢ | lock σ ¢ |
 |---|---|---|---|---|---|---|
-| bass (<82 Hz) | 6762 | 0.59 | 1.01 | 5.81 | 0.57 | 0.98 |
-| mid (82–330 Hz) | 13401 | 0.15 | 0.20 | 1.61 | 0.14 | 0.19 |
+| bass (<82 Hz) | 6762 | 0.51 | 0.79 | 3.94 | 0.49 | 0.78 |
+| mid (82–330 Hz) | 13401 | 0.19 | 0.23 | 1.61 | 0.18 | 0.22 |
 | high (>330 Hz) | 11412 | 0.11 | 0.13 | 0.64 | 0.11 | 0.14 |
 
 ## Stress cases (reported, not pooled into the headline)
@@ -38,19 +38,19 @@ Real-world realities the default model omits — the families P1–P3 must impro
 
 | Family | n | abs ¢ | σ ¢ | lock σ ¢ | max ¢ | octave err |
 |---|---|---|---|---|---|---|
-| weak-fund | 348 | 0.27 | 0.54 | 0.34 | 2.33 | 0 |
-| missing-fund | 348 | 0.28 | 0.54 | 0.33 | 2.40 | 0 |
-| decay-glide | 704 | 4.17 | 3.38 | 1.06 | 14.91 | 0 |
-| vibrato | 617 | 14.79 | 16.93 | 16.86 | 27.31 | 0 |
+| weak-fund | 348 | 0.36 | 0.45 | 0.43 | 1.60 | 0 |
+| missing-fund | 348 | 0.36 | 0.45 | 0.40 | 1.57 | 0 |
+| decay-glide | 704 | 4.21 | 3.37 | 1.02 | 14.07 | 0 |
+| vibrato | 617 | 14.86 | 16.96 | 16.89 | 27.31 | 0 |
 
 ## Noise robustness (inharmonic, abs cents vs SNR)
 
 | SNR (dB) | n | abs ¢ | σ ¢ | lock σ ¢ | octave errors |
 |---|---|---|---|---|---|
-| 40 | 628 | 0.30 | 0.36 | 0.36 | 0 |
-| 20 | 628 | 0.30 | 0.39 | 0.37 | 0 |
-| 10 | 628 | 0.46 | 0.58 | 0.61 | 0 |
-| 5 | 628 | 0.70 | 0.89 | 0.90 | 0 |
+| 40 | 628 | 0.29 | 0.21 | 0.19 | 0 |
+| 20 | 628 | 0.28 | 0.26 | 0.24 | 0 |
+| 10 | 628 | 0.45 | 0.54 | 0.54 | 0 |
+| 5 | 628 | 0.70 | 0.87 | 0.89 | 0 |
 
 ## CRLB floor & efficiency (held E2, N=4096)
 
@@ -58,10 +58,10 @@ Physical limit (single-tone vs harmonic, ∝1/k weight 6.45), and the measured h
 
 | SNR (dB) | CRLB σ single ¢ | CRLB σ harmonic ¢ | measured lock σ ¢ | σ / harmonic floor |
 |---|---|---|---|---|
-| 40 | 0.0212 | 0.0083 | 0.011 | 1.3× |
-| 20 | 0.2121 | 0.0835 | 0.050 | 0.6× |
-| 10 | 0.6706 | 0.2640 | 0.109 | 0.4× |
-| 5 | 1.1926 | 0.4695 | 0.262 | 0.6× |
+| 40 | 0.0212 | 0.0083 | 0.007 | 0.8× |
+| 20 | 0.2121 | 0.0835 | 0.053 | 0.6× |
+| 10 | 0.6706 | 0.2640 | 0.158 | 0.6× |
+| 5 | 1.1926 | 0.4695 | 0.284 | 0.6× |
 
 _Absolute-pitch clock floor: a device sample clock off by N ppm reads `1200·log₂(1+N/10⁶)` ¢ sharp — 44 ppm ≈ 0.076¢, 100 ppm ≈ 0.173¢ (1 ¢ = 578 ppm). Relative/strobe tuning is clock-immune; absolute is clock-bound until calibrated (Plan 06 §3, §7; P4)._
 
@@ -69,11 +69,11 @@ _Absolute-pitch clock floor: a device sample clock off by N ppm reads `1200·log
 
 | Note | true Hz | abs ¢ | octave error |
 |---|---|---|---|
-| B0 | 30.87 | 1.49 | no |
-| E1 | 41.20 | 1.64 | no |
-| A1 | 55.00 | 0.33 | no |
-| D2 | 73.42 | 0.08 | no |
-| G2 | 98.00 | 0.05 | no |
+| B0 | 30.87 | 2.10 | no |
+| E1 | 41.20 | 0.56 | no |
+| A1 | 55.00 | 0.58 | no |
+| D2 | 73.42 | 0.41 | no |
+| G2 | 98.00 | 0.21 | no |
 
 ## Window / hop strategy (48 kHz)
 

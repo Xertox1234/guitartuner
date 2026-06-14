@@ -10,7 +10,7 @@ export async function sendVerificationEmail(
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'LUMA <noreply@mail.lumatuner.com>',
+      from: 'LUMA <noreply@lumatuner.com>',
       to,
       subject: 'Verify your LUMA account',
       html: `<p>Tap to verify: <a href="${deepLink}">Verify Email</a></p><p>Token: <code>${verifyToken}</code></p>`,

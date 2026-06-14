@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "luma"
-database_id = "REPLACE_AFTER_wrangler_d1_create"
+database_id = "e080c4f9-f3dc-4814-acd2-14a6299a2b83"
 
 [vars]
 APPLE_BUNDLE_ID = "com.luma.tuner"

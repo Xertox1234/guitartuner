@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-06-14-monetization-design.md`
 **Backend plan:** `docs/superpowers/plans/2026-06-14-monetization-backend.md` ← implement first
-**Backend URL:** `WORKER_URL` (replace with the deployed Cloudflare Worker URL after backend plan is done)
+**Backend URL:** `https://luma-api.william-tower.workers.dev`
 
 ---
 

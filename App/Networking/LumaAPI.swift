@@ -46,7 +46,9 @@ actor LumaAPI {
     ) async throws -> T {
         var req = makeRequest(method: method, path: path, body: body, token: jwt)
         let (data, response) = try await session.data(for: req)
-        let http = response as! HTTPURLResponse
+        guard let http = response as? HTTPURLResponse else {
+            throw LumaAPIError.server("Invalid response", 0)
+        }
 
         if http.statusCode == 401 {
             guard let refreshed = try? await refreshToken() else {
@@ -55,7 +57,13 @@ actor LumaAPI {
             }
             setJWT(refreshed)
             req = makeRequest(method: method, path: path, body: body, token: refreshed)
-            let (data2, _) = try await session.data(for: req)
+            let (data2, response2) = try await session.data(for: req)
+            guard let http2 = response2 as? HTTPURLResponse,
+                  (200...299).contains(http2.statusCode) else {
+                let msg = (try? JSONDecoder().decode(APIErrorBody.self, from: data2))?.error ?? "Unknown error"
+                let code = (response2 as? HTTPURLResponse)?.statusCode ?? 0
+                throw LumaAPIError.server(msg, code)
+            }
             return try decode(data2)
         }
 
@@ -90,7 +98,7 @@ actor LumaAPI {
         req.httpMethod = "POST"
         req.setValue("Bearer \(current)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: req)
-        guard (response as! HTTPURLResponse).statusCode == 200 else { return nil }
-        return (try? JSONDecoder().decode(TokenResponse.self, from: data))?.token
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+        return try JSONDecoder().decode(TokenResponse.self, from: data).token
     }
 }

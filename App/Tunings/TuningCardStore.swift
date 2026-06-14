@@ -62,6 +62,11 @@ final class TuningCardStore {
     }
 
     private func persistCache() {
-        try? JSONEncoder().encode(cards).write(to: cacheURL, options: .atomic)
+        do {
+            try JSONEncoder().encode(cards).write(to: cacheURL, options: .atomic)
+        } catch {
+            // Non-fatal: stale cache on next launch; no user-visible failure
+            assertionFailure("TuningCardStore: cache write failed — \(error)")
+        }
     }
 }

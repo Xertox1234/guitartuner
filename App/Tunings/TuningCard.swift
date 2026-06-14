@@ -19,7 +19,12 @@ struct TuningCard: Identifiable, Codable, Hashable, Sendable {
 
     /// The decoded strings array, suitable for building a `Tuning`.
     var strings: [GuitarString] {
-        (try? JSONDecoder().decode([GuitarString].self, from: Data(stringsJson.utf8))) ?? []
+        guard let data = stringsJson.data(using: .utf8),
+              let result = try? JSONDecoder().decode([GuitarString].self, from: data) else {
+            assertionFailure("TuningCard: failed to decode strings_json — card id=\(id) may be corrupt")
+            return []
+        }
+        return result
     }
 
     /// A `Tuning` that can be passed directly to `LiveTunerModel.setTuning(_:)`.

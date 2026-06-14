@@ -31,7 +31,7 @@ public struct Tuning: Identifiable, Hashable, Sendable {
     }
 }
 
-public enum Instrument: String, CaseIterable, Identifiable, Sendable {
+public enum Instrument: String, CaseIterable, Codable, Identifiable, Sendable {
     case guitar, bass
     public var id: String { rawValue }
 }

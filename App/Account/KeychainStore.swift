@@ -5,7 +5,8 @@ import Security
 struct KeychainStore {
     let service: String
 
-    func write(key: String, value: String) {
+    @discardableResult
+    func write(key: String, value: String) -> Bool {
         let data = Data(value.utf8)
         let query: [String: Any] = [
             kSecClass as String:       kSecClassGenericPassword,
@@ -15,7 +16,8 @@ struct KeychainStore {
         SecItemDelete(query as CFDictionary)
         var add = query
         add[kSecValueData as String] = data
-        SecItemAdd(add as CFDictionary, nil)
+        let status = SecItemAdd(add as CFDictionary, nil)
+        return status == errSecSuccess
     }
 
     func read(key: String) -> String? {

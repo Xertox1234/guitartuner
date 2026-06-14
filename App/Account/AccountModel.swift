@@ -5,7 +5,7 @@ import AuthenticationServices
 final class AccountModel {
     var isSignedIn: Bool
     var isLoading = false
-    var error: String?
+    var error: String?  // reserved for background error surfacing; callers use throws today
 
     let api: LumaAPI
 

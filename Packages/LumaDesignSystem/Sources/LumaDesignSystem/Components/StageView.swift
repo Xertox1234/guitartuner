@@ -32,7 +32,7 @@ public struct StageView: View {
         self.onExit = onExit
     }
 
-    private var state: TunerVisualState { TunerVisualState.from(cents: cents) }
+    private var state: TunerVisualState { TunerVisualState.from(cents: cents, locked: input.locked) }
 
     public var body: some View {
         ZStack {

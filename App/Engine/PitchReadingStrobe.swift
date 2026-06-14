@@ -10,10 +10,11 @@ import TunerEngine
 extension PitchReading {
     /// Map a reading to the strobe's render contract.
     func strobeInput(lockCents: Double = LumaMusic.lockCents) -> StrobeInput {
-        StrobeInput(
+        let minConf = frequency < 120 ? 0.75 : 0.9
+        return StrobeInput(
             cents: cents,
             phase: phase,
-            locked: isLocked(lockCents: lockCents)
+            locked: isLocked(lockCents: lockCents, minConfidence: minConf)
         )
     }
 }

@@ -30,7 +30,7 @@ struct LiveTunerScreen: View {
     @AppStorage("strobePalette") private var palette: LumaPalette = .aurora
     @Environment(\.openURL) private var openURL
 
-    private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
+    private var state: TunerVisualState { TunerVisualState.from(cents: model.cents, locked: model.strobeInput.locked) }
 
     /// The string cell glows mint only when we're locked *onto that target*.
     private var lockedIdx: Int? {

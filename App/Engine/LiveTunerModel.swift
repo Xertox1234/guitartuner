@@ -219,8 +219,9 @@ final class LiveTunerModel {
             cents = r.cents
             frequency = r.frequency
             confidence = r.confidence
-            strobeInput = r.strobeInput()
-            handleLock(r.isLocked(lockCents: LumaMusic.lockCents), noteFreq: r.note.frequency(a4: a4))
+            let si = r.strobeInput()
+            strobeInput = si
+            handleLock(si.locked, noteFreq: r.note.frequency(a4: a4))
         }
         lastUpdate = Date()
     }

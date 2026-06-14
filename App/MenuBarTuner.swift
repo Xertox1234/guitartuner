@@ -14,7 +14,7 @@ struct MenuBarTuner: View {
     /// Shared with the live screen + Settings via the same key.
     @AppStorage("strobePalette") private var palette: LumaPalette = .aurora
 
-    private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
+    private var state: TunerVisualState { TunerVisualState.from(cents: model.cents, locked: model.strobeInput.locked) }
 
     var body: some View {
         VStack(spacing: Space.s4) {
@@ -57,7 +57,7 @@ struct MenuBarTuner: View {
 struct MenuBarLabel: View {
     var model: LiveTunerModel
 
-    private var state: TunerVisualState { TunerVisualState.from(cents: model.cents) }
+    private var state: TunerVisualState { TunerVisualState.from(cents: model.cents, locked: model.strobeInput.locked) }
 
     var body: some View {
         let caption = MenuBarStrobe.caption(note: model.note, running: model.running, state: state)

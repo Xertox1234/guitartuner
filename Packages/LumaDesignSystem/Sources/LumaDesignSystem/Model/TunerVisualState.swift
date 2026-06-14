@@ -42,11 +42,13 @@ public enum TunerVisualState: String, CaseIterable, Sendable {
         }
     }
 
-    /// Derive the visual state from a signed cents value (negative = flat).
+    /// Derive the visual state from a signed cents value and the confidence-gated
+    /// lock flag. `locked` must be `true` to reach `.tune` — cents proximity alone
+    /// is not sufficient (avoids desync with the strobe bloom during note decay).
     /// `nil` cents means no signal → idle.
-    public static func from(cents: Double?) -> TunerVisualState {
+    public static func from(cents: Double?, locked: Bool = false) -> TunerVisualState {
         guard let cents else { return .idle }
-        if abs(cents) < LumaMusic.lockCents { return .tune }
+        if locked { return .tune }
         return cents < 0 ? .flat : .sharp
     }
 }

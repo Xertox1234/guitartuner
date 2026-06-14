@@ -86,9 +86,17 @@ enum HarmonicEstimator {
             guard fPred < nyquist * 0.95 else { break }
             guard fPred / binSpacing >= minBin else { continue }
 
-            let fRef = SpectralAnalyzer.refineFundamental(
+            // Average Candan (rectangular-window) and log-parabolic (Hann-window)
+            // estimates. At very low bass (partial spacing ~2.7 bins) the two methods
+            // have opposite-signed leakage biases that mostly cancel at the midpoint,
+            // reducing the systematic f0 offset without increasing variance.
+            let fCandan = SpectralAnalyzer.refineFundamental(
                 frame, near: fPred, sampleRate: sampleRate, interp: .candan, maxCents: 50
             )
+            let fHann = SpectralAnalyzer.refineFundamental(
+                frame, near: fPred, sampleRate: sampleRate, interp: .logParabolicHann, maxCents: 50
+            )
+            let fRef = (fCandan + fHann) * 0.5
             let mag = SpectralAnalyzer.magnitude(frame, frequency: fRef, sampleRate: sampleRate)
             collected.append((n: n, freq: fRef, mag: mag))
         }

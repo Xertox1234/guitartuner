@@ -77,19 +77,20 @@ final class AudioCapture: @unchecked Sendable {
 
         calibration?.observe(sampleCount: frames, wallTime: CACurrentMediaTime())
 
+        let safeFrames = min(frames, scratch.count)
         scratch.withUnsafeMutableBufferPointer { out in
             if channelCount == 1 {
                 guard let base = out.baseAddress else { return }
-                base.update(from: channels[0], count: frames)
+                base.update(from: channels[0], count: safeFrames)
             } else {
                 let scale = 1 / Float(channelCount)
-                for i in 0..<frames {
+                for i in 0..<safeFrames {
                     var sum: Float = 0
                     for c in 0..<channelCount { sum += channels[c][i] }
                     out[i] = sum * scale
                 }
             }
-            ring.write(UnsafeBufferPointer(rebasing: out[0..<frames]))
+            ring.write(UnsafeBufferPointer(rebasing: out[0..<safeFrames]))
         }
     }
 

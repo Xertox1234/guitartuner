@@ -4,6 +4,47 @@ Deduplication index for all findings surfaced across audit runs. Before adding a
 
 ---
 
+## 2026-06-15 — full (automated, 5 agents)
+
+| Finding | File | Severity | Status |
+|---------|------|----------|--------|
+| CI benchmark gate contradicts committed spec — relaxed 2.5¢ → 4.0¢ | `Packages/TunerEngine/Sources/Benchmark/main.swift` | Critical | ✅ verified |
+| Missing triple-buffer semaphore in StrobeRenderer | `LumaDesignSystem/Strobe/MetalStrobe.swift` | Critical | ✅ verified |
+| Bloom activates without confidence gate — false-lock visual | `AuroraStrobe.swift`, `RadialStrobe.swift`, `MetalStrobe.swift` | High | ✅ verified |
+| StrobeInput contract — Double→Float, isIdle added | `LumaDesignSystem/Strobe/StrobeInput.swift` + 11 callers | High | ✅ verified |
+| PrivacyInfo.xcprivacy empty collected-data types | `App/PrivacyInfo.xcprivacy` | High | ✅ verified |
+| AudioCapture RT-thread allocation (scratch buffer resize) | `TunerEngine/Capture/AudioCapture.swift` | High | ✅ verified |
+| AudioCapture force-unwrap on RT thread | `TunerEngine/Capture/AudioCapture.swift` | High | ✅ verified |
+| BenchmarkTests tolerance 48× too loose | `TunerEngineTests/BenchmarkTests.swift` | High | ✅ verified |
+| testCaseRunnerScoresCleanTone lockStats always empty | `TunerEngineTests/BenchmarkTests.swift` | High | ✅ verified |
+| spectralRefineMinHz duplicates AnalysisConfig.midLowHz | `TunerEngine/Pipeline/PitchPipeline.swift` | Medium | ⏸ todo: docs/todos/medium-M1-spectralRefineMinHz-duplicate.md |
+| Gate thresholds scattered outside AnalysisConfig | `PitchPipeline.swift`, `Smoothing.swift`, `PitchDetector.swift` | Medium | ⏸ todo: docs/todos/medium-M2-gate-thresholds-outside-AnalysisConfig.md |
+| No post-NSDF octave-history guard | `TunerEngine/DSP/PitchDetector.swift` | Medium | ⏸ todo: docs/todos/medium-M3-no-octave-history-guard.md |
+| UserDefaults bypass in BottomDrawer | `App/Views/Monetization/BottomDrawer.swift` | Medium | ⏸ todo: docs/todos/medium-M4-userdefaults-bypass-bottomdrawer.md |
+| Palette Color(hue:) magic values in two views | `BottomDrawer.swift`, `SaveCardSheet.swift` | Medium | ⏸ todo: docs/todos/medium-M5-palette-color-hue-magic-values.md |
+| System fonts in monetization screens | multiple monetization views | Medium | ⏸ todo: docs/todos/medium-M6-system-fonts-monetization-screens.md |
+| DispatchQueue.main.async in @MainActor view | `App/Views/Monetization/BottomDrawer.swift` | Medium | ⏸ todo: docs/todos/medium-M7-dispatchqueue-main-async.md |
+| swiftui.md "no networking" rule stale | `docs/rules/swiftui.md` | Medium | ⏸ todo: docs/todos/medium-M8-swiftui-rule-networking-stale.md |
+| StringRow.activeIdx dead no-op write | `LumaDesignSystem/Components/StringRow.swift` | Medium | ⏸ todo: docs/todos/medium-M9-stringrow-activeidx-dead-write.md |
+| MetalStrobe no Metal path for Radial | `LumaDesignSystem/Strobe/StrobeField.swift` | Medium | ⏸ todo: docs/todos/medium-M10-metal-radial-parity-gap.md |
+| StrobeLab uses Combine | `LumaDesignSystem/Strobe/StrobeLab.swift` | Medium | ⏸ todo: docs/todos/medium-M11-strobelab-uses-combine.md |
+| useMetalRenderer silently ignored for Radial | `LumaDesignSystem/Strobe/StrobeField.swift` | Medium | ⏸ todo: docs/todos/medium-M12-usemetalrenderer-ignored-radial.md |
+| Pervasive XCTest in 16 of 19 test files | `TunerEngine/Tests/` | Medium | ⏸ todo: docs/todos/medium-M13-xctest-migration.md |
+| PitchDetectorTests copy-paste, needs parameterization | `TunerEngineTests/PitchDetectorTests.swift` | Medium | ⏸ todo: docs/todos/medium-M14-pitchdetectortests-parameterization.md |
+| PipelineTests tolerances 12–40× loose | `TunerEngineTests/PipelineTests.swift` | Medium | ⏸ todo: docs/todos/medium-M15-pipelinetests-tolerances-loose.md |
+| No low-B octave-safety test under stress in swift test | `TunerEngine/Tests/` | Medium | ⏸ todo: docs/todos/medium-M16-no-lowB-octave-stress-test.md |
+| StimulusTests bypasses full pipeline | `TunerEngineTests/StimulusTests.swift` | Medium | ⏸ todo: docs/todos/medium-M17-stimulustests-bypasses-pipeline.md |
+| Networking without CLAUDE.md annotation | `App/Networking/LumaAPI.swift` | Medium | ⏸ todo: docs/todos/medium-M18-networking-claudemd-annotation.md |
+| Autocorrelation prefix-energy scalar loop | `TunerEngine/DSP/Autocorrelation.swift` | Low | ⏸ todo: docs/todos/low-L1-autocorrelation-scalar-loop.md |
+| PhaseIntegrator.lsSlope scalar loops | `TunerEngine/DSP/PhaseIntegrator.swift` | Low | ⏸ todo: docs/todos/low-L2-phaseintegrator-lsslope-scalar-loops.md |
+| recent() circular-buffer scalar copy | `TunerEngine/Pipeline/PitchPipeline.swift` | Low | ⏸ todo: docs/todos/low-L3-recent-scalar-copy.md |
+| LumaConfig URL force-unwrap | `App/Networking/LumaConfig.swift` | Low | ⏸ todo: docs/todos/low-L4-lumaconfig-url-force-unwrap.md |
+| StrobeRenderer.configure() clearColor double-write | `LumaDesignSystem/Strobe/MetalStrobe.swift` | Low | ⏸ todo: docs/todos/low-L5-stroberenderer-clearcolor-double-write.md |
+| AuroraStrobe.wrappedDelta wrong home | `LumaDesignSystem/Strobe/RadialStrobe.swift` | Low | ⏸ todo: docs/todos/low-L6-wrappeddelta-wrong-home.md |
+| FixturesTests UUID temp path | `TunerEngineTests/FixturesTests.swift` | Low | ⏸ todo: docs/todos/low-L7-fixturestests-uuid-temp-path.md |
+
+---
+
 ## 2026-06-12 — full (automated, 5 agents)
 
 | Finding | File | Severity | Status |

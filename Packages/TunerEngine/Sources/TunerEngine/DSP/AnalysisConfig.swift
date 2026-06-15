@@ -55,7 +55,7 @@ public struct AnalysisConfig: Sendable, Equatable {
 
     /// Band-transition centre frequencies (Hz). Hysteresis is applied around each.
     public static let highMidHz:      Double = 250
-    public static let midLowHz:       Double = 120
+    public static let midLowHz:       Double = 120  // also gates spectral-refine in PitchPipeline
     public static let lowUltraLowHz:  Double = 40
 
     /// ±Hysteresis window around each boundary. Prevents chattering when f0 hovers

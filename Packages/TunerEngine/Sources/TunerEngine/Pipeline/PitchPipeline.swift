@@ -36,12 +36,6 @@ public final class PitchPipeline {
     /// Typical settled clean-bass: ~0.12¢; decay-glide early window: ≥2¢.
     static let lockPrecisionThreshold: Double = 1.0   // cents
 
-    /// At/above this fundamental the core range uses the bias-corrected spectral
-    /// refine (Plan 06 P1); below it the fundamental bin is too low for a clean
-    /// single-frame spectral peak (the negative-frequency image leaks in), so bass
-    /// stays on the phase-vocoder until P2's harmonic comb. Tunable in one place.
-    static let spectralRefineMinHz: Double = 120
-
     // Rolling, preprocessed analysis buffer (circular, capacity = longest window).
     private let cap = AnalysisConfig.maxWindow
     private var ring: [Float]
@@ -144,7 +138,7 @@ public final class PitchPipeline {
         var frequency = det.frequency
         var harmonicB: Double? = nil
 
-        if det.frequency >= Self.spectralRefineMinHz {
+        if det.frequency >= AnalysisConfig.midLowHz {
             // P1: bias-corrected spectral refine for mid/high.
             frequency = SpectralAnalyzer.refineFundamental(
                 frame, near: det.frequency, sampleRate: sampleRate, interp: .candan, maxCents: 50

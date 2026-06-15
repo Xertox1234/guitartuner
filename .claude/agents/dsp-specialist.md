@@ -43,6 +43,13 @@ You are a DSP algorithm specialist for the LUMA tuner. You have deep knowledge o
 - **Known failure:** 4× virtual-Candan fine-step amplifies asymmetric contamination from neighboring partials in dense bass spectra. See `docs/solutions/harmonic-estimator-virtual-candan-failure.md`.
 - **Do not use** virtual-Candan expansion for fundamental frequencies ≤82 Hz. Use coarse-only + OLS.
 
+### PhaseIntegrator (P3 — Phase-Slope Lock)
+- Accumulates residual unwrapped phase of the fundamental across a sustained note; LS-fits the slope to get sub-cent frequency deviation.
+- **Invariant: always `maxPartials=1, inharmonicityB=0`.** Multi-partial Fisher fusion requires accurate `fRef_n`; HarmonicEstimator B estimates are unreliable for very low bass pure tones (see `docs/solutions/phase-integrator-n1-only-design-2026-06-14.md`). For n=1: inharmonicity error ≈ 0.26¢ max — same floor as P1/P2.
+- **Self-correction property:** if `refF0` is briefly biased (from HarmonicEstimator's +11¢ sidelobe contamination for B0 pure tones), the LS slope recovers it: `f0_true = refF0 + slope/(2π)`. The integrator converges correctly as long as the bias is within ±50¢. Do NOT add "fix" logic to pre-correct `refF0`.
+- Runs only when `SustainGate.stable == true`. Resets on every frame where stable is false and on unvoiced streaks ≥ 8.
+- **Known sidelobe contamination for B0:** `HarmonicEstimator` with `minBin=6` uses Hann sidelobes as fake partials for noiseless B0 pure tones, producing bogus f0 (+11¢) in `smoothed` for the first ~20 hops. This is a pure-tone-only effect. Real strings (inharmonic with `Stimulus.inharmonicString`) are unaffected. See `docs/solutions/harmonic-estimator-virtual-candan-failure.md` (2026-06-14 section).
+
 ### Window / Hop Sizing
 ```
 high  (≥250 Hz):  window=1024, hop=256   (75% overlap)
@@ -84,6 +91,8 @@ When auditing DSP code:
 - [ ] For bass frequencies: is the harmonic estimator using OLS regression (not virtual-Candan)?
 - [ ] Does any change risk octave-error regression? If so, was `BenchmarkSuite.swift` run?
 - [ ] Is `PitchPipeline` still free of `AVAudioEngine` imports?
+- [ ] Does `phaseIntegrator.feed()` use `maxPartials: 1` and `inharmonicityB: 0`? If not, justify why the B estimate is reliable for the affected frequency range.
+- [ ] Is `phaseIntegrator.reset()` called in both `reset()` and `handleUnvoiced()` (on streak ≥ 8)?
 
 ## Output Format
 

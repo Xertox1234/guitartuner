@@ -77,3 +77,27 @@ Raising from 4 to 6 drops exactly the two contaminated low B0 partials while kee
 For a multi-partial WLS estimator, **regression averaging over many weighted partials is more robust than per-partial sub-bin precision when the signal is contaminated.** A "coarser" per-partial estimate that doesn't amplify contamination lets the regression do its job. This is the Fisher-weighting benefit: high-n partials (with weight n²) dominate and they have well-separated neighbors.
 
 Fine-step refinement only helps when the per-partial signal is clean (well-separated partials, high SNR, low n). For bass strings at 30–82 Hz with N=4096, it doesn't pay.
+
+---
+
+## 2026-06-14 update: Pure-tone B0 produces a systematic +11¢ f0 bias via sidelobe contamination
+
+For a **noiseless pure tone** at B0 (~31 Hz), the included partials (n≥3 above `minBin=6`) are Hann-window sidelobes of the fundamental, not true harmonic energy. This is distinct from the inter-partial contamination described above.
+
+**Mechanism:** For B0 at fs=48 kHz, N=4096, k0≈2.635:
+
+| n | exact bin | nearest int | offset |
+|---|-----------|-------------|--------|
+| 3 | 7.905 | 8 | +21¢ |
+| 5 | 13.175 | 13 | −23¢ |
+| 6 | 15.810 | 16 | +21¢ |
+
+HarmonicEstimator's magnitude gate normalises to the loudest *included* partial — which is itself a sidelobe (~0.08% of fundamental energy). All three sidelobe "partials" pass the relative gate. WLS regression over n=3,5,6 yields:
+- **Bogus f0 ≈ +11¢ from true B0** (the per-partial offsets partially cancel, net positive)
+- **Bogus B ≈ −2.3×10⁻⁴** (negative — safely discarded by `B > 0` guard in `partialFreq`)
+
+**Effect on callers:** The +11¢ f0 bias propagates into `smoother` output for the first ~20 hops (before `PhaseIntegrator` has enough data). After that, the integrator self-corrects via its LS slope (see `phase-integrator-n1-only-design-2026-06-14.md`).
+
+**This is a pure-tone-only effect.** Real guitar strings have harmonic energy at n=3+ that dominates leakage by 40×+. Benchmarks using `Stimulus.inharmonicString` are unaffected; only `Stimulus.pure` for B0 triggers it.
+
+**Why PhaseIntegrator is immune:** PhaseIntegrator visits n=1 (the real fundamental), so `peakMag` is anchored to full fundamental energy. Hann leakage at n≥3 (5+ bins away) is ~0.08% of fundamental — well below the 4% magnitude gate. All sidelobe partials are excluded unconditionally regardless of what `inharmonicityB` is passed in.

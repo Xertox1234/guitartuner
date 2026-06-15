@@ -80,10 +80,14 @@ accuracy, so worth doing well.
       (f0, B) stiff-string WLS (`HarmonicEstimator` + `Inharmonicity`), Fisher-weighted,
       replaces phase-vocoder for bass (<120 Hz). Measured: bass **2.98 ¢ → 0.59 ¢**
       (B0 11.89 ¢ → 1.49 ¢), clean mean **0.77 ¢ → 0.23 ¢**, octave rate held at 0 %.
-- [ ] **P2 residual — bass worst-case gate.** The ≤1 ¢ bass mean target is met but
-      the **worst ≤3 ¢** target is not (max 5.81 ¢ today). Chase the tail cases.
-- [ ] **P3 — Virtual-strobe lock.** Tretter long-window phase-slope, multi-partial, with
-      an uncertainty readout. Target: held-note **σ ≤0.05 ¢**; "LOCKED ±0.0X ¢" in UI.
+- [x] **P2 residual — bass worst-case gate.** Added `ultralow` band (N=8192, hop=2048)
+      for f0 < 40 Hz (5-string low B). Promotes B0 n=2 from bin 5.3 → 10.6 (now above
+      minBin=6) and halves inter-partial leakage. Worst-case bass: **3.79 ¢ → 1.72 ¢**
+      (CI gate tightened to ≤2.5 ¢). Plan 06 ≤3 ¢ target met.
+- [x] **P3 — Virtual-strobe lock.** Tretter long-window phase-slope integrator (`PhaseIntegrator`),
+      n=1-only (conservative; see `docs/solutions/phase-integrator-n1-only-design-2026-06-14.md`).
+      Landed: lock σ **0.12 ¢** (gate ≤0.30 ¢; 0.05 ¢ target needs multi-partial, deferred to
+      P5 or if gate tightens). `precisionCents` on the wire; "LOCKED ±0.0X ¢" UI not yet built.
 - [ ] **P4 — Honesty & calibration.** True-rate plumbing, optional sample-rate (ppm)
       calibration, decay-glide gating, relative-vs-absolute copy. Claim: **0.02 ¢ rel /
       0.1 ¢ abs uncalibrated / 0.02 ¢ calibrated**, each measured.

@@ -281,17 +281,23 @@ public final class PitchPipeline {
 
     /// Band selection with hysteresis so we don't chatter at the boundaries.
     private func nextConfig(for f0: Double) -> AnalysisConfig {
-        let hmLo = AnalysisConfig.highMidHz - AnalysisConfig.highMidHysteresis  // 235
-        let hmHi = AnalysisConfig.highMidHz + AnalysisConfig.highMidHysteresis  // 265
-        let mlLo = AnalysisConfig.midLowHz  - AnalysisConfig.midLowHysteresis   // 110
-        let mlHi = AnalysisConfig.midLowHz  + AnalysisConfig.midLowHysteresis   // 130
+        let hmLo = AnalysisConfig.highMidHz      - AnalysisConfig.highMidHysteresis      // 235
+        let hmHi = AnalysisConfig.highMidHz      + AnalysisConfig.highMidHysteresis      // 265
+        let mlLo = AnalysisConfig.midLowHz       - AnalysisConfig.midLowHysteresis       // 110
+        let mlHi = AnalysisConfig.midLowHz       + AnalysisConfig.midLowHysteresis       // 130
+        let ulLo = AnalysisConfig.lowUltraLowHz  - AnalysisConfig.lowUltraLowHysteresis  //  35
+        let ulHi = AnalysisConfig.lowUltraLowHz  + AnalysisConfig.lowUltraLowHysteresis  //  45
         switch config.label {
         case "high": return f0 < hmLo ? AnalysisConfig.band(forFrequency: f0) : .high
         case "mid":
             if f0 >= hmHi { return .high }
             if f0 < mlLo  { return .low }
             return .mid
-        case "low": return f0 >= mlHi ? AnalysisConfig.band(forFrequency: f0) : .low
+        case "low":
+            if f0 >= mlHi { return .mid }
+            if f0 < ulLo  { return .ultraLow }
+            return .low
+        case "ultralow": return f0 >= ulHi ? .low : .ultraLow
         default: return AnalysisConfig.band(forFrequency: f0)   // acquire → settle
         }
     }

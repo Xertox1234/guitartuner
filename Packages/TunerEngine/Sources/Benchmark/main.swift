@@ -76,10 +76,10 @@ if flag("--ci") {
     if s.octaveErrorRate > 0 { failures.append("clean octave-error rate \(s.octaveErrorRate * 100)% > 0") }
     if s.stressOctaveErrors > 0 { failures.append("stress octave errors \(s.stressOctaveErrors) > 0 (weak/missing-fund/vibrato must hold the octave)") }
 
-    // Non-regression gates (today's numbers in comments; P1+P2+P3 baseline).
+    // Non-regression gates (today's numbers in comments; P1+P2+P3+P2r baseline).
     if s.cleanAbsCents > 0.25 { failures.append("clean abs \(s.cleanAbsCents)¢ > 0.25") }   // P1+P3: ~0.10¢
-    if s.worstAbsCents > 6.0 { failures.append("worst abs \(s.worstAbsCents)¢ > 6.0") }     // P1+P2+P3: ~3.79¢
-    if s.bassAbsCents > 0.35 { failures.append("bass abs \(s.bassAbsCents)¢ > 0.35") }      // P2+P3: ~0.14¢
+    if s.worstAbsCents > 2.5 { failures.append("worst abs \(s.worstAbsCents)¢ > 2.5") }     // P2r: ~1.72¢
+    if s.bassAbsCents > 0.35 { failures.append("bass abs \(s.bassAbsCents)¢ > 0.35") }      // P2+P3: ~0.13¢
     // P1+P3 earned these — spectral refine + long-window phase-slope lock.
     if s.highAbsCents > 0.2 { failures.append("high abs \(s.highAbsCents)¢ > 0.2") }        // P1+P3: ~0.09¢
     if s.midAbsCents > 0.2 { failures.append("mid abs \(s.midAbsCents)¢ > 0.2") }           // P1+P3: ~0.09¢
@@ -87,8 +87,6 @@ if flag("--ci") {
     if s.lockMSMedian > 350 { failures.append("median lock \(s.lockMSMedian)ms > 350") }    // today 43 ms
 
     // TODO gates, unlocked phase-by-phase (assert-ready, kept off until earned):
-    //   P2 residual (N=4096 inter-partial leakage floor): worst < 3¢ needs larger analysis
-    //                                    window for very-low-bass (f0 < 40 Hz, ~2.6 bin spacing)
     //   P3 multi-partial Fisher gain:    lock σ < 0.05¢ (requires reliable B and clean partials)
     //   P4 (clock calibration):          absolute-pitch honesty copy + calibration flow
 

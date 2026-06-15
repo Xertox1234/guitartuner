@@ -210,7 +210,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
         lastTime = now
 
         let err = input.cents
-        let inLock = input.locked || abs(err) < LumaMusic.lockCents
+        let inLock = input.locked
         let target = inLock ? 1.0 : 0.0
         lockEase += (target - lockEase) * min(1.0, dt * 6 + (animated ? 0.0 : 1.0))
         let lock = lockEase

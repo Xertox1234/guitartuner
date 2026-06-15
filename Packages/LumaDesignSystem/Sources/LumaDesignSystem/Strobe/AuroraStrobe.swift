@@ -70,7 +70,7 @@ public struct AuroraStrobe: View {
         let cx = w / 2
         let err = input.cents
         let sign: Double = err < 0 ? -1 : 1
-        let inLock = input.locked || abs(err) < LumaMusic.lockCents
+        let inLock = input.locked
 
         // dt (clamped like the export clock)
         var dt = 0.0

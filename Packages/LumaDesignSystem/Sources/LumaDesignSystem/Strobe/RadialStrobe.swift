@@ -67,7 +67,7 @@ public struct RadialStrobe: View {
         let R = min(w, h) * 0.40
         let err = input.cents
         let sign: Double = err < 0 ? -1 : 1
-        let inLock = input.locked || abs(err) < LumaMusic.lockCents
+        let inLock = input.locked
 
         // dt (clamped like the export clock)
         var dt = 0.0

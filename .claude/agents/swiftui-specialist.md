@@ -135,6 +135,16 @@ URLSession.shared.data(from: url)  // forbidden
 - Glow via `.bloom()` modifier, never `shadow(radius:)`.
 - `ScreenChrome`, `ControlsDock`, `StageView` are layout containers — keep them logic-free.
 
+## LSP Tools
+
+- **Package boundary** — `findReferences` on `TunerEngine` and `PitchPipeline` type names; any hit in `App/` views (outside `LiveTunerModel`) is a Critical violation.
+- **`@Observable` conformance** — `hover` on a model property to confirm it's observed correctly; `@ObservationIgnored` properties should NOT appear in the hover-inferred observation graph.
+- **`LiveTunerModel` API surface** — `documentSymbol` on `LiveTunerModel.swift` to enumerate all properties and methods at a glance before reviewing state ownership.
+- **Task lifetime** — `findReferences` on `Task {` within view files to find unmanaged task launches that lack cancellation.
+- **`@AppStorage` vs model property** — `hover` confirms the storage backing; grep misses the distinction between `@AppStorage` and `@State` when annotations are on separate lines.
+
+Compose: `workspaceSymbol` → get `{line, character}` → `findReferences` / `hover` / `documentSymbol`.
+
 ## Review Checklist
 
 - [ ] Does any view import `TunerEngine` directly? (Package boundary violation — Critical)

@@ -107,7 +107,10 @@ If a solution file's `applies_to` glob tightly matches the affected file AND the
 
 **Otherwise, draft an implementation approach:**
 1. Read the relevant plan file (e.g., `docs/plans/06-accuracy-engine.md` §P2)
-2. Identify affected files using domain knowledge
+2. Identify affected files — use LSP to be precise:
+   - `workspaceSymbol(query:)` to locate the type or function being changed
+   - `findReferences` to discover every call site that will be affected
+   - `incomingCalls` / `outgoingCalls` to map the call graph around the change point
 3. Note which tests will validate the change
 4. Estimate risk: does this touch DSP accuracy? (if yes, benchmark required after)
 
@@ -134,7 +137,10 @@ git checkout -b feat/<slug>
 
 **For each task:**
 1. Check `docs/solutions/` one more time for a tight-match solution (the short-circuit from Phase 3)
-2. Implement the change
+2. Before editing, use LSP to understand the blast radius:
+   - `findReferences` on any symbol you're about to rename, move, or change signature
+   - `outgoingCalls` on any function you're about to rewrite (confirms no hidden dependencies)
+3. Implement the change
 3. Run the relevant test suite:
    - DSP change: `swift test --package-path Packages/TunerEngine`
    - Strobe/UI change: `swift test --package-path Packages/LumaDesignSystem`

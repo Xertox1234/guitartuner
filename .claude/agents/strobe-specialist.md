@@ -108,6 +108,16 @@ Any PR that modifies strobe state machine logic must explicitly verify this sequ
 - `ReducedGauge` uses position encoding (needle/bar) rather than animation to convey pitch error.
 - Both Aurora and Radial must check reduce-motion before rendering.
 
+## LSP Tools
+
+- **`StrobeInput` data contract** — `findReferences` on `StrobeInput` confirms it's the only type crossing from `LiveTunerModel` to renderers. Any hit routing `PitchReading` directly is a Critical violation.
+- **Render path allocation check** — `outgoingCalls` on `draw(in:)` in both `AuroraStrobe` and `RadialStrobe` to enumerate every call made at 120fps. Flag any callee that allocates.
+- **Phase field type** — `hover` on `StrobeInput.phase` usages in MSL bridge code to confirm the value is passed as `Float` (0…1), not converted to degrees before crossing the CPU→GPU boundary.
+- **Triple-buffer semaphore** — `findReferences` on the semaphore variable to confirm `signal()` is only called in the GPU completion handler, not after `commit()`.
+- **Aurora/Radial parity** — `documentSymbol` on both renderer files to compare their method sets; a method present in one but absent in the other is a parity gap.
+
+Compose: `workspaceSymbol` → get `{line, character}` → `outgoingCalls` / `findReferences` / `hover`.
+
 ## Review Checklist
 
 - [ ] Is `phase` used as a 0…1 cycle position (not degrees/radians)? Are MSL conversions to angular form explicit?

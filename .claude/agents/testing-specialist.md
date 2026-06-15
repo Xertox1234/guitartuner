@@ -120,6 +120,15 @@ swift run -c release --package-path Packages/TunerEngine Benchmark
 
 Before merging any DSP change, run the benchmark and compare against `docs/benchmarks/accuracy.md`.
 
+## LSP Tools
+
+- **Detect `TunerEngine` in tests** — `findReferences` on `TunerEngine` within `*Tests/` directories. Any hit is a Critical violation (requires hardware, breaks headless CI).
+- **Confirm `PitchPipeline` usage** — `findReferences` on `PitchPipeline` to verify it's the entry point in all DSP tests, not a deeper internal type.
+- **Benchmark gate integrity** — `documentSymbol` on `BenchmarkSuite.swift` to enumerate all gate thresholds; `findReferences` on threshold constants to confirm they aren't overridden or shadowed elsewhere.
+- **Test isolation** — `outgoingCalls` on a test function to detect unexpected dependencies (network calls, `FileManager` writes, `Date()` access without injection).
+
+Compose: `workspaceSymbol` → get `{line, character}` → `findReferences` / `outgoingCalls`.
+
 ## Review Checklist
 
 - [ ] Are new tests written in Swift Testing (`@Test`, `@Suite`, `#expect`)? Not XCTest?

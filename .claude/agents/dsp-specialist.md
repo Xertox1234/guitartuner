@@ -77,6 +77,18 @@ Any PR that changes these for one frequency band without explicitly checking the
 - Use `vDSP_normalize` for NSDF normalization, `vDSP_sve` for vector summation, etc.
 - `Accelerate` calls require properly aligned `[Float]` buffers. Do not pass non-contiguous slices.
 
+## LSP Tools
+
+Prefer LSP over grep for Swift symbol navigation:
+
+- **Before touching any DSP function** — `prepareCallHierarchy` + `incomingCalls` to see who calls it; `outgoingCalls` to trace what it calls. Avoids breaking callers invisibly.
+- **Verify `AnalysisConfig` is the sole source of truth** — `findReferences` on any window/hop/threshold constant to detect duplicate definitions that will diverge.
+- **Trace the DSP call chain** — `outgoingCalls` on `PitchPipeline.process()` maps the full algorithm path without reading every file.
+- **Confirm resolved types** — `hover` on vDSP function calls to verify the correct Accelerate overload is being called (many vDSP functions are overloaded by buffer type).
+- **Locate a symbol across packages** — `workspaceSymbol(query:)` before reaching for grep; it handles type aliases grep misses.
+
+Compose pattern: `workspaceSymbol` → get `{line, character}` → `hover` / `findReferences` / `outgoingCalls`.
+
 ## Review Checklist
 
 When auditing DSP code:

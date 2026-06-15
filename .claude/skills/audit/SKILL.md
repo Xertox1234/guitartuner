@@ -58,7 +58,12 @@ testing-specialist → Packages/TunerEngine/Tests/
 Dispatch all agents for the scope simultaneously. Each agent:
 1. Reads its domain rules file (`docs/rules/<domain>.md`)
 2. Scans relevant solution files in `docs/solutions/` for known patterns
-3. Reviews the target files
+3. Reviews the target files — **using LSP for symbol-level discovery before grep**:
+   - `workspaceSymbol` to locate a type when the file isn't known
+   - `findReferences` on any changed or suspicious symbol to find all call sites
+   - `outgoingCalls` to enumerate what a function calls (catches unexpected dependencies)
+   - `hover` to confirm resolved types (catches `Optional` mismatches, wrong overloads)
+   - `documentSymbol` to enumerate a file's full API surface without reading it line by line
 4. Returns structured findings using the output format from its agent definition
 
 **Collect all findings before proceeding.**

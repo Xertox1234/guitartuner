@@ -26,12 +26,20 @@ If no scope is provided, default to `full`.
 
 ## Step 2 — Brief each agent
 
-Before dispatching, prepare each agent's brief:
-- The scope of the audit
-- Which files/packages to review (see file map below)
-- Instruction to read the relevant `docs/rules/<domain>.md` file first
-- Instruction to check `docs/solutions/` for known patterns that should be applied
-- **Discovery only** — report findings, do not fix anything in this phase
+Use this template for each agent's brief, filled in with the scope and file list from the table below:
+
+> You are auditing **[domain]** for the LUMA tuner codebase.
+>
+> Scope: [audit scope — e.g. `dsp`, `full`]
+> Files to review: [file list from scope table below]
+>
+> Steps:
+> 1. Read `docs/rules/<domain>.md` first — these are the binding constraints for your domain.
+> 2. Scan `docs/solutions/` for known patterns that already apply:
+>    `grep -r "tags:" docs/solutions/ | grep "<domain>"`
+>    Known patterns must be applied, not re-reported as findings.
+> 3. Use LSP for symbol-level discovery before reading files line by line (see your ## LSP Tools section). Prefer `workspaceSymbol` → `documentSymbol` → `findReferences`/`outgoingCalls`/`hover` over grep for symbol-level questions.
+> 4. Report findings in your ## Output Format. **Discovery only — do not fix anything.**
 
 **File scope by domain:**
 ```

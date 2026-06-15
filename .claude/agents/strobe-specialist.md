@@ -118,6 +118,31 @@ Any PR that modifies strobe state machine logic must explicitly verify this sequ
 
 Compose: `workspaceSymbol` → get `{line, character}` → `outgoingCalls` / `findReferences` / `hover`.
 
+## XcodeBuildMCP Tools
+
+Use these after any strobe change to visually verify the result in the simulator.
+
+**Standard verification flow:**
+```
+1. boot_sim        — if simulator isn't already running, boot it first
+2. build_run_sim   — build + launch app in simulator
+3. screenshot      — capture the strobe rendering (quick visual check)
+```
+
+Key scenarios to verify visually:
+
+| Scenario | What to check |
+|----------|---------------|
+| Any strobe code change | `screenshot` — confirm strobe is rendering (not black/blank) |
+| Lock transition change | Play an in-tune note; `screenshot` when locked — bloom (mint glow) should be visible |
+| Aurora vs Radial toggle | Switch in Settings; `screenshot` both — confirm each renders its distinct pattern |
+| Reduce-motion path | Enable Reduce Motion in simulator Accessibility settings; `screenshot` — should show `ReducedGauge`, not animated strobe |
+| Phase direction change | Tune sharp then flat; `screenshot` each — strobe should drift in opposite directions |
+
+**Note on `snapshot_ui`:** The strobe is a `MTKView` (Metal). The accessibility tree confirms the view is present in the hierarchy, but cannot inspect what Metal has rendered inside it. Use `screenshot` for render verification; use `snapshot_ui` only to confirm the MTKView or ReducedGauge is correctly placed in the view tree.
+
+**Note on ProMotion:** The simulator caps at 60fps regardless of `preferredFramesPerSecond = 120`. Frame pacing at 120fps can only be verified on a ProMotion device. The simulator is sufficient for correctness checks (phase direction, lock transition, accessibility path) but not for jank/frame-drop issues.
+
 ## Review Checklist
 
 - [ ] Is `phase` used as a 0…1 cycle position (not degrees/radians)? Are MSL conversions to angular form explicit?

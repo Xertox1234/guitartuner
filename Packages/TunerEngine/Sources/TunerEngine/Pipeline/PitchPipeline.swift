@@ -60,6 +60,7 @@ public final class PitchPipeline {
     private var prevHop = 0
 
     private let emitFloor: Double = 0.5        // clarity below this = unvoiced
+    private var phaseIntegrator = PhaseIntegrator()
 
     public init(
         sampleRate: Double = 48_000,
@@ -101,7 +102,7 @@ public final class PitchPipeline {
         head = 0; filled = 0; totalSamples = 0; lastAnalyzedAt = 0
         preproc.reset(); smoother.reset(); gate.reset()
         config = .acquire; trackedFrequency = nil; unvoicedStreak = 0
-        prevFrame = nil
+        prevFrame = nil; phaseIntegrator.reset()
         for i in ring.indices { ring[i] = 0 }
     }
 
@@ -173,7 +174,48 @@ public final class PitchPipeline {
         ) ?? 0
 
         // Sustain gate + confidence.
-        let (emit, _) = gate.step(confidence: det.clarity)
+        let (emit, stable) = gate.step(confidence: det.clarity)
+
+        // Timestamp = centre of the analysed window, in seconds.
+        let timestamp = (Double(frameStart) + Double(window) / 2) / sampleRate
+
+        // P3: Phase-slope integrator. Only runs on stable sustain; resets on drop.
+        // Overrides `smoothed` with a long-window phase-slope refined estimate.
+        // The smoother state is NOT updated from the integrator result.
+        //
+        // Always uses maxPartials=1 (the fundamental only) with B=0. Higher partials
+        // require exact inharmonicity — unreliable B estimates (including fake-harmonic
+        // artefacts from very low bass near the HPF cutoff) shift the DFT evaluation
+        // point for n≥2, compounding via Fisher weighting. The fundamental is immune:
+        // for n=1, inharmonicity affects fRef_1 by √(1+B) ≈ 1+B/2 ≈ 0.26¢ max — the
+        // same systematic floor P1/P2 already have — while the long-window slope still
+        // drives lock σ well below 0.1¢.
+        var emittedFrequency = smoothed
+        var emittedNearest = nearest
+        var emittedCents = cents
+        var precisionCents: Double? = nil
+        var isLockIntegrated = false
+
+        if stable {
+            if let r = phaseIntegrator.feed(
+                frame: frame,
+                f0: smoothed,
+                inharmonicityB: 0,
+                sampleRate: sampleRate,
+                frameTime: timestamp,
+                maxPartials: 1
+            ) {
+                emittedFrequency = r.f0
+                if let (nn, nc) = Pitch.nearest(frequency: r.f0, a4: a4) {
+                    emittedNearest = nn
+                    emittedCents = nc
+                }
+                precisionCents = r.precisionCents
+                isLockIntegrated = true
+            }
+        } else {
+            phaseIntegrator.reset()
+        }
 
         // Remember geometry for the next phase-vocoder step and band selection.
         prevFrame = frame
@@ -185,16 +227,16 @@ public final class PitchPipeline {
 
         guard emit else { return nil }
 
-        // Timestamp = centre of the analysed window, in seconds.
-        let timestamp = (Double(frameStart) + Double(window) / 2) / sampleRate
         return PitchReading(
-            frequency: smoothed,
-            note: nearest,
-            cents: cents,
+            frequency: emittedFrequency,
+            note: emittedNearest,
+            cents: emittedCents,
             confidence: det.clarity,
             phase: phase,
             timestamp: timestamp,
-            inharmonicityB: harmonicB
+            inharmonicityB: harmonicB,
+            precisionCents: precisionCents,
+            isLockIntegrated: isLockIntegrated
         )
     }
 
@@ -208,6 +250,7 @@ public final class PitchPipeline {
             trackedFrequency = nil
             config = .acquire
             prevFrame = nil
+            phaseIntegrator.reset()
         }
         return nil
     }

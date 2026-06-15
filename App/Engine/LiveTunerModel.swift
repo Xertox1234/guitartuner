@@ -58,8 +58,6 @@ final class LiveTunerModel {
     /// Cached correction factor; updated every 5 s by the calibration-poll task.
     @ObservationIgnored private var correctionFactor: Double = 1.0
 
-    var idle: Bool { cents == nil }
-
     /// The currently-selected string, if any.
     var activeString: GuitarString? {
         guard let activeIdx else { return nil }

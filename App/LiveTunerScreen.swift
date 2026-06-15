@@ -52,7 +52,7 @@ struct LiveTunerScreen: View {
                 Spacer(minLength: Space.s4)
                 if showScope {
                     Oscilloscope(freq: model.frequency, cents: model.cents ?? 0,
-                                 state: state, active: !model.idle)
+                                 state: state, active: !model.strobeInput.isIdle)
                         .frame(height: 56)
                         .frame(maxWidth: 420)
                         .padding(.horizontal, Space.s6)
@@ -142,7 +142,7 @@ struct LiveTunerScreen: View {
     private var readouts: some View {
         VStack(spacing: 0) {
             NoteReadout(note: model.note, octave: model.octave,
-                        locked: state == .tune, dimmed: model.idle)
+                        locked: state == .tune, dimmed: model.strobeInput.isIdle)
             CentsReadout(cents: model.cents ?? 0, state: state)
                 .padding(.top, Space.s5)
             StateLine(state: state)

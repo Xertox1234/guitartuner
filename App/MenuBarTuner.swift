@@ -26,7 +26,7 @@ struct MenuBarTuner: View {
                 .allowsHitTesting(false)
 
             NoteReadout(note: model.note, octave: model.octave,
-                        locked: state == .tune, dimmed: model.idle)
+                        locked: state == .tune, dimmed: model.strobeInput.isIdle)
             CentsReadout(cents: model.cents ?? 0, state: state)
             StateLine(state: state)
 

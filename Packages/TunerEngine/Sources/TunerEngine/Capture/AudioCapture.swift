@@ -101,7 +101,7 @@ final class AudioCapture: @unchecked Sendable {
         // already output-capable when the confirmation ping or reference tone starts —
         // avoids a live category change that would interrupt the capture tap on iOS.
         try session.setCategory(.playAndRecord, mode: .measurement,
-                                options: [.allowBluetooth, .defaultToSpeaker])
+                                options: [.allowBluetoothHFP, .defaultToSpeaker])
         try session.setPreferredSampleRate(48_000)
         try session.setActive(true)
 

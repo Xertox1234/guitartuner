@@ -87,6 +87,7 @@ struct LiveTunerScreen: View {
                 cardStore: cardStore,
                 accountModel: accountModel,
                 gearStore: gearStore,
+                palette: $palette,
                 detent: $drawerDetent
             )
             .presentationDetents([.height(80), .medium, .fraction(0.9)], selection: $drawerDetent)

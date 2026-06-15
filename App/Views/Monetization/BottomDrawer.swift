@@ -9,6 +9,7 @@ struct BottomDrawer: View {
     @Bindable var accountModel: AccountModel
     @Bindable var gearStore: GearStoreModel
 
+    @Binding var palette: LumaPalette
     @State private var showAccount = false
     @State private var showSaveCard = false
     @State private var showGearStore = false
@@ -245,8 +246,7 @@ struct BottomDrawer: View {
         model.setInstrument(card.instrument)
         model.setTuning(card.tuning)
         model.a4 = card.a4
-        // Note: palette is @AppStorage — set via UserDefaults key "strobePalette"
-        UserDefaults.standard.set(card.palette.rawValue, forKey: "strobePalette")
+        palette = card.palette
     }
 }
 
@@ -309,22 +309,26 @@ private func paletteColor(_ palette: LumaPalette) -> Color {
 
 #Preview("Bottom Drawer — peek") {
     @Previewable @State var detent: PresentationDetent = .height(80)
+    @Previewable @State var palette: LumaPalette = .aurora
     BottomDrawer(
         model: LiveTunerModel(),
         cardStore: TuningCardStore(),
         accountModel: AccountModel(),
         gearStore: GearStoreModel(),
+        palette: $palette,
         detent: $detent
     )
 }
 
 #Preview("Bottom Drawer — expanded") {
     @Previewable @State var detent: PresentationDetent = .medium
+    @Previewable @State var palette: LumaPalette = .aurora
     BottomDrawer(
         model: LiveTunerModel(),
         cardStore: TuningCardStore(),
         accountModel: AccountModel(),
         gearStore: GearStoreModel(),
+        palette: $palette,
         detent: $detent
     )
 }

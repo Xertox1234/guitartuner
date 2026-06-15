@@ -12,27 +12,25 @@ import SwiftUI
 /// readout is the A/B surface).
 public struct MetalStrobe: View {
     var input: StrobeInput
-    var idle: Bool
     var animated: Bool
     var phaseScroll: Bool
 
     @Environment(\.colorScheme) private var scheme
     @Environment(\.lumaPalette) private var palette
 
-    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, phaseScroll: Bool = false) {
+    public init(input: StrobeInput, animated: Bool = true, phaseScroll: Bool = false) {
         self.input = input
-        self.idle = idle
         self.animated = animated
         self.phaseScroll = phaseScroll
     }
 
     public var body: some View {
         #if canImport(MetalKit)
-        MetalStrobeView(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll, scheme: scheme, palette: palette)
+        MetalStrobeView(input: input, animated: animated, phaseScroll: phaseScroll, scheme: scheme, palette: palette)
             .accessibilityHidden(true)
         #else
         // No Metal available (non-Apple) — fall back to the Canvas hero.
-        AuroraStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
+        AuroraStrobe(input: input, animated: animated, phaseScroll: phaseScroll)
             .accessibilityHidden(true)
         #endif
     }
@@ -52,7 +50,6 @@ private typealias StrobeMetalRepresentable = NSViewRepresentable
 /// the view's display link; SwiftUI just pushes the latest `StrobeInput` on update.
 struct MetalStrobeView: StrobeMetalRepresentable {
     var input: StrobeInput
-    var idle: Bool
     var animated: Bool
     var phaseScroll: Bool
     var scheme: ColorScheme
@@ -78,7 +75,6 @@ struct MetalStrobeView: StrobeMetalRepresentable {
         view.isPaused = !animated
         guard let renderer else { return }
         renderer.input = input
-        renderer.idle = idle
         renderer.animated = animated
         renderer.phaseScroll = phaseScroll
         renderer.palette = palette
@@ -123,7 +119,6 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
 
     // Pushed from SwiftUI each update.
     var input = StrobeInput()
-    var idle = false
     var animated = true
     var phaseScroll = false
     var palette: LumaPalette = .aurora
@@ -209,7 +204,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
         if lastTime != 0 { dt = min(0.05, now - lastTime) }
         lastTime = now
 
-        let err = input.cents
+        let err = Double(input.cents)
         let inLock = input.locked
         let target = inLock ? 1.0 : 0.0
         lockEase += (target - lockEase) * min(1.0, dt * 6 + (animated ? 0.0 : 1.0))
@@ -219,12 +214,13 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
         if phaseScroll {
             // Engine-driven true strobe: estimate scroll velocity from the live phase
             // advance, eased to zero at lock (mirrors AuroraStrobe).
-            if lastPhase < 0 { lastPhase = input.phase; phaseChangeTime = now }
-            if input.phase != lastPhase {
-                let d = AuroraStrobe.wrappedDelta(lastPhase, input.phase)
+            let phase = Double(input.phase)
+            if lastPhase < 0 { lastPhase = phase; phaseChangeTime = now }
+            if phase != lastPhase {
+                let d = AuroraStrobe.wrappedDelta(lastPhase, phase)
                 let elapsed = now - phaseChangeTime
                 if elapsed > 1e-4 { scrollVel = d / elapsed }
-                lastPhase = input.phase
+                lastPhase = phase
                 phaseChangeTime = now
             } else if now - phaseChangeTime > 0.25 {
                 scrollVel = 0                                   // stale (silence)
@@ -234,7 +230,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
             scroll += StrobeMath.scrollSpeed(cents: err, lock: lock) * dt
         }
 
-        let breath = idle ? 0.6 + 0.4 * sin(now * 1.4) : 1.0
+        let breath = input.isIdle ? 0.6 + 0.4 * sin(now * 1.4) : 1.0
         let dim = scheme == .light ? 0.5 : 1.0
         let main = StrobeShaderColors.main(cents: err, prox: prox, lock: lock, pal: pal)
         let column = StrobeShaderColors.column(main: main, lock: lock, pal: pal)

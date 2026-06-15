@@ -12,13 +12,15 @@ import Foundation
 ///   with Plan 01.)
 /// - `locked`: inside the ±`LumaMusic.lockCents` window → freeze + bloom.
 public struct StrobeInput: Equatable, Sendable {
-    public var cents: Double
-    public var phase: Double
+    public var cents: Float
+    public var phase: Float
     public var locked: Bool
+    public var isIdle: Bool
 
-    public init(cents: Double = 0, phase: Double = 0, locked: Bool = false) {
+    public init(cents: Float = 0, phase: Float = 0, locked: Bool = false, isIdle: Bool = false) {
         self.cents = cents
         self.phase = phase
         self.locked = locked
+        self.isIdle = isIdle
     }
 }

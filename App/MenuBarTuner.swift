@@ -18,7 +18,7 @@ struct MenuBarTuner: View {
 
     var body: some View {
         VStack(spacing: Space.s4) {
-            StrobeField(input: model.strobeInput, idle: model.idle,
+            StrobeField(input: model.strobeInput,
                         style: strobeStyle, phaseScroll: true)
                 .lumaPalette(palette)
                 .frame(width: 132, height: 132)

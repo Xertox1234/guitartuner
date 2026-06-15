@@ -16,17 +16,15 @@ public struct StageView: View {
     var octave: Int
     /// `nil` when there's no confident pitch (idle / silence).
     var cents: Double?
-    var idle: Bool
     var style: StrobeStyle
     var phaseScroll: Bool
     var onExit: () -> Void
 
-    public init(input: StrobeInput, note: String, octave: Int, cents: Double?, idle: Bool = false, style: StrobeStyle = .aurora, phaseScroll: Bool = false, onExit: @escaping () -> Void) {
+    public init(input: StrobeInput, note: String, octave: Int, cents: Double?, style: StrobeStyle = .aurora, phaseScroll: Bool = false, onExit: @escaping () -> Void) {
         self.input = input
         self.note = note
         self.octave = octave
         self.cents = cents
-        self.idle = idle
         self.style = style
         self.phaseScroll = phaseScroll
         self.onExit = onExit
@@ -38,13 +36,13 @@ public struct StageView: View {
         ZStack {
             // Maximum contrast: pure black under the luminous strobe.
             Color.black.ignoresSafeArea()
-            StrobeField(input: input, idle: idle, style: style, phaseScroll: phaseScroll)
+            StrobeField(input: input, style: style, phaseScroll: phaseScroll)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
             // Hero readouts — the one thing you read from across the room.
             VStack(spacing: Space.s5) {
-                NoteReadout(note: note, octave: octave, locked: state == .tune, dimmed: idle)
+                NoteReadout(note: note, octave: octave, locked: state == .tune, dimmed: input.isIdle)
                 if cents != nil {
                     CentsReadout(cents: cents ?? 0, state: state)
                     StateLine(state: state)
@@ -91,4 +89,5 @@ public struct StageView: View {
     StageView(input: StrobeInput(cents: 0, locked: true), note: "E", octave: 4, cents: 0, style: .radial) {}
         .preferredColorScheme(.dark)
 }
+
 #endif

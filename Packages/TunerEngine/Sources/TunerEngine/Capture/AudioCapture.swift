@@ -17,7 +17,9 @@ final class AudioCapture: @unchecked Sendable {
     private let engine = AVAudioEngine()
     private let ring: SampleRingBuffer
     private var running = false
-    private var scratch = [Float]()
+    // Pre-allocated at maximum expected frame count (4096 covers all iOS buffer
+    // sizes at 44.1 kHz/48 kHz). Never resized on the RT thread.
+    private var scratch = [Float](repeating: 0, count: 4096)
 
     /// The actual capture sample rate, known once started.
     private(set) var sampleRate: Double = 48_000
@@ -65,8 +67,8 @@ final class AudioCapture: @unchecked Sendable {
 
     // MARK: - Real-time tap
 
-    /// Downmix to mono and hand the samples to the ring. No allocation in steady
-    /// state (the scratch buffer is reused).
+    /// Downmix to mono and hand the samples to the ring. Zero allocation: scratch
+    /// is pre-allocated to 4096 frames and never resized on the RT thread.
     private func ingest(_ buffer: AVAudioPCMBuffer) {
         guard let channels = buffer.floatChannelData else { return }
         let frames = Int(buffer.frameLength)
@@ -75,10 +77,10 @@ final class AudioCapture: @unchecked Sendable {
 
         calibration?.observe(sampleCount: frames, wallTime: CACurrentMediaTime())
 
-        if scratch.count < frames { scratch = [Float](repeating: 0, count: frames) }
         scratch.withUnsafeMutableBufferPointer { out in
             if channelCount == 1 {
-                out.baseAddress!.update(from: channels[0], count: frames)
+                guard let base = out.baseAddress else { return }
+                base.update(from: channels[0], count: frames)
             } else {
                 let scale = 1 / Float(channelCount)
                 for i in 0..<frames {

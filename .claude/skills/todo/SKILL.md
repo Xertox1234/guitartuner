@@ -141,12 +141,12 @@ git checkout -b feat/<slug>
    - `findReferences` on any symbol you're about to rename, move, or change signature
    - `outgoingCalls` on any function you're about to rewrite (confirms no hidden dependencies)
 3. Implement the change
-3. Run the relevant test suite:
+4. Run the relevant test suite:
    - DSP change: `swift test --package-path Packages/TunerEngine`
    - Strobe/UI change: `swift test --package-path Packages/LumaDesignSystem`
    - Accuracy-critical: also run `swift run -c release --package-path Packages/TunerEngine Benchmark`
-4. If tests pass → commit with conventional message: `feat(<domain>): <description>`
-5. If tests fail → stop, surface failure, do not commit
+5. If tests pass → commit with conventional message: `feat(<domain>): <description>`
+6. If tests fail → stop, surface failure, do not commit
 
 **After all tasks complete:**
 ```

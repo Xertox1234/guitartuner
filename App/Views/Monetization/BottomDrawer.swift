@@ -114,7 +114,7 @@ struct BottomDrawer: View {
             }
             Button("Delete Account", role: .destructive) {
                 // Deferred to avoid SwiftUI chained-dialog drop bug
-                DispatchQueue.main.async { showDeleteConfirm = true }
+                Task { @MainActor in showDeleteConfirm = true }
             }
             Button("Cancel", role: .cancel) {}
         }

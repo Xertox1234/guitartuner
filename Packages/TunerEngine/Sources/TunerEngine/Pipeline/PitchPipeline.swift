@@ -117,6 +117,16 @@ public final class PitchPipeline {
 
         unvoicedStreak = 0
 
+        // Octave-history guard — second line of defence after k·nmax peak selection.
+        // If the NSDF detection jumps ≥1 octave from the tracked frequency but clarity
+        // is below the high-confidence threshold, the jump is likely an alias or harmonic
+        // artefact (not a genuine note change) and is treated as unvoiced.
+        if let tracked = trackedFrequency,
+           abs(1200 * log2(det.frequency / tracked)) >= 1200,
+           det.clarity < AnalysisConfig.octaveGuardMinClarity {
+            return handleUnvoiced()
+        }
+
         // Sub-cent refinement. Two paths, never touching the octave (MPM anchor):
         //
         // Mid/High (≥120 Hz) — P1 Candan spectral refine: bias-corrected single-

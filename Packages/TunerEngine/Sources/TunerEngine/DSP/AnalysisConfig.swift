@@ -89,6 +89,11 @@ public struct AnalysisConfig: Sendable, Equatable {
     /// Jumps larger than this (¢) bypass EMA smoothing in FrequencySmoother (new-note transient).
     public static let smoothingSnapCents: Double = 120
 
+    /// Minimum NSDF clarity required to accept a detection that is ≥ one octave from
+    /// the tracked frequency. Below this threshold the jump is treated as an alias or
+    /// harmonic artefact and the frame is handled as unvoiced.
+    public static let octaveGuardMinClarity: Double = 0.95
+
     /// Choose the band for a known fundamental. Hysteresis is applied by the
     /// caller (it nudges the boundaries) to avoid chattering at the edges.
     public static func band(forFrequency f0: Double) -> AnalysisConfig {

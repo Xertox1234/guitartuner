@@ -91,6 +91,31 @@ final class PipelineTests: XCTestCase {
         XCTAssertTrue(rs.isEmpty)
     }
 
+    func testOctaveGuardAllowsCleanJump() throws {
+        // A2 (110 Hz) then A3 (220 Hz): clean signal has clarity ≥ 0.95, guard must not block.
+        let a2 = Synth.harmonic(fundamental: 110, sampleRate: fs, seconds: 0.7)
+        let a3 = Synth.harmonic(fundamental: 220, sampleRate: fs, seconds: 0.7)
+        let rs = run(a2 + a3)
+        let late = rs.filter { $0.timestamp > 1.0 }
+        XCTAssertTrue(late.contains { $0.note.description == "A3" },
+                      "clean octave jump should pass the octave guard")
+    }
+
+    func testOctaveGuardSuppressesLowClarityOctaveJump() {
+        // A2 tracked, then a noisy 220 Hz burst (SNR ≈ 8 dB → clarity < 0.95).
+        // The octave guard should suppress readings during the ambiguous burst.
+        var rng = SeededRNG(seed: 7)
+        let a2 = Synth.harmonic(fundamental: 110, sampleRate: fs, seconds: 0.7)
+        let noisyDouble = Synth.addNoise(
+            to: Synth.pure(frequency: 220, sampleRate: fs, seconds: 0.25),
+            snrDB: 8, rng: &rng
+        )
+        let rs = run(a2 + noisyDouble)
+        let duringBurst = rs.filter { $0.timestamp >= 0.7 }
+        XCTAssertFalse(duringBurst.contains { $0.note.description == "A3" },
+                       "low-clarity octave jump should be suppressed by the octave guard")
+    }
+
     func testA4Calibration() throws {
         // At A4 = 432, a 432 Hz tone is A4 ± ~0¢.
         let rs = steady(run(Synth.pure(frequency: 432, sampleRate: fs, seconds: 0.7), a4: 432))

@@ -88,9 +88,12 @@ accuracy, so worth doing well.
       n=1-only (conservative; see `docs/solutions/phase-integrator-n1-only-design-2026-06-14.md`).
       Landed: lock σ **0.12 ¢** (gate ≤0.30 ¢; 0.05 ¢ target needs multi-partial, deferred to
       P5 or if gate tightens). `precisionCents` on the wire; "LOCKED ±0.0X ¢" UI not yet built.
-- [ ] **P4 — Honesty & calibration.** True-rate plumbing, optional sample-rate (ppm)
-      calibration, decay-glide gating, relative-vs-absolute copy. Claim: **0.02 ¢ rel /
-      0.1 ¢ abs uncalibrated / 0.02 ¢ calibrated**, each measured.
+- [ ] **P4 — Honesty & calibration.** Engine core landed (0c6b663):
+      `ClockCalibration.swift` (ppm counter, correctionFactor, 7 tests); decay-glide
+      lock gate (`isLockIntegrated` now requires `precisionCents ≤ 1.0 ¢`).
+      Remaining: wire `ClockCalibration` into `AudioCapture`, apply `correctionFactor`
+      to frequency readings in app layer, add Settings UI + truthful copy
+      ("absolute ≤0.2 ¢ uncalibrated / ±0.02 ¢ calibrated").
 - [ ] **P5 — Temperament (co-benefit of B).** Offset-table engine (Equal / JI / Peterson-
       style / True Temperament), stretch from measured B, per-string inharmonicity
       readout. *(DESIGN v2 surface; engine groundwork falls out of P2.)*

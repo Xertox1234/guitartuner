@@ -8,20 +8,27 @@ import Foundation
 ///
 /// Tabulated at 48 kHz:
 ///
-/// | Band     | f0 range     | Window        | Hop          | Overlap | Settles |
-/// |----------|--------------|---------------|--------------|---------|---------|
-/// | high     | ≥ 250 Hz     | 1024 (21 ms)  | 256 (5.3 ms) | 75 %    | ~30 ms  |
-/// | mid      | 120–250 Hz   | 2048 (43 ms)  | 512 (11 ms)  | 75 %    | ~55 ms  |
-/// | low      | < 120 Hz     | 4096 (85 ms)  | 1024 (21 ms) | 75 %    | ~110 ms |
-/// | acquire  | (cold start) | 4096 (85 ms)  | 1024 (21 ms) | 75 %    | ~110 ms |
+/// | Band     | f0 range     | Window         | Hop           | Overlap | Settles  |
+/// |----------|--------------|----------------|---------------|---------|----------|
+/// | high     | ≥ 250 Hz     | 1024 (21 ms)   | 256 (5.3 ms)  | 75 %    | ~30 ms   |
+/// | mid      | 120–250 Hz   | 2048 (43 ms)   | 512 (11 ms)   | 75 %    | ~55 ms   |
+/// | low      | 40–120 Hz    | 4096 (85 ms)   | 1024 (21 ms)  | 75 %    | ~110 ms  |
+/// | ultralow | < 40 Hz      | 8192 (170 ms)  | 2048 (43 ms)  | 75 %    | ~200 ms  |
+/// | acquire  | (cold start) | 4096 (85 ms)   | 1024 (21 ms)  | 75 %    | ~110 ms  |
+///
+/// The ultra-low band (< 40 Hz) targets the 5-string bass low B (B0 ~31 Hz). At
+/// N=4096 the inter-partial spacing for B0 is only 2.6 bins, causing ~2–4 ¢
+/// inter-partial leakage in the Candan/log-parabolic triplet estimates. N=8192
+/// doubles the resolution (5.2 bins spacing, ~0.5 ¢ leakage) and promotes B0 n=2
+/// (previously at bin 5.3, below minBin=6) to bin 10.6 — now above the gate.
 ///
 /// The low band reaches up to 120 Hz so the low guitar strings (E2 ~82, A2 ~110)
 /// get a long window with ≥~7 periods — they read as low strings, not mids.
 ///
 /// Acquisition always uses the long window so the very first lock is octave-safe
 /// even on low B; once a confident pitch is known we drop to the band's window
-/// for latency. Low B (~31 Hz, 32 ms period) needs ~2.6 periods → settles
-/// ~100–150 ms. That's physics, documented, not a bug.
+/// for latency. Low B (~31 Hz, 32 ms period) with ultralow window (170 ms) covers
+/// ~5 periods — well resolved for MPM and the HarmonicEstimator comb.
 public struct AnalysisConfig: Sendable, Equatable {
     public let window: Int
     public let hop: Int
@@ -33,32 +40,36 @@ public struct AnalysisConfig: Sendable, Equatable {
         self.label = label
     }
 
-    public static let high    = AnalysisConfig(window: 1024, hop: 256, label: "high")
-    public static let mid     = AnalysisConfig(window: 2048, hop: 512, label: "mid")
-    public static let low     = AnalysisConfig(window: 4096, hop: 1024, label: "low")
-    public static let acquire = AnalysisConfig(window: 4096, hop: 1024, label: "acquire")
+    public static let high     = AnalysisConfig(window: 1024, hop: 256,  label: "high")
+    public static let mid      = AnalysisConfig(window: 2048, hop: 512,  label: "mid")
+    public static let low      = AnalysisConfig(window: 4096, hop: 1024, label: "low")
+    public static let ultraLow = AnalysisConfig(window: 8192, hop: 2048, label: "ultralow")
+    public static let acquire  = AnalysisConfig(window: 4096, hop: 1024, label: "acquire")
 
     /// All distinct configs (acquire shares geometry with low).
-    public static let all: [AnalysisConfig] = [.high, .mid, .low]
+    public static let all: [AnalysisConfig] = [.high, .mid, .low, .ultraLow]
 
     /// The longest window any band uses — the pipeline retains at least this many
     /// recent samples so every band can be evaluated from one rolling buffer.
-    public static let maxWindow = 4096
+    public static let maxWindow = 8192
 
     /// Band-transition centre frequencies (Hz). Hysteresis is applied around each.
-    public static let highMidHz: Double = 250
-    public static let midLowHz:  Double = 120
+    public static let highMidHz:      Double = 250
+    public static let midLowHz:       Double = 120
+    public static let lowUltraLowHz:  Double = 40
 
     /// ±Hysteresis window around each boundary. Prevents chattering when f0 hovers
     /// at a band edge. Derived thresholds in PitchPipeline.nextConfig must use these.
-    public static let highMidHysteresis: Double = 15
-    public static let midLowHysteresis:  Double = 10
+    public static let highMidHysteresis:     Double = 15
+    public static let midLowHysteresis:      Double = 10
+    public static let lowUltraLowHysteresis: Double = 5
 
     /// Choose the band for a known fundamental. Hysteresis is applied by the
     /// caller (it nudges the boundaries) to avoid chattering at the edges.
     public static func band(forFrequency f0: Double) -> AnalysisConfig {
-        if f0 >= highMidHz { return .high }
-        if f0 >= midLowHz  { return .mid }
-        return .low
+        if f0 >= highMidHz    { return .high }
+        if f0 >= midLowHz     { return .mid }
+        if f0 >= lowUltraLowHz { return .low }
+        return .ultraLow
     }
 }

@@ -80,13 +80,22 @@ accuracy, so worth doing well.
       (f0, B) stiff-string WLS (`HarmonicEstimator` + `Inharmonicity`), Fisher-weighted,
       replaces phase-vocoder for bass (<120 Hz). Measured: bass **2.98 ¢ → 0.59 ¢**
       (B0 11.89 ¢ → 1.49 ¢), clean mean **0.77 ¢ → 0.23 ¢**, octave rate held at 0 %.
-- [ ] **P2 residual — bass worst-case gate.** The ≤1 ¢ bass mean target is met but
-      the **worst ≤3 ¢** target is not (max 5.81 ¢ today). Chase the tail cases.
-- [ ] **P3 — Virtual-strobe lock.** Tretter long-window phase-slope, multi-partial, with
-      an uncertainty readout. Target: held-note **σ ≤0.05 ¢**; "LOCKED ±0.0X ¢" in UI.
-- [ ] **P4 — Honesty & calibration.** True-rate plumbing, optional sample-rate (ppm)
-      calibration, decay-glide gating, relative-vs-absolute copy. Claim: **0.02 ¢ rel /
-      0.1 ¢ abs uncalibrated / 0.02 ¢ calibrated**, each measured.
+- [x] **P2 residual — bass worst-case gate.** Added `ultralow` band (N=8192, hop=2048)
+      for f0 < 40 Hz (5-string low B). Promotes B0 n=2 from bin 5.3 → 10.6 (now above
+      minBin=6) and halves inter-partial leakage. Worst-case bass: **3.79 ¢ → 1.72 ¢**
+      (CI gate tightened to ≤2.5 ¢). Plan 06 ≤3 ¢ target met.
+- [x] **P3 — Virtual-strobe lock.** Tretter long-window phase-slope integrator (`PhaseIntegrator`),
+      n=1-only (conservative; see `docs/solutions/phase-integrator-n1-only-design-2026-06-14.md`).
+      Landed: lock σ **0.12 ¢** (gate ≤0.30 ¢; 0.05 ¢ target needs multi-partial, deferred to
+      P5 or if gate tightens). `precisionCents` on the wire; "LOCKED ±0.0X ¢" UI not yet built.
+- [x] **P4 — Honesty & calibration.** `ClockCalibration.swift` (ppm counter,
+      correctionFactor, 7 tests); decay-glide lock gate (`isLockIntegrated` now
+      requires `precisionCents ≤ 1.0 ¢`). `AudioCapture.ingest()` calls
+      `calibration.observe()` on every buffer; `TunerEngine` owns the instance and
+      exposes `correctionFactor` / `isClockCalibrated` / `absoluteAccuracyCents`.
+      `LiveTunerModel` polls every 5 s and applies `adjFreq = r.frequency / cf`
+      (centsShift ≈ 0.076 ¢ at 44 ppm). Settings → Accuracy: adaptive copy
+      "≤0.2 ¢ uncalibrated / ≤0.02 ¢ calibrated". *(0c6b663, 0d107e9)*
 - [ ] **P5 — Temperament (co-benefit of B).** Offset-table engine (Equal / JI / Peterson-
       style / True Temperament), stretch from measured B, per-string inharmonicity
       readout. *(DESIGN v2 surface; engine groundwork falls out of P2.)*

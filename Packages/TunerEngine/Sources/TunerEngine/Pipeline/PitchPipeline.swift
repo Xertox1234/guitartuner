@@ -29,6 +29,13 @@ public final class PitchPipeline {
     /// The full guitar+bass search range (below low B to high frets).
     public static let searchRange: ClosedRange<Double> = 27...1400
 
+    /// Maximum per-estimate ±σ for `isLockIntegrated` to engage (Plan 06 P4 §7.2).
+    /// The LS-fit residuals from PhaseIntegrator grow large when the pitch is still
+    /// drifting (decay-glide attack), producing a high `precisionCents`. Below this
+    /// threshold the pitch trend is flat — only then is the "LOCKED ±X¢" state valid.
+    /// Typical settled clean-bass: ~0.12¢; decay-glide early window: ≥2¢.
+    static let lockPrecisionThreshold: Double = 1.0   // cents
+
     /// At/above this fundamental the core range uses the bias-corrected spectral
     /// refine (Plan 06 P1); below it the fundamental bin is too low for a clean
     /// single-frame spectral peak (the negative-frequency image leaks in), so bass
@@ -60,6 +67,7 @@ public final class PitchPipeline {
     private var prevHop = 0
 
     private let emitFloor: Double = 0.5        // clarity below this = unvoiced
+    private var phaseIntegrator = PhaseIntegrator()
 
     public init(
         sampleRate: Double = 48_000,
@@ -101,7 +109,7 @@ public final class PitchPipeline {
         head = 0; filled = 0; totalSamples = 0; lastAnalyzedAt = 0
         preproc.reset(); smoother.reset(); gate.reset()
         config = .acquire; trackedFrequency = nil; unvoicedStreak = 0
-        prevFrame = nil
+        prevFrame = nil; phaseIntegrator.reset()
         for i in ring.indices { ring[i] = 0 }
     }
 
@@ -173,7 +181,54 @@ public final class PitchPipeline {
         ) ?? 0
 
         // Sustain gate + confidence.
-        let (emit, _) = gate.step(confidence: det.clarity)
+        let (emit, stable) = gate.step(confidence: det.clarity)
+
+        // Timestamp = centre of the analysed window, in seconds.
+        let timestamp = (Double(frameStart) + Double(window) / 2) / sampleRate
+
+        // P3: Phase-slope integrator. Only runs on stable sustain; resets on drop.
+        // Overrides `smoothed` with a long-window phase-slope refined estimate.
+        // The smoother state is NOT updated from the integrator result.
+        //
+        // Always uses maxPartials=1 (the fundamental only) with B=0. Higher partials
+        // require exact inharmonicity — unreliable B estimates (including fake-harmonic
+        // artefacts from very low bass near the HPF cutoff) shift the DFT evaluation
+        // point for n≥2, compounding via Fisher weighting. The fundamental is immune:
+        // for n=1, inharmonicity affects fRef_1 by √(1+B) ≈ 1+B/2 ≈ 0.26¢ max — the
+        // same systematic floor P1/P2 already have — while the long-window slope still
+        // drives lock σ well below 0.1¢.
+        var emittedFrequency = smoothed
+        var emittedNearest = nearest
+        var emittedCents = cents
+        var precisionCents: Double? = nil
+        var isLockIntegrated = false
+
+        if stable {
+            if let r = phaseIntegrator.feed(
+                frame: frame,
+                f0: smoothed,
+                inharmonicityB: 0,
+                sampleRate: sampleRate,
+                frameTime: timestamp,
+                maxPartials: 1
+            ) {
+                precisionCents = r.precisionCents
+                // Only override the frequency estimate when the LS residuals are tight.
+                // During decay-glide attack the pitch is still drifting — large residuals
+                // mean the integrator's f0 is biased by the slope of the glide, so we
+                // fall back to `smoothed` and leave isLockIntegrated false.
+                isLockIntegrated = r.precisionCents <= Self.lockPrecisionThreshold
+                if isLockIntegrated {
+                    emittedFrequency = r.f0
+                    if let (nn, nc) = Pitch.nearest(frequency: r.f0, a4: a4) {
+                        emittedNearest = nn
+                        emittedCents = nc
+                    }
+                }
+            }
+        } else {
+            phaseIntegrator.reset()
+        }
 
         // Remember geometry for the next phase-vocoder step and band selection.
         prevFrame = frame
@@ -185,16 +240,16 @@ public final class PitchPipeline {
 
         guard emit else { return nil }
 
-        // Timestamp = centre of the analysed window, in seconds.
-        let timestamp = (Double(frameStart) + Double(window) / 2) / sampleRate
         return PitchReading(
-            frequency: smoothed,
-            note: nearest,
-            cents: cents,
+            frequency: emittedFrequency,
+            note: emittedNearest,
+            cents: emittedCents,
             confidence: det.clarity,
             phase: phase,
             timestamp: timestamp,
-            inharmonicityB: harmonicB
+            inharmonicityB: harmonicB,
+            precisionCents: precisionCents,
+            isLockIntegrated: isLockIntegrated
         )
     }
 
@@ -208,6 +263,7 @@ public final class PitchPipeline {
             trackedFrequency = nil
             config = .acquire
             prevFrame = nil
+            phaseIntegrator.reset()
         }
         return nil
     }
@@ -238,17 +294,23 @@ public final class PitchPipeline {
 
     /// Band selection with hysteresis so we don't chatter at the boundaries.
     private func nextConfig(for f0: Double) -> AnalysisConfig {
-        let hmLo = AnalysisConfig.highMidHz - AnalysisConfig.highMidHysteresis  // 235
-        let hmHi = AnalysisConfig.highMidHz + AnalysisConfig.highMidHysteresis  // 265
-        let mlLo = AnalysisConfig.midLowHz  - AnalysisConfig.midLowHysteresis   // 110
-        let mlHi = AnalysisConfig.midLowHz  + AnalysisConfig.midLowHysteresis   // 130
+        let hmLo = AnalysisConfig.highMidHz      - AnalysisConfig.highMidHysteresis      // 235
+        let hmHi = AnalysisConfig.highMidHz      + AnalysisConfig.highMidHysteresis      // 265
+        let mlLo = AnalysisConfig.midLowHz       - AnalysisConfig.midLowHysteresis       // 110
+        let mlHi = AnalysisConfig.midLowHz       + AnalysisConfig.midLowHysteresis       // 130
+        let ulLo = AnalysisConfig.lowUltraLowHz  - AnalysisConfig.lowUltraLowHysteresis  //  35
+        let ulHi = AnalysisConfig.lowUltraLowHz  + AnalysisConfig.lowUltraLowHysteresis  //  45
         switch config.label {
         case "high": return f0 < hmLo ? AnalysisConfig.band(forFrequency: f0) : .high
         case "mid":
             if f0 >= hmHi { return .high }
             if f0 < mlLo  { return .low }
             return .mid
-        case "low": return f0 >= mlHi ? AnalysisConfig.band(forFrequency: f0) : .low
+        case "low":
+            if f0 >= mlHi { return .mid }
+            if f0 < ulLo  { return .ultraLow }
+            return .low
+        case "ultralow": return f0 >= ulHi ? .low : .ultraLow
         default: return AnalysisConfig.band(forFrequency: f0)   // acquire → settle
         }
     }

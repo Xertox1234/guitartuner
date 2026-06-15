@@ -2,6 +2,7 @@ import Foundation
 
 #if canImport(AVFoundation)
 import AVFoundation
+import QuartzCore
 
 /// Live capture via `AVAudioEngine`: mono, the hardware's native rate (we ask for
 /// 48 kHz), small buffers. The tap is the **only** real-time code — it downmixes
@@ -20,6 +21,10 @@ final class AudioCapture: @unchecked Sendable {
 
     /// The actual capture sample rate, known once started.
     private(set) var sampleRate: Double = 48_000
+
+    /// Optional clock-calibration sink. Set before `start()`; `observe` is called
+    /// from the audio tap on every buffer so the calibration accumulates passively.
+    var calibration: ClockCalibration?
 
     init(ring: SampleRingBuffer) {
         self.ring = ring
@@ -67,6 +72,8 @@ final class AudioCapture: @unchecked Sendable {
         let frames = Int(buffer.frameLength)
         guard frames > 0 else { return }
         let channelCount = Int(buffer.format.channelCount)
+
+        calibration?.observe(sampleCount: frames, wallTime: CACurrentMediaTime())
 
         if scratch.count < frames { scratch = [Float](repeating: 0, count: frames) }
         scratch.withUnsafeMutableBufferPointer { out in

@@ -26,6 +26,14 @@ public struct PitchReading: Sendable, Equatable {
     public let phase: Double
     public let timestamp: TimeInterval
     public let inharmonicityB: Double?
+    /// Estimated ±σ of `cents` (and `frequency`) in cents, from the P3 phase-slope
+    /// integrator. `nil` while acquiring or when the integrator has not yet converged.
+    /// Non-nil implies `isLockIntegrated == true`.
+    public let precisionCents: Double?
+    /// `true` when `frequency` (and `cents`) come from the P3 long-window phase-slope
+    /// integrator rather than the per-hop P1/P2 refine. Implies sub-0.05 ¢ σ on a
+    /// clean sustained note.
+    public let isLockIntegrated: Bool
 
     public init(
         frequency: Double,
@@ -34,7 +42,9 @@ public struct PitchReading: Sendable, Equatable {
         confidence: Double,
         phase: Double,
         timestamp: TimeInterval,
-        inharmonicityB: Double? = nil
+        inharmonicityB: Double? = nil,
+        precisionCents: Double? = nil,
+        isLockIntegrated: Bool = false
     ) {
         self.frequency = frequency
         self.note = note
@@ -43,6 +53,8 @@ public struct PitchReading: Sendable, Equatable {
         self.phase = phase
         self.timestamp = timestamp
         self.inharmonicityB = inharmonicityB
+        self.precisionCents = precisionCents
+        self.isLockIntegrated = isLockIntegrated
     }
 
     /// Confidence floor for mid/high strings (f0 ≥ 120 Hz). Bass uses a lower

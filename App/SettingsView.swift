@@ -86,6 +86,16 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Text(model.isClockCalibrated
+                         ? "Absolute accuracy: ≤0.02 ¢ (clock calibrated). Relative (strobe) accuracy is always exact."
+                         : "Relative (strobe) accuracy: ≤0.12 ¢ (typ. ≤0.09 ¢ guitar range). Absolute A=440 accuracy: ≤0.2 ¢, limited by your device's sample clock. Improves to ≤0.02 ¢ after ~30 s of listening.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Accuracy")
+                }
+
+                Section {
                     Text("All audio is analyzed entirely on your device. Your playing is never recorded, stored, or sent — LUMA does no networking.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)

@@ -60,4 +60,15 @@ final class AccountModel {
         await api.clearJWT()
         isSignedIn = false
     }
+
+    func deleteAccount() async throws {
+        isLoading = true
+        defer { isLoading = false }
+        let response: BoolResponse = try await api.delete("auth/account")
+        guard response.deleted == true else {
+            throw LumaAPIError.server("Account deletion failed", 0)
+        }
+        await api.clearJWT()
+        isSignedIn = false
+    }
 }

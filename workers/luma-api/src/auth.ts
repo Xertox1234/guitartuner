@@ -98,6 +98,21 @@ authRoutes.post('/refresh', async (c) => {
   }
 })
 
+authRoutes.delete('/account', async (c) => {
+  const userId = await requireAuth(c.req.header('Authorization'), c.env.JWT_SECRET)
+  if (!userId) return jsonError('Unauthorized', 401)
+
+  // TODO (pre-App Store): If apple_sub is set, revoke Apple token via
+  // POST https://appleid.apple.com/auth/revoke before deleting.
+  // Requires storing apple_refresh_token at sign-in + APPLE_PRIVATE_KEY binding.
+
+  const result = await c.env.DB.prepare('DELETE FROM users WHERE id = ?')
+    .bind(userId).run()
+  if (result.meta.changes === 0) return jsonError('Not found', 404)
+  // tuning_cards deleted automatically via ON DELETE CASCADE
+  return jsonOk({ deleted: true })
+})
+
 export async function requireAuth(
   authHeader: string | null | undefined,
   jwtSecret: string

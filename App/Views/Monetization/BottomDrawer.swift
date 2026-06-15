@@ -13,6 +13,8 @@ struct BottomDrawer: View {
     @State private var showSaveCard = false
     @State private var showGearStore = false
     @State private var showSignOutConfirm = false
+    @State private var showDeleteConfirm = false
+    @State private var deleteError: String? = nil
     @Binding var detent: PresentationDetent
 
     var body: some View {
@@ -109,6 +111,34 @@ struct BottomDrawer: View {
             Button("Sign Out", role: .destructive) {
                 Task { await accountModel.signOut() }
             }
+            Button("Delete Account", role: .destructive) {
+                // Deferred to avoid SwiftUI chained-dialog drop bug
+                DispatchQueue.main.async { showDeleteConfirm = true }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog(
+            "Permanently Delete Account?",
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete My Account and Data", role: .destructive) {
+                Task {
+                    do { try await accountModel.deleteAccount() }
+                    catch { deleteError = error.localizedDescription }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete your account and all saved tunings. This cannot be undone.")
+        }
+        .alert("Could Not Delete Account", isPresented: Binding(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button("OK") { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
         }
     }
 
@@ -183,9 +213,12 @@ struct BottomDrawer: View {
                         .foregroundStyle(Color.lumaInTune)
                     Text("Signed in")
                         .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Sign out") { showSignOutConfirm = true }
+                        .foregroundStyle(.secondary)
                 }
                 .font(.caption)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity)
                 .padding(.bottom, 16)
             } else {
                 Button {

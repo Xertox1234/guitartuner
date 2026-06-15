@@ -124,8 +124,9 @@ Use these after any strobe change to visually verify the result in the simulator
 
 **Standard verification flow:**
 ```
-1. build_run_sim   — build + launch app in simulator
-2. screenshot      — capture the strobe rendering (quick visual check)
+1. boot_sim        — if simulator isn't already running, boot it first
+2. build_run_sim   — build + launch app in simulator
+3. screenshot      — capture the strobe rendering (quick visual check)
 ```
 
 Key scenarios to verify visually:

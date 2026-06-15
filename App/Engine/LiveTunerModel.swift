@@ -50,6 +50,14 @@ final class LiveTunerModel {
     var a4: Double = 440 { didSet { applyA4() } }
     @ObservationIgnored @AppStorage("a4Calibration") private var storedA4: Double = 440
 
+    // MARK: Clock calibration (P4)
+    /// True once the engine has accumulated ≥30 s of samples and ppm is converged.
+    private(set) var isClockCalibrated = false
+    /// Absolute pitch accuracy in the current calibration state (shown in Settings).
+    private(set) var absoluteAccuracyCents: Double = 100.0 / 577.8   // uncalibrated worst-case
+    /// Cached correction factor; updated every 5 s by the calibration-poll task.
+    @ObservationIgnored private var correctionFactor: Double = 1.0
+
     var idle: Bool { cents == nil }
 
     /// The currently-selected string, if any.
@@ -63,6 +71,7 @@ final class LiveTunerModel {
     @ObservationIgnored private let haptics = LockHaptics()
     @ObservationIgnored private var readTask: Task<Void, Never>?
     @ObservationIgnored private var watchdog: Task<Void, Never>?
+    @ObservationIgnored private var calibrationTask: Task<Void, Never>?
     @ObservationIgnored private var lastUpdate = Date.distantPast
     @ObservationIgnored private var lockGate = LockGate()
 
@@ -93,6 +102,7 @@ final class LiveTunerModel {
                     self.apply(reading)
                 }
             }
+            startCalibrationPoll()
             startWatchdog()
         } catch {
             running = false
@@ -106,7 +116,11 @@ final class LiveTunerModel {
         running = false
         readTask?.cancel(); readTask = nil
         watchdog?.cancel(); watchdog = nil
+        calibrationTask?.cancel(); calibrationTask = nil
         cents = nil
+        correctionFactor = 1.0
+        isClockCalibrated = false
+        absoluteAccuracyCents = 100.0 / 577.8
         lockGate.reset()
         status = "Stopped"
         let e = engine                      // capture the actor, not self
@@ -204,25 +218,33 @@ final class LiveTunerModel {
     // MARK: - Reading → display
 
     private func apply(_ r: PitchReading) {
+        // Apply clock correction: if the crystal runs fast/slow, the engine sees a
+        // slightly wrong sample rate and over/under-reports every frequency by ppm/1e6.
+        // Dividing by correctionFactor removes this bias once calibration converges.
+        let cf = correctionFactor
+        let adjFreq = cf != 1.0 ? r.frequency / cf : r.frequency
+        // Cents shift: correctedCents = rawCents - 1200·log₂(cf). At 44 ppm ≈ 0.076 ¢.
+        let centsShift = cf != 1.0 ? 1200.0 * log2(cf) : 0.0
+
         if mode == .lock, let target = targetNote {
             // Judge only the targeted string: cents relative to it, phase already
             // referenced to it by the engine. Octave errors can't cause a false
             // lock here because a wrong octave lands far outside lockCents.
-            let c = target.cents(of: r.frequency, a4: a4)
+            let c = target.cents(of: adjFreq, a4: a4)
             let locked = abs(c) <= LumaMusic.lockCents && r.confidence >= r.minLockConfidence
             note = target.name
             octave = target.octave
             cents = c
-            frequency = r.frequency
+            frequency = adjFreq
             confidence = r.confidence
             strobeInput = StrobeInput(cents: c, phase: r.phase, locked: locked)
             handleLock(locked, noteFreq: target.frequency(a4: a4))
         } else {
-            // Chromatic nearest-note.
+            // Chromatic nearest-note. The note/octave boundary won't shift at <0.1¢.
             note = r.note.name
             octave = r.note.octave
-            cents = r.cents
-            frequency = r.frequency
+            cents = r.cents - centsShift
+            frequency = adjFreq
             confidence = r.confidence
             let si = r.strobeInput()
             strobeInput = si
@@ -237,6 +259,23 @@ final class LiveTunerModel {
         let (haptic, ping) = lockGate.step(locked: locked)
         if haptic, hapticsEnabled { haptics.tap() }
         if ping, !toneOn { tone.ping(frequency: noteFreq) }
+    }
+
+    /// Poll the engine's clock calibration every 5 s and cache correctionFactor.
+    /// Runs off the main actor so the actor hop is cheap.
+    private func startCalibrationPoll() {
+        calibrationTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                let cf   = await self.engine.correctionFactor
+                let cal  = await self.engine.isClockCalibrated
+                let acc  = await self.engine.absoluteAccuracyCents
+                self.correctionFactor = cf
+                self.isClockCalibrated = cal
+                self.absoluteAccuracyCents = acc
+                try? await Task.sleep(nanoseconds: 5_000_000_000)   // 5 s
+            }
+        }
     }
 
     /// Fade to idle when readings stop arriving (note released / silence), so the

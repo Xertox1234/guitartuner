@@ -60,10 +60,23 @@ public actor TunerEngine {
     private var pipeline: PitchPipeline?
     private var consumer: Task<Void, Never>?
     private var isRunning = false
+    private var calibration: ClockCalibration?
 
     #if canImport(AVFoundation)
     private var capture: AudioCapture?
     #endif
+
+    // MARK: - Clock calibration
+
+    /// Correction factor for the device's sample-clock error. 1.0 before convergence
+    /// (≥30 s of listening). Apply: `trueHz = nominalHz * correctionFactor`.
+    public var correctionFactor: Double { calibration?.correctionFactor ?? 1.0 }
+
+    /// True once ~30 s of samples have been counted and the ppm estimate has converged.
+    public var isClockCalibrated: Bool { calibration?.isConverged ?? false }
+
+    /// Absolute pitch accuracy this device achieves in the current calibration state.
+    public var absoluteAccuracyCents: Double { calibration?.absoluteAccuracyCents ?? (100.0 / 577.8) }
 
     public init(
         a4: Double = Pitch.standardA4,
@@ -98,6 +111,11 @@ public actor TunerEngine {
         }
         self.capture = capture
 
+        let cal = ClockCalibration(nominalRate: capture.sampleRate)
+        capture.calibration = cal
+        cal.startMeasurement(wallTime: ProcessInfo.processInfo.systemUptime)
+        calibration = cal
+
         let pipeline = PitchPipeline(
             sampleRate: capture.sampleRate, a4: a4, method: method, targetNote: targetNote
         )
@@ -116,9 +134,11 @@ public actor TunerEngine {
         consumer?.cancel()
         consumer = nil
         #if canImport(AVFoundation)
+        capture?.calibration = nil
         capture?.stop()
         capture = nil
         #endif
+        calibration = nil
         pipeline?.reset()
         ring.reset()
     }

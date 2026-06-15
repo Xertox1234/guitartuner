@@ -97,60 +97,87 @@ Ask: "Which of these Ready items should I implement?"
 
 ## Phase 3 — Plan
 
-For each selected todo:
+**Domain routing — determine which specialist to dispatch per task:**
 
-**Check docs/solutions/ for a verified short-circuit:**
-```bash
-grep -r "applies_to" docs/solutions/ | grep "<relevant file pattern>"
-```
-If a solution file's `applies_to` glob tightly matches the affected file AND the solution's `tags` overlap the domain → read that solution first. It may contain the full answer — skip the research phase.
+| Affected files | Specialist agent |
+|----------------|-----------------|
+| `TunerEngine/DSP/`, `PitchPipeline`, `AnalysisConfig`, `Bench/` | `dsp-specialist` |
+| `LumaDesignSystem/Strobe/`, `*.metal` | `strobe-specialist` |
+| `App/*.swift`, `App/Engine/`, `LumaDesignSystem/Components/`, `LumaDesignSystem/Tokens/` | `swiftui-specialist` |
+| `*Tests/`, `Bench/`, accuracy-related | `testing-specialist` |
+| Multi-domain or cross-cutting | dispatch all relevant specialists |
 
-**Otherwise, draft an implementation approach:**
-1. Read the relevant plan file (e.g., `docs/plans/06-accuracy-engine.md` §P2)
-2. Identify affected files — use LSP to be precise:
-   - `workspaceSymbol(query:)` to locate the type or function being changed
-   - `findReferences` to discover every call site that will be affected
-   - `incomingCalls` / `outgoingCalls` to map the call graph around the change point
-3. Note which tests will validate the change
-4. Estimate risk: does this touch DSP accuracy? (if yes, benchmark required after)
+For each selected task, dispatch the appropriate specialist agent with this brief:
 
-Present the plan for each selected item. Wait for approval before Phase 4.
+> You are planning the implementation of: **[task title]**
+>
+> Description: [task description from ROADMAP or plan file]
+> Plan file to read: `docs/plans/[file].md §[section]` (if applicable)
+> Expected affected files: [list from domain table above]
+>
+> Steps:
+> 1. Check `docs/solutions/` for a tight-match solution first (`grep -r "applies_to" docs/solutions/`). If found, include it in your plan as a short-circuit.
+> 2. Use LSP to map the blast radius: `workspaceSymbol` → `findReferences` / `outgoingCalls` on the key symbols being changed.
+> 3. Return a structured implementation plan — not implementation. Discovery and planning only.
+>
+> Return: affected files, implementation steps, test commands, accuracy risk (yes/no), and any solutions/ short-circuit found.
+
+Dispatch independent tasks in parallel. Collect all plans before proceeding.
+
+Present each specialist's plan to the user. Wait for approval before Phase 4.
 
 ---
 
 ## Phase 4 — Execute
 
-For each approved item:
+**Setup (same isolation logic as before):**
 
-**If tasks are independent (no shared state):**
-Use a git worktree for isolation:
+Independent tasks → create a worktree per task:
 ```bash
 git worktree add ../luma-<slug> -b feat/<slug>
 ```
-Then implement in the worktree. See `superpowers:using-git-worktrees` skill for the full pattern.
-
-**If tasks are sequential or share state:**
-Implement one at a time on the current branch or a new branch:
+Sequential or shared-state tasks → single branch:
 ```bash
 git checkout -b feat/<slug>
 ```
 
-**For each task:**
-1. Check `docs/solutions/` one more time for a tight-match solution (the short-circuit from Phase 3)
-2. Before editing, use LSP to understand the blast radius:
-   - `findReferences` on any symbol you're about to rename, move, or change signature
-   - `outgoingCalls` on any function you're about to rewrite (confirms no hidden dependencies)
-3. Implement the change
-4. Run the relevant test suite:
-   - DSP change: `swift test --package-path Packages/TunerEngine`
-   - Strobe/UI change: `swift test --package-path Packages/LumaDesignSystem`
-   - Accuracy-critical: also run `swift run -c release --package-path Packages/TunerEngine Benchmark`
-5. If tests pass → commit with conventional message: `feat(<domain>): <description>`
-6. If tests fail → stop, surface failure, do not commit
+**Dispatch the specialist agent for each task:**
 
-**After all tasks complete:**
+Brief the same specialist from Phase 3 with:
+
+> You are implementing: **[task title]**
+>
+> Approved plan: [paste the plan returned in Phase 3]
+> Working directory: [worktree path or current branch]
+>
+> Steps:
+> 1. Check `docs/solutions/` one more time for the short-circuit identified in planning.
+> 2. Implement the change per the approved plan.
+> 3. Run the relevant test suite:
+>    - DSP change: `swift test --package-path Packages/TunerEngine`
+>    - Strobe/UI change: `swift test --package-path Packages/LumaDesignSystem`
+>    - Accuracy-critical: also run `swift run -c release --package-path Packages/TunerEngine Benchmark`
+> 4. If tests pass → commit: `feat(<domain>): <description>`
+> 5. If tests fail → stop. Report the failure. Do not commit.
+
+Dispatch independent tasks in parallel (one specialist per worktree). Wait for all to complete before the review pass.
+
+**After all tasks complete — dispatch code-reviewer:**
+
+Brief code-reviewer with:
+
+> Review the changes just implemented across these commits/worktrees: [list]
+>
+> Focus on: package boundary violations, Swift concurrency safety, test coverage gaps, any accuracy spec risk.
+> Report findings only — do not fix anything.
+
+If code-reviewer returns **Critical or High** findings → surface them to the user and stop before merging.
+If **Low/Medium only or clean** → report and proceed.
+
+**Closing:**
 ```
 All N todos implemented and tested.
+Code-reviewer pass: [summary or "clean"].
 Recommend: /codify to preserve any non-obvious patterns discovered during implementation.
 ```
 

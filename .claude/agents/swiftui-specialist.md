@@ -145,8 +145,41 @@ URLSession.shared.data(from: url)  // forbidden
 
 Compose: `workspaceSymbol` → get `{line, character}` → `findReferences` / `hover` / `documentSymbol`.
 
+## XcodeBuildMCP Tools
+
+Use these after making any UI change to visually verify the result — the Swift equivalent of "open the browser and check."
+
+**Standard visual verification flow:**
+```
+1. build_run_sim          — build + launch app in simulator
+2. screenshot             — capture the current screen (quick visual check)
+3. snapshot_ui            — capture the runtime accessibility/view hierarchy
+```
+
+`snapshot_ui` returns the live accessibility tree from the running app. Use it to:
+- Confirm the view hierarchy matches the intended structure (no wrong conditional branch rendered)
+- Verify accessibility labels are present on interactive elements
+- Detect unexpected views (debug overlays, hidden sheets that shouldn't be there)
+- Check that `StrobeField` → `AuroraStrobe`/`RadialStrobe` dispatch resolved correctly
+
+`screenshot` is faster — use it first for a quick "does it look right?" sanity check before diving into `snapshot_ui`.
+
+**When to use each:**
+
+| Scenario | Tool |
+|----------|------|
+| Quick visual sanity after layout change | `screenshot` |
+| Verifying conditional view renders correct branch | `snapshot_ui` |
+| Confirming accessibility label is present | `snapshot_ui` |
+| Checking multiplatform layout (Mac vs iOS) | `screenshot` (run both destinations) |
+| After design token change (`Space.*`, `LumaColor.*`) | `screenshot` |
+| After `StrobeField` rendering path change | `build_run_sim` → `snapshot_ui` on strobe view |
+
+**Note:** `snapshot_ui` requires the app to be running in the simulator. Always call `build_run_sim` first. If the simulator isn't booted, call `boot_sim` before building.
+
 ## Review Checklist
 
+- [ ] After any UI change: was `build_run_sim` → `screenshot` / `snapshot_ui` run to verify visually?
 - [ ] Does any view import `TunerEngine` directly? (Package boundary violation — Critical)
 - [ ] Is model access via `@Bindable`? Not `@State` or `@StateObject`?
 - [ ] Are state mutations happening on `@MainActor`? Any `Task { model.property = x }` without MainActor hop?

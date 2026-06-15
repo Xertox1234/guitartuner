@@ -212,15 +212,19 @@ public final class PitchPipeline {
                 frameTime: timestamp,
                 maxPartials: 1
             ) {
-                emittedFrequency = r.f0
-                if let (nn, nc) = Pitch.nearest(frequency: r.f0, a4: a4) {
-                    emittedNearest = nn
-                    emittedCents = nc
-                }
                 precisionCents = r.precisionCents
-                // Only declare the note "locked" when the LS residuals are tight —
-                // large residuals indicate a still-drifting pitch (decay-glide attack).
+                // Only override the frequency estimate when the LS residuals are tight.
+                // During decay-glide attack the pitch is still drifting — large residuals
+                // mean the integrator's f0 is biased by the slope of the glide, so we
+                // fall back to `smoothed` and leave isLockIntegrated false.
                 isLockIntegrated = r.precisionCents <= Self.lockPrecisionThreshold
+                if isLockIntegrated {
+                    emittedFrequency = r.f0
+                    if let (nn, nc) = Pitch.nearest(frequency: r.f0, a4: a4) {
+                        emittedNearest = nn
+                        emittedCents = nc
+                    }
+                }
             }
         } else {
             phaseIntegrator.reset()

@@ -55,8 +55,9 @@ struct ClockCalibrationTests {
         let cal = ClockCalibration(nominalRate: Self.nominal)
         feed(cal: cal, ppmError: Self.fastPPM, durationSeconds: 60.0)
         #expect(cal.isConverged)
-        // A note measured as 440 Hz with a fast-crystal device actually has:
-        //   trueHz = measuredHz / correctionFactor  (device over-reports frequency)
+        // A fast crystal under-reports frequency (more samples per real second means
+        // a shorter apparent period). The true frequency is:
+        //   trueHz = measuredHz * correctionFactor
         // After applying the correction, absolute accuracy = uncertaintyPPM/577.8 ¢.
         let absoluteAccuracy = cal.absoluteAccuracyCents
         #expect(absoluteAccuracy < 0.02)   // calibrated-mode spec

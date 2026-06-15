@@ -117,13 +117,14 @@ struct PhaseIntegrator {
             refB = inharmonicityB
             startTime = frameTime
         }
-        let t = frameTime - startTime!
+        guard let refF0, let startTime else { return nil }
+        let t = frameTime - startTime
         hopCount += 1
 
         // ── Accumulate per-partial residual phase ─────────────────────────────
         let nyquist = sampleRate / 2
         for n in 1...maxPartials {
-            let fRef_n = partialFreq(n: n, f0: refF0!, B: refB)
+            let fRef_n = partialFreq(n: n, f0: refF0, B: refB)
             guard fRef_n < nyquist * 0.95 else { break }
 
             let c = StrobePhase.bin(frame, frequency: fRef_n, sampleRate: sampleRate)
@@ -164,7 +165,7 @@ struct PhaseIntegrator {
         }
 
         guard hopCount >= Self.minHops else { return nil }
-        return estimate(anchor: f0, maxPartials: maxPartials)
+        return estimate(anchor: f0, refF0: refF0, maxPartials: maxPartials)
     }
 
     // MARK: - Reset
@@ -184,7 +185,7 @@ struct PhaseIntegrator {
     }
 
     /// Compute the fused f0 estimate from accumulated residual phase histories.
-    private func estimate(anchor: Double, maxPartials: Int) -> Result? {
+    private func estimate(anchor: Double, refF0: Double, maxPartials: Int) -> Result? {
         let B = refB
 
         // Magnitude gate: partials dominated by spectral leakage (rather than
@@ -211,7 +212,7 @@ struct PhaseIntegrator {
             let (slope, sigma_slope) = lsSlope(times: state.times, phases: state.phases)
 
             // Recover actual partial frequency and map back to f0.
-            let fRef_n = partialFreq(n: n, f0: refF0!, B: B)
+            let fRef_n = partialFreq(n: n, f0: refF0, B: B)
             let f_n = fRef_n + slope / (2 * Double.pi)
             let divisor = partialFreq(n: n, f0: 1.0, B: B)   // = n·√(1+Bn²)
             let f0_n = f_n / divisor

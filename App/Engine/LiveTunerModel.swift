@@ -218,12 +218,13 @@ final class LiveTunerModel {
     // MARK: - Reading → display
 
     private func apply(_ r: PitchReading) {
-        // Apply clock correction: if the crystal runs fast/slow, the engine sees a
-        // slightly wrong sample rate and over/under-reports every frequency by ppm/1e6.
-        // Dividing by correctionFactor removes this bias once calibration converges.
+        // Apply clock correction: a fast crystal delivers more samples per real second
+        // than nominal, so the pipeline under-reports every frequency by ppm/1e6.
+        //   f_true = f_meas * correctionFactor   (multiply — fast crystal: cf > 1)
+        //   trueCents = measCents + 1200·log₂(cf)
+        // At 44 ppm: cf ≈ 1.000044, adjFreq differs by ~0.019 Hz at 440 Hz ≈ 0.076 ¢.
         let cf = correctionFactor
-        let adjFreq = cf != 1.0 ? r.frequency / cf : r.frequency
-        // Cents shift: correctedCents = rawCents - 1200·log₂(cf). At 44 ppm ≈ 0.076 ¢.
+        let adjFreq = cf != 1.0 ? r.frequency * cf : r.frequency
         let centsShift = cf != 1.0 ? 1200.0 * log2(cf) : 0.0
 
         if mode == .lock, let target = targetNote {
@@ -243,7 +244,7 @@ final class LiveTunerModel {
             // Chromatic nearest-note. The note/octave boundary won't shift at <0.1¢.
             note = r.note.name
             octave = r.note.octave
-            cents = r.cents - centsShift
+            cents = r.cents + centsShift
             frequency = adjFreq
             confidence = r.confidence
             let si = r.strobeInput()

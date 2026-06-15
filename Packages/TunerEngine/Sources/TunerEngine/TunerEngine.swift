@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(QuartzCore)
+import QuartzCore
+#endif
 
 /// The public, actor-isolated tuner. Live audio (on-device) flows
 /// `tap → ring buffer → pipeline`, emitting `PitchReading`s on an `AsyncStream`.
@@ -113,7 +116,11 @@ public actor TunerEngine {
 
         let cal = ClockCalibration(nominalRate: capture.sampleRate)
         capture.calibration = cal
+        #if canImport(QuartzCore)
+        cal.startMeasurement(wallTime: CACurrentMediaTime())
+        #else
         cal.startMeasurement(wallTime: ProcessInfo.processInfo.systemUptime)
+        #endif
         calibration = cal
 
         let pipeline = PitchPipeline(

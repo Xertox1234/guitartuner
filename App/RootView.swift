@@ -33,6 +33,9 @@ struct RootView: View {
         shell
             .tint(.lumaInTune)
             .preferredColorScheme(theme.colorScheme)
+            #if os(iOS)
+            .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
+            #endif
     }
 
     @ViewBuilder private var shell: some View {

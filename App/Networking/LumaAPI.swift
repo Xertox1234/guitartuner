@@ -74,10 +74,16 @@ actor LumaAPI {
         return try decode(data)
     }
 
+    // Use buildURL — never appending(component:), which percent-encodes slashes.
+    // See docs/solutions/logic-errors/url-appending-component-encodes-slashes-2026-06-15.md
+    static func buildURL(base: URL, path: String) -> URL {
+        base.appending(path: path)
+    }
+
     private func makeRequest<B: Encodable>(
         method: String, path: String, body: B?, token: String?
     ) throws -> URLRequest {
-        var req = URLRequest(url: baseURL.appending(component: path))
+        var req = URLRequest(url: LumaAPI.buildURL(base: baseURL, path: path))
         req.httpMethod = method
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body, !(body is EmptyBody) {
@@ -94,7 +100,7 @@ actor LumaAPI {
 
     private func refreshToken() async throws -> String? {
         guard let current = jwt else { return nil }
-        var req = URLRequest(url: baseURL.appending(component: "auth/refresh"))
+        var req = URLRequest(url: LumaAPI.buildURL(base: baseURL, path: "auth/refresh"))
         req.httpMethod = "POST"
         req.setValue("Bearer \(current)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: req)

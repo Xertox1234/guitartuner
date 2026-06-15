@@ -235,7 +235,7 @@ struct LiveTunerScreen: View {
 #if DEBUG
 #Preview("Live Tuner — dark") {
     LiveTunerScreen(model: LiveTunerModel(), accountModel: AccountModel(), cardStore: TuningCardStore(), gearStore: GearStoreModel())
-        .frame(width: 440, height: 720)
         .preferredColorScheme(.dark)
+        .previewDevice(PreviewDevice(rawValue: "iPhone 16"))
 }
 #endif

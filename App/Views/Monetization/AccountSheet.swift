@@ -39,15 +39,33 @@ struct AccountSheet: View {
 
     private var authForm: some View {
         Form {
-            Section {
-                SignInWithAppleButton(.signIn) { request in
-                    request.requestedScopes = [.email, .fullName]
-                } onCompletion: { result in
-                    handleAppleResult(result)
+            if let err = errorMessage {
+                Section {
+                    Text(err)
+                        .foregroundStyle(.red)
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 44)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+            }
+
+            Section {
+                if accountModel.isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                    .frame(height: 44)
+                } else {
+                    SignInWithAppleButton(.signIn) { request in
+                        request.requestedScopes = [.email, .fullName]
+                    } onCompletion: { result in
+                        handleAppleResult(result)
+                    }
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 44)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                }
             }
 
             Section {
@@ -59,12 +77,6 @@ struct AccountSheet: View {
                     #endif
                 SecureField("Password (8+ characters)", text: $password)
                     .textContentType(isRegistering ? .newPassword : .password)
-            }
-
-            if let err = errorMessage {
-                Section {
-                    Text(err).foregroundStyle(.red).font(.caption)
-                }
             }
 
             Section {
@@ -182,12 +194,17 @@ struct AccountSheet: View {
     private func handleAppleResult(_ result: Result<ASAuthorization, Error>) {
         switch result {
         case .success(let auth):
-            guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else { return }
+            guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else {
+                print("[LUMA] Apple sign-in: unexpected credential type")
+                return
+            }
             Task {
                 do {
                     try await accountModel.signInWithApple(credential)
+                    print("[LUMA] Apple sign-in: success")
                     dismiss()
                 } catch {
+                    print("[LUMA] Apple sign-in: failed — \(error)")
                     errorMessage = error.localizedDescription
                 }
             }

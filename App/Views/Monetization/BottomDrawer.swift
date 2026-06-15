@@ -12,6 +12,7 @@ struct BottomDrawer: View {
     @State private var showAccount = false
     @State private var showSaveCard = false
     @State private var showGearStore = false
+    @State private var showSignOutConfirm = false
     @Binding var detent: PresentationDetent
 
     var body: some View {
@@ -75,9 +76,7 @@ struct BottomDrawer: View {
             } else {
                 cardGrid
             }
-            if !accountModel.isSignedIn {
-                signInNudge
-            }
+            accountStatus
         }
         .padding(.horizontal, 16)
     }
@@ -97,8 +96,20 @@ struct BottomDrawer: View {
                     .font(.caption)
             }
             .foregroundStyle(.secondary)
+            Button {
+                if accountModel.isSignedIn { showSignOutConfirm = true }
+                else { showAccount = true }
+            } label: {
+                Image(systemName: accountModel.isSignedIn ? "person.circle.fill" : "person.circle")
+                    .foregroundStyle(accountModel.isSignedIn ? Color.lumaInTune : Color.secondary)
+            }
         }
         .padding(.vertical, 12)
+        .confirmationDialog("Account", isPresented: $showSignOutConfirm) {
+            Button("Sign Out", role: .destructive) {
+                Task { await accountModel.signOut() }
+            }
+        }
     }
 
     private var cardGrid: some View {
@@ -164,12 +175,30 @@ struct BottomDrawer: View {
         .padding(.vertical, 32)
     }
 
-    private var signInNudge: some View {
-        Text("Sign in to sync tunings across devices")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.bottom, 16)
+    private var accountStatus: some View {
+        Group {
+            if accountModel.isSignedIn {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.lumaInTune)
+                    Text("Signed in")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.caption)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 16)
+            } else {
+                Button {
+                    showAccount = true
+                } label: {
+                    Text("Sign in to sync tunings across devices")
+                        .font(.caption)
+                        .foregroundStyle(Color.lumaInTune)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.bottom, 16)
+                }
+            }
+        }
     }
 
     // MARK: - Actions
@@ -243,5 +272,27 @@ private func paletteColor(_ palette: LumaPalette) -> Color {
     case .forest:  return Color(hue: 0.35, saturation: 0.7, brightness: 0.7)
     case .crimson: return Color(hue: 0.0, saturation: 0.8, brightness: 0.85)
     }
+}
+
+#Preview("Bottom Drawer — peek") {
+    @Previewable @State var detent: PresentationDetent = .height(80)
+    BottomDrawer(
+        model: LiveTunerModel(),
+        cardStore: TuningCardStore(),
+        accountModel: AccountModel(),
+        gearStore: GearStoreModel(),
+        detent: $detent
+    )
+}
+
+#Preview("Bottom Drawer — expanded") {
+    @Previewable @State var detent: PresentationDetent = .medium
+    BottomDrawer(
+        model: LiveTunerModel(),
+        cardStore: TuningCardStore(),
+        accountModel: AccountModel(),
+        gearStore: GearStoreModel(),
+        detent: $detent
+    )
 }
 #endif

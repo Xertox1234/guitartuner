@@ -9,3 +9,4 @@
 - Menu bar tuner (`MenuBarTuner`) shares the same `LiveTunerModel` instance as the main window — it does not own its own `TunerEngine`.
 - Use Swift Concurrency (`async/await`, `Task`, `actor`) everywhere. Existing code uses `AsyncStream`; match that pattern. No Combine.
 - `@Observable` macro: do not add `@Published` — it's redundant and conflicts. Use `@ObservationIgnored` for properties that should not trigger view updates.
+- URL construction in `LumaAPI`: always use `LumaAPI.buildURL(base:path:)` — never `URL.appending(component:)` directly. `appending(component:)` percent-encodes slashes, silently turning `"auth/apple"` into `auth%2Fapple` and breaking routing. `appending(path:)` (wrapped by `buildURL`) treats slashes as separators.

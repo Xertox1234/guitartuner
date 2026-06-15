@@ -25,7 +25,6 @@ public struct StringRow: View {
         HStack(spacing: Space.s3) {
             ForEach(tuning.strings) { string in
                 Button {
-                    activeIdx = string.idx
                     onPick?(string.idx)
                 } label: {
                     StringCell(
@@ -101,7 +100,7 @@ private struct StringRowDemo: View {
     @State private var active: Int? = 5
     var body: some View {
         VStack(spacing: 28) {
-            StringRow(tuning: Tunings.guitar, activeIdx: $active)
+            StringRow(tuning: Tunings.guitar, activeIdx: $active, onPick: { active = $0 })
             StringRow(tuning: Tunings.guitar, activeIdx: .constant(5), lockedIdx: 5)
             StringRow(tuning: Tunings.bass, activeIdx: .constant(4))
         }

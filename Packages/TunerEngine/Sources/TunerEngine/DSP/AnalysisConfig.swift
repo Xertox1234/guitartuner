@@ -64,6 +64,31 @@ public struct AnalysisConfig: Sendable, Equatable {
     public static let midLowHysteresis:      Double = 10
     public static let lowUltraLowHysteresis: Double = 5
 
+    // MARK: – Gate & lock thresholds
+
+    /// PhaseIntegrator LS-fit residual must be ≤ this before reporting LOCKED state.
+    /// Typical settled clean-bass: ~0.12¢; decay-glide early window: ≥2¢.
+    public static let lockPrecisionThreshold: Double = 1.0
+
+    /// Clarity (NSDF normalised peak height) below which a frame is treated as
+    /// unvoiced. Used as emit floor in PitchPipeline and as octave-rescue fallback
+    /// threshold in PitchDetector.
+    public static let emitFloor: Double = 0.5
+
+    /// Minimum clarity for SustainGate to count a frame as voiced.
+    /// Sits below clean clarity (~0.95) and inharmonic-low (~0.7–0.85) but above noise (~0.3–0.5).
+    public static let sustainMinConfidence: Double = 0.6
+
+    /// McLeod NSDF peak-selection fraction: first key-maximum clearing k·nmax.
+    /// k≈0.9 is the octave-safe value from McLeod & Wyvill (2005).
+    public static let nsdfPeakK: Double = 0.9
+
+    /// EMA smoothing factor for FrequencySmoother. Higher = snappier but noisier.
+    public static let smoothingAlpha: Double = 0.35
+
+    /// Jumps larger than this (¢) bypass EMA smoothing in FrequencySmoother (new-note transient).
+    public static let smoothingSnapCents: Double = 120
+
     /// Choose the band for a known fundamental. Hysteresis is applied by the
     /// caller (it nudges the boundaries) to avoid chattering at the edges.
     public static func band(forFrequency f0: Double) -> AnalysisConfig {

@@ -30,12 +30,6 @@ public final class PitchPipeline {
     public static let searchRange: ClosedRange<Double> = 27...1400
 
     /// Maximum per-estimate ±σ for `isLockIntegrated` to engage (Plan 06 P4 §7.2).
-    /// The LS-fit residuals from PhaseIntegrator grow large when the pitch is still
-    /// drifting (decay-glide attack), producing a high `precisionCents`. Below this
-    /// threshold the pitch trend is flat — only then is the "LOCKED ±X¢" state valid.
-    /// Typical settled clean-bass: ~0.12¢; decay-glide early window: ≥2¢.
-    static let lockPrecisionThreshold: Double = 1.0   // cents
-
     // Rolling, preprocessed analysis buffer (circular, capacity = longest window).
     private let cap = AnalysisConfig.maxWindow
     private var ring: [Float]
@@ -45,9 +39,7 @@ public final class PitchPipeline {
 
     private var preproc: Preprocessor
     private var smoother = FrequencySmoother()
-    // Gate margin sits below clean clarity (~0.95) and inharmonic-low clarity
-    // (~0.7–0.85 on raw frames) but above noise (~0.3–0.5).
-    private var gate = SustainGate(minConfidence: 0.6)
+    private var gate = SustainGate(minConfidence: AnalysisConfig.sustainMinConfidence)
     private var hannCache: [Int: [Float]] = [:]      // per-instance window cache
     private var config: AnalysisConfig = .acquire
     private var lastAnalyzedAt = 0
@@ -60,7 +52,6 @@ public final class PitchPipeline {
     private var prevWindow = 0
     private var prevHop = 0
 
-    private let emitFloor: Double = 0.5        // clarity below this = unvoiced
     private var phaseIntegrator = PhaseIntegrator()
 
     public init(
@@ -120,7 +111,7 @@ public final class PitchPipeline {
 
         guard let det = PitchDetector.detect(
             frame, sampleRate: sampleRate, range: Self.searchRange, method: method
-        ), det.clarity >= emitFloor else {
+        ), det.clarity >= AnalysisConfig.emitFloor else {
             return handleUnvoiced()
         }
 
@@ -211,7 +202,7 @@ public final class PitchPipeline {
                 // During decay-glide attack the pitch is still drifting — large residuals
                 // mean the integrator's f0 is biased by the slope of the glide, so we
                 // fall back to `smoothed` and leave isLockIntegrated false.
-                isLockIntegrated = r.precisionCents <= Self.lockPrecisionThreshold
+                isLockIntegrated = r.precisionCents <= AnalysisConfig.lockPrecisionThreshold
                 if isLockIntegrated {
                     emittedFrequency = r.f0
                     if let (nn, nc) = Pitch.nearest(frequency: r.f0, a4: a4) {

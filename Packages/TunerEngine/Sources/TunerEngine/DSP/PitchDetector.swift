@@ -88,7 +88,7 @@ enum PitchDetector {
         guard let nmax = maxima.map(\.value).max(), nmax > 0 else { return nil }
 
         // First key max clearing k·nmax — the octave-safe choice (McLeod k≈0.9).
-        let k = 0.9
+        let k = AnalysisConfig.nsdfPeakK
         let threshold = k * nmax
         let chosen = maxima.first { $0.value >= threshold } ?? maxima.max { $0.value < $1.value }!
 
@@ -174,7 +174,7 @@ enum PitchDetector {
             // Trust the lower fundamental if it's reasonably clear.
             let lower = m.frequency < y.frequency ? m : y
             let higher = m.frequency < y.frequency ? y : m
-            let pick = lower.clarity > 0.5 ? lower : higher
+            let pick = lower.clarity > AnalysisConfig.emitFloor ? lower : higher
             return relabel(pick, .hybrid)
         }
         // Agree → keep MPM's value but average the clarity for a fair score.

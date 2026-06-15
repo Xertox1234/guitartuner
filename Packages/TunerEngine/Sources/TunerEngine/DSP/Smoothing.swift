@@ -15,7 +15,7 @@ struct FrequencySmoother {
     /// - medianCount: odd window length for the median (5 ≈ 3 hops of lag).
     /// - alpha: EMA factor (higher = snappier, noisier).
     /// - snapCents: jumps larger than this bypass smoothing (new note).
-    init(medianCount: Int = 5, alpha: Double = 0.35, snapCents: Double = 120) {
+    init(medianCount: Int = 5, alpha: Double = AnalysisConfig.smoothingAlpha, snapCents: Double = AnalysisConfig.smoothingSnapCents) {
         self.medianCount = max(1, medianCount | 1)   // force odd
         self.alpha = alpha
         self.snapCents = snapCents

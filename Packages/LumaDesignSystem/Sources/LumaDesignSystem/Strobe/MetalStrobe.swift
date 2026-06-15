@@ -119,6 +119,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
     let device: MTLDevice
     private let queue: MTLCommandQueue
     private let pipeline: MTLRenderPipelineState
+    private let frameSemaphore = DispatchSemaphore(value: 3)
 
     // Pushed from SwiftUI each update.
     var input = StrobeInput()
@@ -182,10 +183,14 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
     func draw(in view: MTKView) {
+        frameSemaphore.wait()
         guard let drawable = view.currentDrawable,
               let pass = view.currentRenderPassDescriptor,
               let cmd = queue.makeCommandBuffer(),
-              let enc = cmd.makeRenderCommandEncoder(descriptor: pass) else { return }
+              let enc = cmd.makeRenderCommandEncoder(descriptor: pass) else {
+            frameSemaphore.signal()
+            return
+        }
 
         var u = makeUniforms(size: view.drawableSize)
         enc.setRenderPipelineState(pipeline)
@@ -193,6 +198,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
         enc.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         enc.endEncoding()
         cmd.present(drawable)
+        cmd.addCompletedHandler { [frameSemaphore] _ in frameSemaphore.signal() }
         cmd.commit()
     }
 

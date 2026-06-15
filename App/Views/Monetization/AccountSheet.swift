@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import LumaDesignSystem
 
 /// Registration / sign-in flow. Presented when unauthenticated user tries to save a card.
 struct AccountSheet: View {
@@ -43,7 +44,7 @@ struct AccountSheet: View {
                 Section {
                     Text(err)
                         .foregroundStyle(.red)
-                        .font(.subheadline)
+                        .font(LumaFont.ui(LumaFont.Size.body))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -98,16 +99,16 @@ struct AccountSheet: View {
                     isRegistering.toggle()
                     errorMessage = nil
                 }
-                .font(.footnote)
+                .font(LumaFont.ui(LumaFont.Size.label))
                 .foregroundStyle(.secondary)
             }
 
             Section {
                 Text("All audio is analyzed on your device and never sent anywhere. ")
-                    .font(.caption2)
+                    .font(LumaFont.ui(LumaFont.Size.micro))
                     .foregroundStyle(.tertiary)
                 + Text("Privacy Policy")
-                    .font(.caption2)
+                    .font(LumaFont.ui(LumaFont.Size.micro))
                     .foregroundStyle(Color.lumaInTune)
             }
         }
@@ -120,11 +121,11 @@ struct AccountSheet: View {
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Check your inbox")
-                        .font(.headline)
+                        .font(LumaFont.display(LumaFont.Size.lg, weight: .semibold))
                     Text("We sent a verification link to ")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(LumaFont.ui(LumaFont.Size.body)).foregroundStyle(.secondary)
                     + Text(email)
-                        .font(.subheadline).foregroundStyle(Color.lumaInTune)
+                        .font(LumaFont.ui(LumaFont.Size.body)).foregroundStyle(Color.lumaInTune)
                 }
                 .padding(.vertical, 4)
             }
@@ -133,9 +134,9 @@ struct AccountSheet: View {
                 Toggle(isOn: $marketingOptIn) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Get exclusive gear deals")
-                            .font(.subheadline)
+                            .font(LumaFont.ui(LumaFont.Size.body))
                         Text("Occasional handpicked Sweetwater deals. No spam. Unsubscribe anytime.")
-                            .font(.caption)
+                            .font(LumaFont.ui(LumaFont.Size.cap))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -143,7 +144,7 @@ struct AccountSheet: View {
 
                 if marketingOptIn {
                     Text("We'll use **\(email)** for gear deal emails.")
-                        .font(.caption)
+                        .font(LumaFont.ui(LumaFont.Size.cap))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -160,14 +161,14 @@ struct AccountSheet: View {
 
             Section {
                 Button("I'll skip for now") { dismiss() }
-                    .font(.footnote)
+                    .font(LumaFont.ui(LumaFont.Size.label))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
 
                 Button("Resend verification email") {
                     Task { try? await accountModel.register(email: email, password: password) }
                 }
-                .font(.caption)
+                .font(LumaFont.ui(LumaFont.Size.cap))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
             }

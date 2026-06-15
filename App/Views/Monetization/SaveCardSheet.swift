@@ -81,7 +81,7 @@ struct SaveCardSheet: View {
             }
             GridRow {
                 Text("Palette").foregroundStyle(.secondary)
-                Text(palette.label).foregroundStyle(paletteColor(palette))
+                Text(palette.label).foregroundStyle(palette.color)
             }
         }
         .font(.subheadline)
@@ -110,12 +110,3 @@ struct SaveCardSheet: View {
     }
 }
 
-private func paletteColor(_ palette: LumaPalette) -> Color {
-    switch palette {
-    case .aurora:  return Color.lumaInTune
-    case .amber:   return Color(hue: 0.1, saturation: 0.8, brightness: 0.9)
-    case .neon:    return Color(hue: 0.75, saturation: 0.8, brightness: 0.9)
-    case .forest:  return Color(hue: 0.35, saturation: 0.7, brightness: 0.7)
-    case .crimson: return Color(hue: 0.0, saturation: 0.8, brightness: 0.85)
-    }
-}

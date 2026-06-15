@@ -258,15 +258,15 @@ struct CardChip: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(card.name)
                 .font(.caption.bold())
-                .foregroundStyle(paletteColor(card.palette))
+                .foregroundStyle(card.palette.color)
             Text("\(card.instrument == .guitar ? "Guitar" : "Bass") · \(Int(card.a4))")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(paletteColor(card.palette).opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(paletteColor(card.palette).opacity(0.3)))
+        .background(card.palette.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(card.palette.color.opacity(0.3)))
     }
 }
 
@@ -276,7 +276,7 @@ struct TuningCardCell: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(card.name)
                 .font(.caption.bold())
-                .foregroundStyle(paletteColor(card.palette))
+                .foregroundStyle(card.palette.color)
             Text("\(card.instrument == .guitar ? "Guitar" : "Bass") · \(Int(card.a4)) Hz · \(card.palette.label)")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -285,27 +285,18 @@ struct TuningCardCell: View {
                     Text(s.note)
                         .font(.system(size: 9, design: .monospaced))
                         .padding(.horizontal, 4).padding(.vertical, 2)
-                        .background(paletteColor(card.palette).opacity(0.15), in: RoundedRectangle(cornerRadius: 3))
-                        .foregroundStyle(paletteColor(card.palette))
+                        .background(card.palette.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 3))
+                        .foregroundStyle(card.palette.color)
                 }
             }
         }
         .padding(10)
         .frame(maxWidth: .infinity, minHeight: 70, alignment: .topLeading)
-        .background(paletteColor(card.palette).opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(paletteColor(card.palette).opacity(0.2)))
+        .background(card.palette.color.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(card.palette.color.opacity(0.2)))
     }
 }
 
-private func paletteColor(_ palette: LumaPalette) -> Color {
-    switch palette {
-    case .aurora:  return .lumaInTune
-    case .amber:   return Color(hue: 0.1, saturation: 0.8, brightness: 0.9)
-    case .neon:    return Color(hue: 0.75, saturation: 0.8, brightness: 0.9)
-    case .forest:  return Color(hue: 0.35, saturation: 0.7, brightness: 0.7)
-    case .crimson: return Color(hue: 0.0, saturation: 0.8, brightness: 0.85)
-    }
-}
 
 #Preview("Bottom Drawer — peek") {
     @Previewable @State var detent: PresentationDetent = .height(80)

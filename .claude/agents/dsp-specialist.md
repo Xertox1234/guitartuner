@@ -49,6 +49,7 @@ You are a DSP algorithm specialist for the LUMA tuner. You have deep knowledge o
 - **Self-correction property:** if `refF0` is briefly biased (from HarmonicEstimator's +11¢ sidelobe contamination for B0 pure tones), the LS slope recovers it: `f0_true = refF0 + slope/(2π)`. The integrator converges correctly as long as the bias is within ±50¢. Do NOT add "fix" logic to pre-correct `refF0`.
 - Runs only when `SustainGate.stable == true`. Resets on every frame where stable is false and on unvoiced streaks ≥ 8.
 - **Known sidelobe contamination for B0:** `HarmonicEstimator` with `minBin=6` uses Hann sidelobes as fake partials for noiseless B0 pure tones, producing bogus f0 (+11¢) in `smoothed` for the first ~20 hops. This is a pure-tone-only effect. Real strings (inharmonic with `Stimulus.inharmonicString`) are unaffected. See `docs/solutions/harmonic-estimator-virtual-candan-failure.md` (2026-06-14 section).
+- **Dual-gate invariant:** `precisionCents` guards both the LOCKED indicator AND whether `r.f0` overrides `emittedFrequency`. During decay-glide the LS fit captures the pitch drift, producing a biased `f0` even though `precisionCents > 1¢`. Only set `emittedFrequency = r.f0` inside the `if isLockIntegrated` block. See `docs/solutions/logic-errors/phase-integrator-precision-gate-guards-emission-2026-06-15.md`.
 
 ### Window / Hop Sizing
 ```

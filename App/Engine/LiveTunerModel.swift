@@ -118,6 +118,7 @@ final class LiveTunerModel {
         watchdog?.cancel(); watchdog = nil
         calibrationTask?.cancel(); calibrationTask = nil
         cents = nil
+        strobeInput.isIdle = true
         correctionFactor = 1.0
         isClockCalibrated = false
         absoluteAccuracyCents = 100.0 / 577.8
@@ -238,7 +239,7 @@ final class LiveTunerModel {
             cents = c
             frequency = adjFreq
             confidence = r.confidence
-            strobeInput = StrobeInput(cents: c, phase: r.phase, locked: locked)
+            strobeInput = StrobeInput(cents: Float(c), phase: Float(r.phase), locked: locked, isIdle: false)
             handleLock(locked, noteFreq: target.frequency(a4: a4))
         } else {
             // Chromatic nearest-note. The note/octave boundary won't shift at <0.1¢.
@@ -288,6 +289,7 @@ final class LiveTunerModel {
                 guard let self else { return }
                 if self.running, Date().timeIntervalSince(self.lastUpdate) > 0.35 {
                     self.cents = nil
+                    self.strobeInput.isIdle = true
                     self.lockGate.reset()
                 }
             }

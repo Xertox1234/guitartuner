@@ -7,7 +7,6 @@ import SwiftUI
 /// `tuner-ui.jsx`.
 public struct StrobeField: View {
     var input: StrobeInput
-    var idle: Bool
     var animated: Bool
     /// Which hero strobe to render (ignored under Reduce Motion). Default `.aurora`.
     var style: StrobeStyle
@@ -25,9 +24,8 @@ public struct StrobeField: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, style: StrobeStyle = .aurora, forceReduceMotion: Bool? = nil, phaseScroll: Bool = false, useMetalRenderer: Bool = false) {
+    public init(input: StrobeInput, animated: Bool = true, style: StrobeStyle = .aurora, forceReduceMotion: Bool? = nil, phaseScroll: Bool = false, useMetalRenderer: Bool = false) {
         self.input = input
-        self.idle = idle
         self.animated = animated
         self.style = style
         self.forceReduceMotion = forceReduceMotion
@@ -39,17 +37,17 @@ public struct StrobeField: View {
 
     public var body: some View {
         if usesReducedMotion {
-            ReducedGauge(cents: input.cents, locked: input.locked)
+            ReducedGauge(cents: Double(input.cents), locked: input.locked)
         } else {
             switch style {
             case .aurora:
                 if useMetalRenderer {
-                    MetalStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
+                    MetalStrobe(input: input, animated: animated, phaseScroll: phaseScroll)
                 } else {
-                    AuroraStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
+                    AuroraStrobe(input: input, animated: animated, phaseScroll: phaseScroll)
                 }
             case .radial:
-                RadialStrobe(input: input, idle: idle, animated: animated, phaseScroll: phaseScroll)
+                RadialStrobe(input: input, animated: animated, phaseScroll: phaseScroll)
             }
         }
     }

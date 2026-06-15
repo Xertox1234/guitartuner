@@ -26,7 +26,6 @@ final class AuroraClock {
 /// replace this while keeping the same input contract.
 public struct AuroraStrobe: View {
     var input: StrobeInput
-    var idle: Bool
     var animated: Bool
     var ribbonCount: Int
     /// When `true`, lateral scroll is driven by the engine's live `phase`
@@ -38,9 +37,8 @@ public struct AuroraStrobe: View {
     @Environment(\.lumaPalette) private var palette
     @State private var clock = AuroraClock()
 
-    public init(input: StrobeInput, idle: Bool = false, animated: Bool = true, ribbonCount: Int = 13, phaseScroll: Bool = false) {
+    public init(input: StrobeInput, animated: Bool = true, ribbonCount: Int = 13, phaseScroll: Bool = false) {
         self.input = input
-        self.idle = idle
         self.animated = animated
         self.ribbonCount = ribbonCount
         self.phaseScroll = phaseScroll
@@ -68,9 +66,9 @@ public struct AuroraStrobe: View {
         let w = size.width, h = size.height
         guard w > 1, h > 1 else { return }
         let cx = w / 2
-        let err = input.cents
+        let err = Double(input.cents)
         let sign: Double = err < 0 ? -1 : 1
-        let inLock = input.locked || abs(err) < LumaMusic.lockCents
+        let inLock = input.locked
 
         // dt (clamped like the export clock)
         var dt = 0.0
@@ -86,12 +84,13 @@ public struct AuroraStrobe: View {
         if phaseScroll {
             // Engine-driven: estimate scroll velocity from the live phase advance
             // (Δphase over the time between readings), eased to zero at lock.
-            if clock.lastPhase < 0 { clock.lastPhase = input.phase; clock.phaseChangeTime = time }
-            if input.phase != clock.lastPhase {
-                let d = AuroraStrobe.wrappedDelta(clock.lastPhase, input.phase)
+            let phase = Double(input.phase)
+            if clock.lastPhase < 0 { clock.lastPhase = phase; clock.phaseChangeTime = time }
+            if phase != clock.lastPhase {
+                let d = AuroraStrobe.wrappedDelta(clock.lastPhase, phase)
                 let elapsed = time - clock.phaseChangeTime
                 if elapsed > 1e-4 { clock.scrollVel = d / elapsed }
-                clock.lastPhase = input.phase
+                clock.lastPhase = phase
                 clock.phaseChangeTime = time
             } else if time - clock.phaseChangeTime > 0.25 {
                 clock.scrollVel = 0          // stale (silence) → stop drifting
@@ -101,7 +100,7 @@ public struct AuroraStrobe: View {
             clock.scroll += StrobeMath.scrollSpeed(cents: err, lock: lock) * dt
         }
 
-        let breath = idle ? 0.6 + 0.4 * sin(time * 1.4) : 1.0
+        let breath = input.isIdle ? 0.6 + 0.4 * sin(time * 1.4) : 1.0
 
         // colour for the current side, blended toward mint by proximity + lock
         let side = sign < 0 ? mix(pal.flat, pal.flat2, 0.35) : mix(pal.sharp, pal.sharp2, 0.35)
@@ -168,9 +167,9 @@ public struct AuroraStrobe: View {
 
 #if DEBUG
 private struct AuroraDemo: View {
-    let cents: Double
+    let cents: Float
     var body: some View {
-        AuroraStrobe(input: StrobeInput(cents: cents, locked: abs(cents) < LumaMusic.lockCents))
+        AuroraStrobe(input: StrobeInput(cents: cents, locked: Double(abs(cents)) < LumaMusic.lockCents))
             .frame(width: 360, height: 420)
             .background(Color.lumaBg)
     }

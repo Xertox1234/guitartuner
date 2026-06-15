@@ -36,7 +36,7 @@ public final class TunerSimulator {
 
     public var locked: Bool { abs(cents) < LumaMusic.lockCents }
 
-    public var input: StrobeInput { StrobeInput(cents: cents, phase: 0, locked: locked) }
+    public var input: StrobeInput { StrobeInput(cents: Float(cents), phase: 0, locked: locked, isIdle: false) }
 
     public func displayedFrequency(a4: Double = 440) -> Double {
         LumaMusic.frequency(midi: activeString.midi, a4: a4) * pow(2, cents / 1200)

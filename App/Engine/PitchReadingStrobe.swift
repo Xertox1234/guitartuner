@@ -16,9 +16,10 @@ extension PitchReading {
     /// Map a reading to the strobe's render contract.
     func strobeInput(lockCents: Double = LumaMusic.lockCents) -> StrobeInput {
         StrobeInput(
-            cents: cents,
-            phase: phase,
-            locked: isLocked(lockCents: lockCents, minConfidence: minLockConfidence)
+            cents: Float(cents),
+            phase: Float(phase),
+            locked: isLocked(lockCents: lockCents, minConfidence: minLockConfidence),
+            isIdle: false
         )
     }
 }

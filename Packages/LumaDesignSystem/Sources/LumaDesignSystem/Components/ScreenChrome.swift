@@ -127,7 +127,7 @@ public struct TunerScreenStatic: View {
 
                 // Hero field — note stack over the Aurora strobe (Plan 03).
                 ZStack {
-                    StrobeField(input: StrobeInput(cents: cents ?? 0, locked: locked), idle: cents == nil)
+                    StrobeField(input: StrobeInput(cents: Float(cents ?? 0), locked: locked, isIdle: cents == nil))
                     VStack(spacing: 0) {
                         NoteReadout(note: note, octave: octave, locked: locked, dimmed: cents == nil)
                         if let cents {

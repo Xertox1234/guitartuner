@@ -34,7 +34,7 @@ final class BenchmarkTests: XCTestCase {
     }
 
     func testCaseRunnerScoresCleanTone() {
-        let sig = Synth.harmonic(fundamental: 196, sampleRate: fs, seconds: 0.8)
+        let sig = Synth.harmonic(fundamental: 196, sampleRate: fs, seconds: 2.0)
         let r = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 196,
                                category: "harmonic", centsTarget: 0, snrDB: .infinity, method: .mpm)
         XCTAssertFalse(r.octaveError)
@@ -52,7 +52,7 @@ final class BenchmarkTests: XCTestCase {
             let r = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 146.83,
                                    category: "inharmonic", centsTarget: 0, snrDB: .infinity, method: method)
             XCTAssertFalse(r.octaveError, "\(method) octave-safe")
-            XCTAssertLessThan(r.stats.meanAbs, 12, "\(method) accuracy")
+            XCTAssertLessThan(r.stats.meanAbs, 1.0, "\(method) accuracy")
         }
     }
 }

@@ -43,7 +43,7 @@ struct LiveTunerScreen: View {
 
     var body: some View {
         ZStack {
-            StrobeField(input: model.strobeInput, idle: model.idle, style: strobeStyle,
+            StrobeField(input: model.strobeInput, style: strobeStyle,
                         phaseScroll: true, useMetalRenderer: useMetalStrobe)
             VStack(spacing: 0) {
                 topChrome
@@ -64,7 +64,7 @@ struct LiveTunerScreen: View {
 
             if stageMode {
                 StageView(input: model.strobeInput, note: model.note, octave: model.octave,
-                          cents: model.cents, idle: model.idle, style: strobeStyle, phaseScroll: true) {
+                          cents: model.cents, style: strobeStyle, phaseScroll: true) {
                     withAnimation(.easeInOut(duration: 0.3)) { stageMode = false }
                 }
                 .transition(.opacity)

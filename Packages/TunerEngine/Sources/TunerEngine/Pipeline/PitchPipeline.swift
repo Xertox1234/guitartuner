@@ -29,6 +29,13 @@ public final class PitchPipeline {
     /// The full guitar+bass search range (below low B to high frets).
     public static let searchRange: ClosedRange<Double> = 27...1400
 
+    /// Maximum per-estimate ±σ for `isLockIntegrated` to engage (Plan 06 P4 §7.2).
+    /// The LS-fit residuals from PhaseIntegrator grow large when the pitch is still
+    /// drifting (decay-glide attack), producing a high `precisionCents`. Below this
+    /// threshold the pitch trend is flat — only then is the "LOCKED ±X¢" state valid.
+    /// Typical settled clean-bass: ~0.12¢; decay-glide early window: ≥2¢.
+    static let lockPrecisionThreshold: Double = 1.0   // cents
+
     /// At/above this fundamental the core range uses the bias-corrected spectral
     /// refine (Plan 06 P1); below it the fundamental bin is too low for a clean
     /// single-frame spectral peak (the negative-frequency image leaks in), so bass
@@ -211,7 +218,9 @@ public final class PitchPipeline {
                     emittedCents = nc
                 }
                 precisionCents = r.precisionCents
-                isLockIntegrated = true
+                // Only declare the note "locked" when the LS residuals are tight —
+                // large residuals indicate a still-drifting pitch (decay-glide attack).
+                isLockIntegrated = r.precisionCents <= Self.lockPrecisionThreshold
             }
         } else {
             phaseIntegrator.reset()

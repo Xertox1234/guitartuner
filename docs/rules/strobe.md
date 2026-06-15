@@ -7,3 +7,4 @@
 - Always honor `@Environment(\.accessibilityReduceMotion)`. When reduce motion is enabled, substitute the `ReducedGauge` readout — do not just slow the animation.
 - Aurora and Radial are both first-class; neither is deprecated or secondary. The user selects via `@AppStorage("strobeStyle")`.
 - The **in-tune lock moment** — phase standing still, bloom activating, haptic firing — is the emotional core of the product. Do not degrade it. Changes to the strobe state machine require explicit review of the lock transition.
+- Renderers must derive `inLock` from `input.locked` **only** — never from `abs(input.cents) < lockCents`. The confidence gate lives in `LiveTunerModel`; replicating it in the renderer causes false-lock bloom during bass attacks where cents error is small but confidence is low.

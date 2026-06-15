@@ -8,3 +8,4 @@
 - Microphone permission is requested lazily on first `start()`, not at app launch.
 - On macOS sandboxed/notarized builds, the `com.apple.security.device.audio-input` entitlement is required. It is present in `Guitar_Tuner.entitlements`.
 - If `AVAudioEngine` throws on start, surface the error via `TunerEngineError` — do not silently swallow it.
+- Scratch buffers must be pre-allocated to the maximum expected frame count (4096 covers all iOS/macOS buffer sizes at 44.1/48 kHz); clamp every read/write with `let safeFrames = min(frames, scratch.count)` — never resize on the RT thread.

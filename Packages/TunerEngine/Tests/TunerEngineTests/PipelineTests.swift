@@ -1,10 +1,10 @@
-import XCTest
+import Foundation
+import Testing
 @testable import TunerEngine
 
-final class PipelineTests: XCTestCase {
+@Suite struct PipelineTests {
     let fs = 48_000.0
 
-    /// Feed a full signal through a fresh pipeline in 10 ms blocks.
     private func run(_ signal: [Float], a4: Double = 440, method: DetectionMethod = .mpm,
                      targetNote: Note? = nil) -> [PitchReading] {
         let p = PitchPipeline(sampleRate: fs, a4: a4, method: method, targetNote: targetNote)
@@ -22,88 +22,104 @@ final class PipelineTests: XCTestCase {
     private func steady(_ rs: [PitchReading], after t: TimeInterval = 0.4) -> [PitchReading] {
         rs.filter { $0.timestamp >= t }
     }
+
     private func sigma(_ xs: [Double]) -> Double {
         guard xs.count > 1 else { return 0 }
         let m = xs.reduce(0, +) / Double(xs.count)
         return (xs.reduce(0) { $0 + ($1 - m) * ($1 - m) } / Double(xs.count)).squareRoot()
     }
 
-    func testTracksCleanGuitarNote() throws {
-        // G3 = 196 Hz.
+    @Test func tracksCleanGuitarNote() throws {
         let rs = run(Synth.harmonic(fundamental: 196, sampleRate: fs, seconds: 0.8))
-        let last = try XCTUnwrap(rs.last)
-        XCTAssertEqual(last.note.description, "G3")
-        XCTAssertLessThan(abs(last.cents), 3.0)
-        XCTAssertGreaterThan(last.confidence, 0.8)
+        let last = try #require(rs.last)
+        #expect(last.note.description == "G3")
+        #expect(abs(last.cents) < 1.0)
+        #expect(last.confidence > 0.8)
     }
 
-    func testSteadyToneIsLowJitter() {
-        let rs = steady(run(Synth.pure(frequency: 246.94, sampleRate: fs, seconds: 0.9)))  // B3
-        XCTAssertGreaterThan(rs.count, 5)
-        XCTAssertLessThan(sigma(rs.map(\.cents)), 3.0, "steady tone should barely jitter")
+    @Test func steadyToneIsLowJitter() {
+        let rs = steady(run(Synth.pure(frequency: 246.94, sampleRate: fs, seconds: 0.9)))
+        #expect(rs.count > 5)
+        #expect(sigma(rs.map(\.cents)) < 1.0, "steady pure tone should barely jitter")
     }
 
-    func testDetunedReadsCorrectCents() throws {
+    @Test func detunedReadsCorrectCents() throws {
         let f = 110 * pow(2, 20.0 / 1200)        // A2, +20¢
         let rs = steady(run(Synth.harmonic(fundamental: f, sampleRate: fs, seconds: 0.9)))
         let mean = rs.map(\.cents).reduce(0, +) / Double(max(1, rs.count))
-        XCTAssertEqual(mean, 20, accuracy: 5)
-        XCTAssertEqual(try XCTUnwrap(rs.last).note.description, "A2")
+        #expect(abs(mean - 20) < 2, "detuned A2 mean should read +20¢")
+        let last = try #require(rs.last)
+        #expect(last.note.description == "A2")
     }
 
-    func testInharmonicGuitarString() throws {
+    @Test func inharmonicGuitarString() throws {
         let rs = steady(run(Synth.inharmonicString(fundamental: 82.41, sampleRate: fs, seconds: 1.0)))
-        let last = try XCTUnwrap(rs.last)
-        XCTAssertEqual(last.note.description, "E2")
-        XCTAssertLessThan(abs(last.cents), 12)
+        let last = try #require(rs.last)
+        #expect(last.note.description == "E2")
+        #expect(abs(last.cents) < 3.0)
     }
 
-    func testLowBassOctaveSafety() throws {
+    @Test func lowBassOctaveSafety() throws {
         // E1 = 41.2 Hz — must read E1, never E2.
         let rs = steady(run(Synth.inharmonicString(fundamental: 41.20, sampleRate: fs, seconds: 1.3)), after: 0.5)
-        let last = try XCTUnwrap(rs.last)
-        XCTAssertEqual(last.note.octave, 1, "octave-safe on low bass")
-        XCTAssertEqual(last.note.name, "E")
+        let last = try #require(rs.last)
+        #expect(last.note.octave == 1, "octave-safe on low bass")
+        #expect(last.note.name == "E")
     }
 
-    func testNoiseRobustness() throws {
+    // M16: Low-string octave safety under weak fundamental, exercised in the fast
+    // swift test cycle. The benchmark covers only clean tones; stress stimuli
+    // (weak/missing fund.) are normally only in --ci runs. This parameterized test
+    // catches regressions on the hardest strings in < 10 s.
+    @Test(arguments: [30.87, 41.20])   // B0, E1
+    func lowBassOctaveSafeUnderWeakFundamental(_ f: Double) {
+        let signal = Synth.inharmonicString(fundamental: f, sampleRate: fs, seconds: 1.5,
+                                            fundamentalLevel: 0.15)
+        let result = CaseRunner.run(
+            signal: signal, sampleRate: fs, trueFrequency: f,
+            category: "weak-fund", centsTarget: 0, snrDB: 60, method: .mpm
+        )
+        #expect(!result.octaveError, "octave error on f=\(f) Hz with weak fundamental")
+        #expect(result.readings > 3, "pipeline should produce steady readings at f=\(f) Hz")
+    }
+
+    @Test func noiseRobustness() throws {
         var rng = SeededRNG(seed: 99)
-        let clean = Synth.inharmonicString(fundamental: 220, sampleRate: fs, seconds: 0.9)  // A3
+        let clean = Synth.inharmonicString(fundamental: 220, sampleRate: fs, seconds: 0.9)
         let noisy = Synth.addNoise(to: clean, snrDB: 20, rng: &rng)
         let rs = steady(run(noisy))
-        XCTAssertGreaterThan(rs.count, 3)
-        // No octave errors, and the settled reading stays close.
-        XCTAssertTrue(rs.allSatisfy { abs(TestSupport.cents($0.frequency, 220)) < 50 }, "no octave error under noise")
-        XCTAssertLessThan(abs(TestSupport.cents(try XCTUnwrap(rs.last).frequency, 220)), 20)
+        #expect(rs.count > 3)
+        #expect(rs.allSatisfy { abs(TestSupport.cents($0.frequency, 220)) < 50 }, "no octave error under noise")
+        let last = try #require(rs.last)
+        #expect(abs(TestSupport.cents(last.frequency, 220)) < 5.0)
     }
 
-    func testPhaseAlwaysNormalized() {
-        let rs = run(Synth.pure(frequency: 329.63, sampleRate: fs, seconds: 0.6))  // E4
-        XCTAssertFalse(rs.isEmpty)
+    @Test func phaseAlwaysNormalized() {
+        let rs = run(Synth.pure(frequency: 329.63, sampleRate: fs, seconds: 0.6))
+        #expect(!rs.isEmpty)
         for r in rs {
-            XCTAssertGreaterThanOrEqual(r.phase, 0)
-            XCTAssertLessThan(r.phase, 1)
+            #expect(r.phase >= 0)
+            #expect(r.phase < 1)
         }
     }
 
-    func testSilenceProducesNoReadings() {
+    @Test func silenceProducesNoReadings() {
         let rs = run([Float](repeating: 0, count: Int(fs * 0.5)))
-        XCTAssertTrue(rs.isEmpty)
+        #expect(rs.isEmpty)
     }
 
-    func testOctaveGuardAllowsCleanJump() throws {
+    @Test func octaveGuardAllowsCleanJump() throws {
         // A2 (110 Hz) then A3 (220 Hz): clean signal has clarity ≥ 0.95, guard must not block.
         let a2 = Synth.harmonic(fundamental: 110, sampleRate: fs, seconds: 0.7)
         let a3 = Synth.harmonic(fundamental: 220, sampleRate: fs, seconds: 0.7)
         let rs = run(a2 + a3)
         let late = rs.filter { $0.timestamp > 1.0 }
-        XCTAssertTrue(late.contains { $0.note.description == "A3" },
-                      "clean octave jump should pass the octave guard")
+        #expect(late.contains { $0.note.description == "A3" },
+                "clean octave jump should pass the octave guard")
     }
 
-    func testOctaveGuardSuppressesLowClarityOctaveJump() {
+    @Test func octaveGuardSuppressesLowClarityOctaveJump() {
         // A2 tracked, then a noisy 220 Hz burst (SNR ≈ 8 dB → clarity < 0.95).
-        // The octave guard should suppress readings during the ambiguous burst.
         var rng = SeededRNG(seed: 7)
         let a2 = Synth.harmonic(fundamental: 110, sampleRate: fs, seconds: 0.7)
         let noisyDouble = Synth.addNoise(
@@ -112,15 +128,15 @@ final class PipelineTests: XCTestCase {
         )
         let rs = run(a2 + noisyDouble)
         let duringBurst = rs.filter { $0.timestamp >= 0.7 }
-        XCTAssertFalse(duringBurst.contains { $0.note.description == "A3" },
-                       "low-clarity octave jump should be suppressed by the octave guard")
+        #expect(!duringBurst.contains { $0.note.description == "A3" },
+                "low-clarity octave jump should be suppressed by the octave guard")
     }
 
-    func testA4Calibration() throws {
+    @Test func a4Calibration() throws {
         // At A4 = 432, a 432 Hz tone is A4 ± ~0¢.
         let rs = steady(run(Synth.pure(frequency: 432, sampleRate: fs, seconds: 0.7), a4: 432))
-        let last = try XCTUnwrap(rs.last)
-        XCTAssertEqual(last.note.description, "A4")
-        XCTAssertLessThan(abs(last.cents), 3)
+        let last = try #require(rs.last)
+        #expect(last.note.description == "A4")
+        #expect(abs(last.cents) < 1.0)
     }
 }

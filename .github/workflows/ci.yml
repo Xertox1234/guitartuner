@@ -60,11 +60,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Use the runner image's latest-stable Xcode (kept current via macos-15).
+      # Pin an explicit Xcode (NOT latest-stable, which floats with the runner image —
+      # a green main could go red with no code change). 26.3 is the macos-15 image's
+      # current stable and tracks the local toolchain; bump it deliberately via PR.
+      # Keep this at or above the team's local Xcode floor so iOS-only `#if os(iOS)`
+      # code can't use a symbol newer than CI's SDK. See
+      # docs/solutions/best-practices/ios-only-code-ci-sdk-skew-2026-06-16.md
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: "26.3"
 
       - name: Environment
         run: |

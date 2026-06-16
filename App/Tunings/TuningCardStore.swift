@@ -66,10 +66,18 @@ final class TuningCardStore {
 
     private func persistCache() {
         do {
+            // Application Support is not created automatically on iOS — ensure the
+            // parent directory exists, or .write(to:) fails with ENOENT on first run.
+            try FileManager.default.createDirectory(
+                at: cacheURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try JSONEncoder().encode(cards).write(to: cacheURL, options: .atomic)
         } catch {
-            // Non-fatal: stale cache on next launch; no user-visible failure
-            assertionFailure("TuningCardStore: cache write failed — \(error)")
+            // Non-fatal: stale cache on next launch; no user-visible failure.
+            // (Must not crash — a debug assertionFailure here was terminating the
+            // app on a fresh install before Application Support existed.)
+            print("[LUMA] TuningCardStore: cache write failed — \(error)")
         }
     }
 }

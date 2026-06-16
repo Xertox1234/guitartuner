@@ -40,7 +40,7 @@ final class FixturesTests: XCTestCase {
     // MARK: end-to-end scoring from a directory
 
     func testRunScoresFixturesFromDirectory() throws {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("luma-fixtures-\(UUID().uuidString)")
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("luma-fixtures-\(ProcessInfo.processInfo.processIdentifier)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
 

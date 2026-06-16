@@ -162,11 +162,10 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
         }
     }
 
-    /// Match the drawable format + clear to the palette background.
+    /// Match the drawable pixel format. Background is rendered by the fragment
+    /// shader (colBg fills every pixel), so clearColor is not needed.
     func configure(_ view: MTKView) {
         view.colorPixelFormat = .bgra8Unorm
-        let bg = StrobePalette.resolve(scheme, palette: palette).bg
-        view.clearColor = MTLClearColor(red: bg.r, green: bg.g, blue: bg.b, alpha: 1)
     }
 
     func update(scheme: ColorScheme, view: MTKView) {

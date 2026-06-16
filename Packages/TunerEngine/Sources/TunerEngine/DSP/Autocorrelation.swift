@@ -45,12 +45,16 @@ struct Correlation {
 
         // Prefix sum of squares in Double for a numerically clean m(τ).
         var prefix = [Double](repeating: 0, count: n + 1)
-        var acc = 0.0
+        #if canImport(Accelerate)
+        var sq = [Float](repeating: 0, count: n)
+        vDSP_vsq(x, 1, &sq, 1, vDSP_Length(n))
+        for i in 0..<n { prefix[i + 1] = prefix[i] + Double(sq[i]) }
+        #else
         for i in 0..<n {
             let v = Double(x[i])
-            acc += v * v
-            prefix[i + 1] = acc
+            prefix[i + 1] = prefix[i] + v * v
         }
+        #endif
 
         var r = [Double](repeating: 0, count: lag + 1)
         #if canImport(Accelerate)

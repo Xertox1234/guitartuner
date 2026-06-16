@@ -99,7 +99,7 @@ final class ToneGenerator {
         // effort — the tone is a convenience and never essential.
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playAndRecord, mode: .measurement,
-                                 options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers])
+                                 options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
         try? session.setActive(true)
         #endif
 

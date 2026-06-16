@@ -12,7 +12,7 @@ final class GearStoreModel {
 
     init(api: LumaAPI = LumaAPI()) {
         self.api = api
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let support = URL.applicationSupportDirectory
         self.cacheURL = support.appending(component: "luma_gear_products.json")
         self.products = loadCache()
     }

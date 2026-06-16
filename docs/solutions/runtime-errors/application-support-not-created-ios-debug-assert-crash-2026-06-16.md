@@ -107,12 +107,13 @@ network-response, or external-data path — log with `print("[LUMA] …")` and d
 
 ## Related / follow-up
 
-- Both stores still resolve the cache dir with `FileManager.default.urls(for:
+- Both stores previously resolved the cache dir with `FileManager.default.urls(for:
   .applicationSupportDirectory, in: .userDomainMask)[0]` — a force subscript that
   would be **Release-fatal** if the array were ever empty (violates the repo's
-  no-force-unwrap rule). Practically unreachable for `.applicationSupportDirectory`,
-  but `.first` or the `create: true` idiom above is the form to reach for. Track
-  separately if fixing.
+  no-force-unwrap rule). Now resolved via the modern non-optional
+  `URL.applicationSupportDirectory` (iOS 16+/macOS 13+; deployment targets are iOS
+  17 / macOS 14). Prefer that over the `urls(...)[0]` form for known system
+  directories.
 
 ## Related files
 

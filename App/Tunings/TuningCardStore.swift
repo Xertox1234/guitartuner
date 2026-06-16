@@ -12,7 +12,7 @@ final class TuningCardStore {
 
     init(api: LumaAPI = LumaAPI()) {
         self.api = api
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let support = URL.applicationSupportDirectory
         self.cacheURL = support.appending(component: "luma_tuning_cards.json")
         self.cards = loadCache()
     }

@@ -5,6 +5,11 @@ import SwiftUI
 /// *Reduce Motion* is on — engaged automatically via the environment (an equal, not
 /// a downgrade), and overriding the style choice. Mirrors `StrobeField` in
 /// `tuner-ui.jsx`.
+///
+/// **Metal renderer** (`useMetalRenderer: true`): supported for both styles.
+/// `.aurora` → `MetalStrobe`, `.radial` → `RadialMetalStrobe`. Ignored under
+/// Reduce Motion (the gauge has no Metal path). Falls back to Canvas on
+/// non-Metal platforms automatically within each renderer.
 public struct StrobeField: View {
     var input: StrobeInput
     var animated: Bool

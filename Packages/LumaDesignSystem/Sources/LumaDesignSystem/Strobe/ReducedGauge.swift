@@ -17,9 +17,14 @@ public struct ReducedGauge: View {
     }
 
     public var body: some View {
-        let tuneColor = Color(StrobePalette.resolve(scheme, palette: palette).tune, opacity: 1)
+        let pal       = StrobePalette.resolve(scheme, palette: palette)
+        let tuneColor = Color(pal.tune,  opacity: 1)
+        let flatColor = Color(pal.flat,  opacity: 1)
+        let sharpColor = Color(pal.sharp, opacity: 1)
+        let glow: Color = locked ? tuneColor
+            : (cents < -0.001 ? flatColor : (cents > 0.001 ? sharpColor : .lumaInk))
         Canvas { context, size in
-            draw(&context, size, tuneColor: tuneColor)
+            draw(&context, size, tuneColor: tuneColor, glow: glow)
         }
         .accessibilityElement()
         .accessibilityLabel("Tuning gauge")
@@ -32,7 +37,7 @@ public struct ReducedGauge: View {
         return cents < 0 ? "\(mag) cents flat" : "\(mag) cents sharp"
     }
 
-    private func draw(_ ctx: inout GraphicsContext, _ size: CGSize, tuneColor: Color) {
+    private func draw(_ ctx: inout GraphicsContext, _ size: CGSize, tuneColor: Color, glow: Color) {
         // Fit the 220×220 viewBox from the export, then draw in those coordinates.
         let s = min(size.width, size.height) / 220
         guard s > 0 else { return }
@@ -42,8 +47,6 @@ public struct ReducedGauge: View {
         let cx = 110.0, cy = 124.0, R = 86.0
         let span = StrobeMath.gaugeSpan
         let a = StrobeMath.gaugeAngle(cents: cents)
-        let glow: Color = locked ? tuneColor
-            : (cents < -0.001 ? .lumaFlat : (cents > 0.001 ? .lumaSharp : .lumaInk))
 
         // track
         ctx.stroke(arc(cx, cy, R, -span, span),

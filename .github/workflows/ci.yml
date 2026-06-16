@@ -88,10 +88,14 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Build app (macOS)
+      # Build the macOS app AND run the app-layer unit tests. LUMATests is a
+      # macOS-hosted bundle (LockGate, LumaAPI.buildURL, and the CacheFile
+      # regression guarding the iOS Application Support launch crash). `test`
+      # implies `build`, so this keeps the macOS compile gate and adds execution.
+      - name: Test app (macOS)
         run: |
           set -o pipefail
-          xcodebuild build \
+          xcodebuild test \
             -project LUMA.xcodeproj \
             -scheme LUMA \
             -destination 'platform=macOS' \

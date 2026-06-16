@@ -50,13 +50,7 @@ final class GearStoreModel {
 
     private func persistCache() {
         do {
-            // Application Support is not created automatically on iOS — ensure the
-            // parent directory exists, or .write(to:) fails with ENOENT on first run.
-            try FileManager.default.createDirectory(
-                at: cacheURL.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            try JSONEncoder().encode(products).write(to: cacheURL, options: .atomic)
+            try CacheFile.write(products, to: cacheURL)
         } catch {
             // Non-fatal: stale cache on next launch; no user-visible failure.
             print("[LUMA] GearStoreModel: cache write failed — \(error)")

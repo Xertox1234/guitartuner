@@ -4,7 +4,7 @@ track: bug
 category: runtime-errors
 tags: [swiftui]
 module: App
-applies_to: ["App/Tunings/TuningCardStore.swift", "App/Store/GearStoreModel.swift", "App/Tunings/TuningCard.swift"]
+applies_to: ["App/Persistence/CacheFile.swift", "App/Tunings/TuningCardStore.swift", "App/Store/GearStoreModel.swift", "App/Tunings/TuningCard.swift"]
 created: 2026-06-16
 ---
 
@@ -84,6 +84,10 @@ writers is `FileManager.default.url(for: .applicationSupportDirectory, in:
 .userDomainMask, appropriateFor: nil, create: true)`, which creates the directory
 at URL-resolution time.
 
+The create-dir-then-write logic is now centralized in `CacheFile.write(_:to:)`
+(`App/Persistence/CacheFile.swift`); both stores delegate to it, so a future cache
+writer cannot silently reintroduce the missing-directory bug.
+
 A third instance of the same anti-pattern, `TuningCard.strings`, sat on the exact
 `fetch()` decode path and was downgraded the same way (corrupt `strings_json` →
 empty tuning + log, instead of a Debug crash).
@@ -104,6 +108,12 @@ network-response, or external-data path — log with `print("[LUMA] …")` and d
 - Built a signed Debug build with the fix, installed + launched via the same
   `devicectl` harness → app runs **past** the previous crash point (process stays
   alive). Preview independently confirmed working on device.
+- Automated regression: `LUMA/Tests/CacheFileTests.swift` writes to a not-yet-
+  existing nested directory and asserts the file is created. Confirmed it goes red
+  with `NSCocoaError 4` / `ENOENT` — the exact device signature — when the
+  `createDirectory` line is removed. CI now runs the macOS `LUMATests` bundle via
+  `xcodebuild test` (the macOS job previously only `build`-ed the app, so these
+  app-layer tests had never executed), so the guard runs on every push.
 
 ## Related / follow-up
 
@@ -117,7 +127,10 @@ network-response, or external-data path — log with `print("[LUMA] …")` and d
 
 ## Related files
 
-- `App/Tunings/TuningCardStore.swift` (`persistCache`)
-- `App/Store/GearStoreModel.swift` (`persistCache`)
+- `App/Persistence/CacheFile.swift` (shared create-dir-then-write helper)
+- `App/Tunings/TuningCardStore.swift` (`persistCache` → `CacheFile.write`)
+- `App/Store/GearStoreModel.swift` (`persistCache` → `CacheFile.write`)
 - `App/Tunings/TuningCard.swift` (`strings` decode path)
 - `App/LumaApp.swift` (single-owner `@State` instantiation — why per-write is cheap)
+- `LUMA/Tests/CacheFileTests.swift` (regression guard)
+- `.github/workflows/ci.yml` (macOS job now runs `LUMATests` via `xcodebuild test`)

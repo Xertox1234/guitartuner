@@ -6,6 +6,7 @@
 - Stage Mode is a `ZStack` overlay — it does not restructure the base layout. Keep it isolated.
 - **Audio never leaves the device.** `TunerEngine` has no networking; the privacy guarantee is architectural. The opt-in account/monetization stack (`LumaAPI`, `AccountModel`, `TuningCardStore`, `GearStoreModel`) uses `URLSession` for backend calls with explicit user consent — this is intentional. Do not add networking outside of `LumaAPI`.
 - Multiplatform target: iPhone/iPad/Mac (true multiplatform, not Catalyst). Use `#if os(macOS)` / `#if os(iOS)` guards where platform behavior differs.
+- **`#if os(iOS)` code is type-checked in CI only by the `iOS Simulator` build step** — not `swift test`, not the macOS build. So an iOS-only symbol newer than CI's Xcode SDK (e.g. an iOS-26-only API used while CI is on Xcode 16.2) compiles on your local Xcode but breaks CI, and only there. Use the spelling in the lowest SDK you build against; `#available` gates runtime, not symbol existence. See `docs/solutions/best-practices/ios-only-code-ci-sdk-skew-2026-06-16.md`.
 - Menu bar tuner (`MenuBarTuner`) shares the same `LiveTunerModel` instance as the main window — it does not own its own `TunerEngine`.
 - Use Swift Concurrency (`async/await`, `Task`, `actor`) everywhere. Existing code uses `AsyncStream`; match that pattern. No Combine.
 - `@Observable` macro: do not add `@Published` — it's redundant and conflicts. Use `@ObservationIgnored` for properties that should not trigger view updates.

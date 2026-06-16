@@ -95,3 +95,8 @@ scoping, tool/extension skips):
 ```bash
 bash .claude/hooks/tests/validate-invariants.test.sh
 ```
+
+The suite is currently run manually and is **not yet CI-wired**, so it can rot. A
+small follow-up is to invoke it from the CI workflow (cheap; no Xcode/Swift needed —
+just `bash` + `jq`) so the hook's contract is regression-guarded alongside the
+accuracy benchmark.

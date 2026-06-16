@@ -85,6 +85,10 @@ run_case "skip: non-edit tool (Bash)" Bash "$f" 0 none
 f=$(make_file "App/Engine/Thing.swift" "let d = try! make()")
 run_case "REVIEW-only: try! in App -> exit 0 / additionalContext" Write "$f" 0 stdout "force operation"
 
+# HARD + REVIEW together: violation blocks (exit 2) and the review rides along on stderr.
+f=$(make_file "Packages/TunerEngine/Sources/TunerEngine/Both.swift" "import SwiftUI" "let d = try! make()")
+run_case "HARD+REVIEW: review rides along in the exit-2 stderr report" Write "$f" 2 stderr "REVIEW"
+
 # --- finding 2: submodule / symbol imports are caught ---
 f=$(make_file "Packages/TunerEngine/Sources/TunerEngine/Sym.swift" "import struct SwiftUI.Color")
 run_case "finding2: 'import struct SwiftUI.Color' caught" Write "$f" 2 stderr "import SwiftUI"

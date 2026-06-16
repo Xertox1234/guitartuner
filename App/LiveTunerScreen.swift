@@ -76,7 +76,10 @@ struct LiveTunerScreen: View {
         .lumaPalette(palette)
         .lumaGlow(state.glow(palette: palette, scheme: colorScheme))
         .foregroundStyle(Color.lumaInk)
-        .task { await model.start() }
+        .task {
+            guard ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" else { return }
+            await model.start()
+        }
         .onChange(of: stageMode) { _, active in setStageHold(active) }
         .onDisappear { setStageHold(false); model.stop() }
         .sheet(isPresented: $showSettings) { SettingsView(model: model) }

@@ -66,7 +66,7 @@ open Packages/LumaDesignSystem/Package.swift
 - **After finding something non-obvious**, run `/codify` to write it into `docs/solutions/`
 - **Never break CI** — accuracy benchmark is CI-blocking; `swift test` must pass
 - **Validate Swift edits** with `XcodeRefreshCodeIssuesInFile` (fast) then `BuildProject` when uncertain
-- **Audio never leaves the device** — no networking in v1; do not add URLSession or any network calls
+- **Audio never leaves the device** — `TunerEngine` has no networking; audio privacy is architectural. The opt-in account/monetization stack (`LumaAPI`, `AccountModel`, `TuningCardStore`, `GearStoreModel`) uses URLSession for backend calls with explicit user consent — this is intentional. Do not add networking outside of `LumaAPI`.
 - **Swift Concurrency everywhere** — `async/await`, `actor`, `AsyncStream`; no Combine
 - **No force-unwrapping** in production code paths
 

@@ -1,58 +1,58 @@
-import XCTest
+import Testing
 @testable import TunerEngine
 
-final class SmoothingTests: XCTestCase {
+@Suite struct SmoothingTests {
 
-    func testConstantInputIsPreserved() {
+    @Test func constantInputIsPreserved() {
         var s = FrequencySmoother()
         var out = 0.0
         for _ in 0..<10 { out = s.update(frequency: 220, a4: 440) }
-        XCTAssertEqual(out, 220, accuracy: 0.5)
+        #expect(abs(out - 220) < 0.5)
     }
 
-    func testSingleOctaveOutlierRejected() {
+    @Test func singleOctaveOutlierRejected() {
         var s = FrequencySmoother()
         for _ in 0..<5 { _ = s.update(frequency: 220, a4: 440) }
         let out = s.update(frequency: 440, a4: 440)   // lone octave spike
-        XCTAssertEqual(out, 220, accuracy: 5)          // median rejects it
+        #expect(abs(out - 220) < 5)                    // median rejects it
     }
 
-    func testNoteChangeConverges() {
+    @Test func noteChangeConverges() {
         var s = FrequencySmoother()
         for _ in 0..<6 { _ = s.update(frequency: 220, a4: 440) }
         var out = 0.0
         for _ in 0..<6 { out = s.update(frequency: 330, a4: 440) }   // step to a new note
-        XCTAssertEqual(out, 330, accuracy: 2)
+        #expect(abs(out - 330) < 2)
     }
 
-    func testMedianHelper() {
-        XCTAssertEqual(FrequencySmoother.median([3, 1, 2]), 2)
-        XCTAssertEqual(FrequencySmoother.median([5]), 5)
-        XCTAssertEqual(FrequencySmoother.median([]), 0)
+    @Test func medianHelper() {
+        #expect(FrequencySmoother.median([3, 1, 2]) == 2)
+        #expect(FrequencySmoother.median([5]) == 5)
+        #expect(FrequencySmoother.median([]) == 0)
     }
 
     // MARK: Sustain gate
 
-    func testGateRequiresSustain() {
+    @Test func gateRequiresSustain() {
         var gate = SustainGate(minConfidence: 0.7, sustainFrames: 3)
-        let a = gate.step(confidence: 0.9); XCTAssertTrue(a.emit);  XCTAssertFalse(a.stable)
-        let b = gate.step(confidence: 0.9); XCTAssertTrue(b.emit);  XCTAssertFalse(b.stable)
-        let c = gate.step(confidence: 0.9); XCTAssertTrue(c.emit);  XCTAssertTrue(c.stable)
+        let a = gate.step(confidence: 0.9); #expect(a.emit);  #expect(!a.stable)
+        let b = gate.step(confidence: 0.9); #expect(b.emit);  #expect(!b.stable)
+        let c = gate.step(confidence: 0.9); #expect(c.emit);  #expect(c.stable)
     }
 
-    func testGateRejectsLowConfidence() {
+    @Test func gateRejectsLowConfidence() {
         var gate = SustainGate(minConfidence: 0.7, sustainFrames: 3)
         let a = gate.step(confidence: 0.3)
-        XCTAssertFalse(a.emit); XCTAssertFalse(a.stable)
+        #expect(!a.emit); #expect(!a.stable)
     }
 
-    func testGateResetsStreakOnDropout() {
+    @Test func gateResetsStreakOnDropout() {
         var gate = SustainGate(minConfidence: 0.7, sustainFrames: 3)
         _ = gate.step(confidence: 0.9)
         _ = gate.step(confidence: 0.9)
         _ = gate.step(confidence: 0.1)               // dropout
         let after = gate.step(confidence: 0.9)
-        XCTAssertTrue(after.emit)
-        XCTAssertFalse(after.stable)                 // streak restarted
+        #expect(after.emit)
+        #expect(!after.stable)                       // streak restarted
     }
 }

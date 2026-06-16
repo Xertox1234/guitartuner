@@ -1,78 +1,76 @@
-import XCTest
+import Foundation
+import Testing
 @testable import TunerEngine
 
-final class NoteTests: XCTestCase {
+@Suite struct NoteTests {
 
-    func testStandardFrequencies() {
-        XCTAssertEqual(Pitch.frequency(midi: 69), 440, accuracy: 1e-9)        // A4
-        XCTAssertEqual(Pitch.frequency(midi: 60), 261.6256, accuracy: 1e-3)   // C4
-        XCTAssertEqual(Pitch.frequency(midi: 40), 82.4069, accuracy: 1e-3)    // E2
-        XCTAssertEqual(Pitch.frequency(midi: 28), 41.2034, accuracy: 1e-3)    // E1
+    @Test func standardFrequencies() {
+        #expect(abs(Pitch.frequency(midi: 69) - 440) < 1e-9)         // A4
+        #expect(abs(Pitch.frequency(midi: 60) - 261.6256) < 1e-3)    // C4
+        #expect(abs(Pitch.frequency(midi: 40) - 82.4069) < 1e-3)     // E2
+        #expect(abs(Pitch.frequency(midi: 28) - 41.2034) < 1e-3)     // E1
     }
 
-    func testA4Calibration() {
-        XCTAssertEqual(Pitch.frequency(midi: 69, a4: 432), 432, accuracy: 1e-9)
-        // A note's frequency scales with A4.
+    @Test func a4Calibration() {
+        #expect(abs(Pitch.frequency(midi: 69, a4: 432) - 432) < 1e-9)
         let e2at440 = Pitch.frequency(midi: 40, a4: 440)
         let e2at432 = Pitch.frequency(midi: 40, a4: 432)
-        XCTAssertEqual(e2at432 / e2at440, 432.0 / 440.0, accuracy: 1e-9)
+        #expect(abs(e2at432 / e2at440 - 432.0 / 440.0) < 1e-9)
     }
 
-    func testNoteNaming() {
-        XCTAssertEqual(Note(midi: 69).description, "A4")
-        XCTAssertEqual(Note(midi: 60).description, "C4")
-        XCTAssertEqual(Note(midi: 40).description, "E2")
-        XCTAssertEqual(Note(midi: 61).name, "C\u{266F}")
-        XCTAssertEqual(Note(midi: 23).description, "B0")     // 5-string low B
+    @Test func noteNaming() {
+        #expect(Note(midi: 69).description == "A4")
+        #expect(Note(midi: 60).description == "C4")
+        #expect(Note(midi: 40).description == "E2")
+        #expect(Note(midi: 61).name == "C\u{266F}")
+        #expect(Note(midi: 23).description == "B0")     // 5-string low B
     }
 
-    func testNearestRoundTrip() {
+    @Test func nearestRoundTrip() {
         for midi in 23...100 {
             let f = Pitch.frequency(midi: midi)
             let n = Pitch.nearest(frequency: f)
-            XCTAssertEqual(n?.note.midi, midi)
-            XCTAssertEqual(n?.cents ?? 99, 0, accuracy: 1e-6)
+            #expect(n?.note.midi == midi)
+            #expect(abs(n?.cents ?? 99) < 1e-6)
         }
     }
 
-    func testNearestCentsSign() {
+    @Test func nearestCentsSign() {
         // 20 cents sharp of A4.
         let sharp = Pitch.nearest(frequency: 440 * pow(2, 20.0 / 1200))
-        XCTAssertEqual(sharp?.note.midi, 69)
-        XCTAssertEqual(sharp?.cents ?? 0, 20, accuracy: 0.01)
+        #expect(sharp?.note.midi == 69)
+        #expect(abs((sharp?.cents ?? 0) - 20) < 0.01)
         // 30 cents flat of E2.
         let flat = Pitch.nearest(frequency: Pitch.frequency(midi: 40) * pow(2, -30.0 / 1200))
-        XCTAssertEqual(flat?.note.midi, 40)
-        XCTAssertEqual(flat?.cents ?? 0, -30, accuracy: 0.01)
+        #expect(flat?.note.midi == 40)
+        #expect(abs((flat?.cents ?? 0) - (-30)) < 0.01)
     }
 
-    func testNearestRejectsNonPositive() {
-        XCTAssertNil(Pitch.nearest(frequency: 0))
-        XCTAssertNil(Pitch.nearest(frequency: -10))
+    @Test func nearestRejectsNonPositive() {
+        #expect(Pitch.nearest(frequency: 0) == nil)
+        #expect(Pitch.nearest(frequency: -10) == nil)
     }
 
-    func testCentsRelativeToTargetNote() {
+    @Test func centsRelativeToTargetNote() {
         let a4 = Note(midi: 69)
-        XCTAssertEqual(a4.cents(of: 440), 0, accuracy: 1e-6)
-        XCTAssertEqual(a4.cents(of: 440 * pow(2, 10.0 / 1200)), 10, accuracy: 1e-6)   // sharp
-        XCTAssertEqual(a4.cents(of: 440 * pow(2, -25.0 / 1200)), -25, accuracy: 1e-6) // flat
-        // Scales with the A4 reference (432 Hz reads as in-tune A4 at A4 = 432).
-        XCTAssertEqual(Note(midi: 69).cents(of: 432, a4: 432), 0, accuracy: 1e-6)
-        // 5-string low B target judged against a slightly sharp reading.
+        #expect(abs(a4.cents(of: 440)) < 1e-6)
+        #expect(abs(a4.cents(of: 440 * pow(2, 10.0 / 1200)) - 10) < 1e-6)   // sharp
+        #expect(abs(a4.cents(of: 440 * pow(2, -25.0 / 1200)) - (-25)) < 1e-6) // flat
+        #expect(abs(Note(midi: 69).cents(of: 432, a4: 432)) < 1e-6)
         let b0 = Note(midi: 23)
-        XCTAssertGreaterThan(b0.cents(of: b0.frequency() * 1.01), 0)
-        XCTAssertEqual(b0.cents(of: 0), 0)   // non-positive input is guarded
+        #expect(b0.cents(of: b0.frequency() * 1.01) > 0)
+        #expect(b0.cents(of: 0) == 0)                                          // non-positive guarded
     }
 
-    func testReadingLock() {
+    @Test func readingLock() {
         let inTune = PitchReading(frequency: 440, note: Note(midi: 69), cents: 1.5,
                                   confidence: 0.95, phase: 0, timestamp: 0)
-        XCTAssertTrue(inTune.isLocked())
+        #expect(inTune.isLocked())
         let off = PitchReading(frequency: 440, note: Note(midi: 69), cents: 8,
                                confidence: 0.95, phase: 0, timestamp: 0)
-        XCTAssertFalse(off.isLocked())
+        #expect(!off.isLocked())
         let unsure = PitchReading(frequency: 440, note: Note(midi: 69), cents: 1,
                                   confidence: 0.4, phase: 0, timestamp: 0)
-        XCTAssertFalse(unsure.isLocked())
+        #expect(!unsure.isLocked())
     }
 }

@@ -1,76 +1,73 @@
-import XCTest
+import Foundation
+import Testing
 @testable import TunerEngine
 
-final class DSPTests: XCTestCase {
+@Suite struct DSPTests {
 
     // MARK: Preprocessing
 
-    func testDCBlockerRemovesBias() {
+    @Test func dcBlockerRemovesBias() {
         var pre = Preprocessor(sampleRate: 48_000)
         var last: Float = 0
         for _ in 0..<16_000 { last = pre.process(1.0) }   // constant DC, ~0.33 s
-        XCTAssertEqual(last, 0, accuracy: 0.02)            // settles to ~0
+        #expect(abs(last) < 0.02)                           // settles to ~0
     }
 
-    func testHighPassPreservesMusicalBand() {
+    @Test func highPassPreservesMusicalBand() {
         var pre = Preprocessor(sampleRate: 48_000)
         let sig = Synth.pure(frequency: 200, sampleRate: 48_000, seconds: 0.2)
         var out = [Float]()
         for s in sig { out.append(pre.process(s)) }
-        // Compare RMS over the settled tail.
-        let inRMS = rms(Array(sig.suffix(4000)))
+        let inRMS  = rms(Array(sig.suffix(4000)))
         let outRMS = rms(Array(out.suffix(4000)))
-        XCTAssertEqual(outRMS / inRMS, 1.0, accuracy: 0.15)   // ~unity at 200 Hz
+        #expect(abs(outRMS / inRMS - 1.0) < 0.15)          // ~unity at 200 Hz
     }
 
-    func testHighPassAttenuatesRumble() {
+    @Test func highPassAttenuatesRumble() {
         var pre = Preprocessor(sampleRate: 48_000)
         let sig = Synth.pure(frequency: 8, sampleRate: 48_000, seconds: 0.5)
         var out = [Float]()
         for s in sig { out.append(pre.process(s)) }
-        let inRMS = rms(Array(sig.suffix(8000)))
+        let inRMS  = rms(Array(sig.suffix(8000)))
         let outRMS = rms(Array(out.suffix(8000)))
-        XCTAssertLessThan(outRMS / inRMS, 0.2)                // 8 Hz strongly cut
+        #expect(outRMS / inRMS < 0.2)                       // 8 Hz strongly cut
     }
 
     // MARK: Correlation / NSDF identities
 
-    func testNSDFAtZeroLagIsOne() {
+    @Test func nsdfAtZeroLagIsOne() {
         let frame = Synth.pure(frequency: 480, sampleRate: 48_000, seconds: 0.05)
         let corr = Correlation.compute(frame, maxLag: 500)
-        XCTAssertEqual(corr.nsdf(0), 1, accuracy: 1e-6)
+        #expect(abs(corr.nsdf(0) - 1) < 1e-6)
     }
 
-    func testAutocorrelationUnitsMatchEnergy() {
+    @Test func autocorrelationUnitsMatchEnergy() {
         let frame = Synth.pure(frequency: 480, sampleRate: 48_000, seconds: 0.05)
         let corr = Correlation.compute(frame, maxLag: 500)
-        // r[0] == Σ x² == prefixEnergy[N].
-        XCTAssertEqual(corr.r[0], corr.prefixEnergy[corr.count], accuracy: corr.r[0] * 1e-4 + 1e-6)
+        #expect(abs(corr.r[0] - corr.prefixEnergy[corr.count]) < corr.r[0] * 1e-4 + 1e-6)
     }
 
-    func testNSDFPeaksAtPeriod() {
-        // Period of exactly 100 samples (fs/100).
-        let frame = Synth.pure(frequency: 480, sampleRate: 48_000, seconds: 0.04)  // 480 Hz → 100-sample period
+    @Test func nsdfPeaksAtPeriod() {
+        let frame = Synth.pure(frequency: 480, sampleRate: 48_000, seconds: 0.04)
         let corr = Correlation.compute(frame, maxLag: 250)
-        XCTAssertGreaterThan(corr.nsdf(100), 0.95)
-        // Half-period should be clearly lower (octave discrimination).
-        XCTAssertLessThan(corr.nsdf(50), corr.nsdf(100))
+        #expect(corr.nsdf(100) > 0.95)
+        #expect(corr.nsdf(50) < corr.nsdf(100))
     }
 
     // MARK: Parabolic interpolation
 
-    func testParabolicVertex() {
+    @Test func parabolicVertexIsCorrect() {
         // y = 5 − (x − 0.3)² sampled at −1, 0, 1.
         let f = { (x: Double) in 5 - (x - 0.3) * (x - 0.3) }
         let (offset, value) = parabolicVertex(f(-1), f(0), f(1))
-        XCTAssertEqual(offset, 0.3, accuracy: 1e-9)
-        XCTAssertEqual(value, 5, accuracy: 1e-9)
+        #expect(abs(offset - 0.3) < 1e-9)
+        #expect(abs(value  - 5.0) < 1e-9)
     }
 
-    func testParabolicVertexFlat() {
+    @Test func parabolicVertexFlatInput() {
         let (offset, value) = parabolicVertex(1, 1, 1)
-        XCTAssertEqual(offset, 0, accuracy: 1e-12)
-        XCTAssertEqual(value, 1, accuracy: 1e-12)
+        #expect(abs(offset) < 1e-12)
+        #expect(abs(value - 1) < 1e-12)
     }
 
     private func rms(_ xs: [Float]) -> Double {

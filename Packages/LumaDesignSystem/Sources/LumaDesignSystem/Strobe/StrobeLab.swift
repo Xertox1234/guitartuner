@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 import QuartzCore
 
 /// Interactive harness for the Aurora strobe prototype — full-bleed strobe +
@@ -14,10 +13,6 @@ public struct StrobeLab: View {
     @State private var style: StrobeStyle = .aurora
     @State private var palette: LumaPalette = .aurora
     @State private var useMetal = false
-
-    // Physics tick, off the view-update path (advancing @Observable inside body
-    // would trip "modifying state during view update").
-    private let physics = Timer.publish(every: 1.0 / 120.0, on: .main, in: .common).autoconnect()
 
     public init() {}
 
@@ -37,7 +32,16 @@ public struct StrobeLab: View {
         .lumaPalette(palette)
         .environment(\.colorScheme, scheme)
         .foregroundStyle(Color.lumaInk)
-        .onReceive(physics) { _ in sim.advance(to: CACurrentMediaTime()) }
+        .task {
+            // Advance the simulator ~120fps from an async task — off the render
+            // path so @Observable mutations don't trip "modifying state during
+            // view update". Uses wall-clock time so jitter in Task.sleep is
+            // absorbed by the integrator's actual-dt calculation.
+            while !Task.isCancelled {
+                sim.advance(to: CACurrentMediaTime())
+                try? await Task.sleep(nanoseconds: 8_333_333)  // ≈ 1/120 s
+            }
+        }
     }
 
     // MARK: Readouts (reused Plan 02 components)

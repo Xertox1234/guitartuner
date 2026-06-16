@@ -266,11 +266,18 @@ public final class PitchPipeline {
     // MARK: - Helpers
 
     /// The most recent `n` preprocessed samples, in chronological order.
+    /// Uses two contiguous slice copies to avoid per-element modulo arithmetic.
     private func recent(_ n: Int) -> [Float] {
         var out = [Float](repeating: 0, count: n)
         let start = (head - n + cap) % cap
-        for i in 0..<n {
-            out[i] = ring[(start + i) % cap]
+        if start + n <= cap {
+            // Non-wrapping: one contiguous copy.
+            out.replaceSubrange(0..<n, with: ring[start..<start + n])
+        } else {
+            // Wrapping: copy tail of ring, then head.
+            let tail = cap - start
+            out.replaceSubrange(0..<tail,    with: ring[start..<cap])
+            out.replaceSubrange(tail..<n,    with: ring[0..<n - tail])
         }
         return out
     }

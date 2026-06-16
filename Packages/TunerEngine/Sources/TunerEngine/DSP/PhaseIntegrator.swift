@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(Accelerate)
+import Accelerate
+#endif
 
 /// Tretter long-window phase-slope fundamental estimator (Plan 06 P3 centrepiece).
 ///
@@ -258,22 +261,31 @@ struct PhaseIntegrator {
         let tMean = times.reduce(0, +) / Double(k)
         let pMean = phases.reduce(0, +) / Double(k)
 
+        // Centre both arrays, then use vDSP dot products for sxy and sxx.
+        var dt = times.map  { $0 - tMean }
+        var dp = phases.map { $0 - pMean }
+
         var sxy = 0.0, sxx = 0.0
-        for i in 0..<k {
-            let dt = times[i] - tMean
-            sxy += dt * (phases[i] - pMean)
-            sxx += dt * dt
-        }
+        #if canImport(Accelerate)
+        vDSP_dotprD(dt, 1, dp, 1, &sxy, vDSP_Length(k))
+        vDSP_dotprD(dt, 1, dt, 1, &sxx, vDSP_Length(k))
+        #else
+        for i in 0..<k { sxy += dt[i] * dp[i]; sxx += dt[i] * dt[i] }
+        #endif
+
         guard sxx > 0 else { return (0, Double.infinity) }
         let slope = sxy / sxx
 
-        // Residual sum of squares → standard error of the slope estimate.
+        // Residual SSE: r[i] = dp[i] − slope·dt[i]; SSE = Σ r²
         var sse = 0.0
-        for i in 0..<k {
-            let pred = pMean + slope * (times[i] - tMean)
-            let r = phases[i] - pred
-            sse += r * r
-        }
+        #if canImport(Accelerate)
+        var negSlope = -slope
+        var residuals = [Double](repeating: 0, count: k)
+        vDSP_vsmaD(dt, 1, &negSlope, dp, 1, &residuals, 1, vDSP_Length(k))
+        vDSP_dotprD(residuals, 1, residuals, 1, &sse, vDSP_Length(k))
+        #else
+        for i in 0..<k { let r = dp[i] - slope * dt[i]; sse += r * r }
+        #endif
         let s2 = k > 2 ? sse / Double(k - 2) : 0.0
         let sigma = (s2 / sxx).squareRoot()
 

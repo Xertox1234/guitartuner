@@ -66,7 +66,7 @@ struct SustainGate {
 
     /// - minConfidence: clarity floor to count a frame as voiced.
     /// - sustainFrames: consecutive voiced frames required to call it stable.
-    init(minConfidence: Double = 0.7, sustainFrames: Int = 3) {
+    init(minConfidence: Double = AnalysisConfig.sustainMinConfidence, sustainFrames: Int = 3) {
         self.minConfidence = minConfidence
         self.sustainFrames = sustainFrames
     }

@@ -21,7 +21,10 @@ struct TuningCard: Identifiable, Codable, Hashable, Sendable {
     var strings: [GuitarString] {
         guard let data = stringsJson.data(using: .utf8),
               let result = try? JSONDecoder().decode([GuitarString].self, from: data) else {
-            assertionFailure("TuningCard: failed to decode strings_json — card id=\(id) may be corrupt")
+            // Non-fatal: a corrupt card degrades to an empty tuning rather than
+            // crashing. (A debug assertionFailure here would terminate the app on
+            // the fetch() decode path the same way the cache writes did.)
+            print("[LUMA] TuningCard: failed to decode strings_json — card id=\(id) may be corrupt")
             return []
         }
         return result

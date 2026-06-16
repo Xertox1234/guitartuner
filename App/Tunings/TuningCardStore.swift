@@ -12,7 +12,7 @@ final class TuningCardStore {
 
     init(api: LumaAPI = LumaAPI()) {
         self.api = api
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let support = URL.applicationSupportDirectory
         self.cacheURL = support.appending(component: "luma_tuning_cards.json")
         self.cards = loadCache()
     }
@@ -66,10 +66,12 @@ final class TuningCardStore {
 
     private func persistCache() {
         do {
-            try JSONEncoder().encode(cards).write(to: cacheURL, options: .atomic)
+            try CacheFile.write(cards, to: cacheURL)
         } catch {
-            // Non-fatal: stale cache on next launch; no user-visible failure
-            assertionFailure("TuningCardStore: cache write failed — \(error)")
+            // Non-fatal: stale cache on next launch; no user-visible failure.
+            // (Must not crash — a debug assertionFailure here was terminating the
+            // app on a fresh install before Application Support existed.)
+            print("[LUMA] TuningCardStore: cache write failed — \(error)")
         }
     }
 }

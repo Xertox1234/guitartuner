@@ -12,7 +12,7 @@ final class GearStoreModel {
 
     init(api: LumaAPI = LumaAPI()) {
         self.api = api
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let support = URL.applicationSupportDirectory
         self.cacheURL = support.appending(component: "luma_gear_products.json")
         self.products = loadCache()
     }
@@ -50,9 +50,10 @@ final class GearStoreModel {
 
     private func persistCache() {
         do {
-            try JSONEncoder().encode(products).write(to: cacheURL, options: .atomic)
+            try CacheFile.write(products, to: cacheURL)
         } catch {
-            assertionFailure("GearStoreModel: cache write failed — \(error)")
+            // Non-fatal: stale cache on next launch; no user-visible failure.
+            print("[LUMA] GearStoreModel: cache write failed — \(error)")
         }
     }
 }

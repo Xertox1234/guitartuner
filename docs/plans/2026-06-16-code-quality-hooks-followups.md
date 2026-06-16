@@ -35,7 +35,7 @@ checks for mechanizable invariants.
 
   Note: hook-config changes are picked up on a fresh session / after reviewing in
   `/hooks` — they do not take effect mid-session. Smoke-test first by piping a sample
-  PostToolUse JSON payload into the script (see "Verify" below).
+  PostToolUse JSON payload into the script (see "Smoke-test the hook" below).
 
 ## Remaining suggestions (this is the next-session work list)
 
@@ -77,11 +77,21 @@ checks for mechanizable invariants.
 - **Commit gate:** `commit-verify.sh` (PostToolUse on Bash).
 - **CI gate:** accuracy benchmark + `swift test`.
 
-## Verify (before wiring in)
+## Smoke-test the hook
+
+Quick manual check (point `file_path` at a real `.swift` file containing `import
+SwiftUI` to see the violation fire):
 
 ```bash
-# Should report a VIOLATION (SwiftUI import in TunerEngine):
+# Should report a VIOLATION (SwiftUI import in TunerEngine), exit 2:
 printf '{"tool_name":"Write","tool_input":{"file_path":"%s/Packages/TunerEngine/Sources/TunerEngine/Foo.swift"}}' \
   "$PWD" | bash .claude/hooks/validate-invariants.sh; echo "exit=$?"
-# (point file_path at a real .swift file that contains `import SwiftUI` to see it fire)
+```
+
+The full, repeatable suite lives at `.claude/hooks/tests/validate-invariants.test.sh`
+(HARD vs REVIEW channels, submodule imports, comment false-positives, GearStore
+scoping, tool/extension skips):
+
+```bash
+bash .claude/hooks/tests/validate-invariants.test.sh
 ```

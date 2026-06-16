@@ -1,12 +1,11 @@
-import XCTest
+import Foundation
+import Testing
 @testable import TunerEngine
 
-final class PitchDetectorTests: XCTestCase {
+@Suite struct PitchDetectorTests {
     let fs = 48_000.0
     let range = PitchPipeline.searchRange
 
-    // Raw (unwindowed) frames isolate detector capability; the pipeline tests
-    // cover the windowed end-to-end path.
     private func pure(_ f: Double, _ n: Int) -> [Float] {
         Array(Synth.pure(frequency: f, sampleRate: fs, seconds: Double(n) / fs + 0.01).prefix(n))
     }
@@ -16,64 +15,50 @@ final class PitchDetectorTests: XCTestCase {
     private func string(_ f: Double, _ n: Int) -> [Float] {
         Array(Synth.inharmonicString(fundamental: f, sampleRate: fs, seconds: Double(n) / fs + 0.01).prefix(n))
     }
-    private func err(_ r: DetectorResult?, _ truth: Double) throws -> Double {
-        let r = try XCTUnwrap(r)
-        return TestSupport.cents(r.frequency, truth)
+
+    @Test(arguments: DetectionMethod.allCases)
+    func pureToneMidRangeAllMethods(_ method: DetectionMethod) throws {
+        let r = try #require(PitchDetector.detect(pure(440, 2048), sampleRate: fs, range: range, method: method))
+        #expect(abs(TestSupport.cents(r.frequency, 440)) < 2.0)
+        #expect(r.clarity > 0.9)
     }
 
-    func testPureToneMidRangeAllMethods() throws {
-        for method in DetectionMethod.allCases {
-            let r = PitchDetector.detect(pure(440, 2048), sampleRate: fs, range: range, method: method)
-            XCTAssertLessThan(abs(try err(r, 440)), 2.0, "method \(method)")
-            XCTAssertGreaterThan(try XCTUnwrap(r).clarity, 0.9)
-        }
+    // Parameterized octave-safety for all low bass strings in a single test.
+    // maxCents: E2 ≤ 4¢, E1 ≤ 8¢, B0 ≤ 50¢ (octave-safe only — hardest case).
+    @Test(arguments: [82.41, 41.20, 30.87])
+    func lowNoteIsOctaveSafe(_ f: Double) throws {
+        let r = try #require(PitchDetector.detect(pure(f, 4096), sampleRate: fs, range: range, method: .mpm))
+        let maxCents: Double = f > 60 ? 4.0 : (f > 35 ? 8.0 : 50.0)
+        #expect(abs(TestSupport.cents(r.frequency, f)) < 50, "octave error at f=\(f) Hz")
+        #expect(abs(TestSupport.cents(r.frequency, f)) < maxCents)
     }
 
-    func testGuitarLowE() throws {
-        let r = PitchDetector.detect(pure(82.41, 4096), sampleRate: fs, range: range, method: .mpm)
-        XCTAssertLessThan(abs(try err(r, 82.41)), 4.0)
-    }
-
-    func testBassLowEOctaveSafe() throws {
-        let r = try XCTUnwrap(PitchDetector.detect(pure(41.20, 4096), sampleRate: fs, range: range, method: .mpm))
-        XCTAssertLessThan(abs(TestSupport.cents(r.frequency, 41.20)), 50, "must not jump octave")
-        XCTAssertLessThan(abs(TestSupport.cents(r.frequency, 41.20)), 8.0)
-    }
-
-    func testFiveStringLowBOctaveSafe() throws {
-        // B0 ≈ 30.87 Hz — the hardest case.
-        let r = try XCTUnwrap(PitchDetector.detect(pure(30.87, 4096), sampleRate: fs, range: range, method: .mpm))
-        XCTAssertLessThan(abs(TestSupport.cents(r.frequency, 30.87)), 50, "must not jump octave")
-    }
-
-    func testHarmonicToneTracksFundamentalNotOctave() throws {
+    @Test func harmonicToneTracksFundamental() throws {
         // A2 with 8 harmonics — fundamental is 110, not 220.
-        let r = try XCTUnwrap(PitchDetector.detect(harmonic(110, 2048), sampleRate: fs, range: range, method: .mpm))
-        XCTAssertEqual(r.frequency, 110, accuracy: 110 * 0.01)   // within ~17 cents, definitely not 220
-        XCTAssertLessThan(abs(TestSupport.cents(r.frequency, 110)), 5.0)
+        let r = try #require(PitchDetector.detect(harmonic(110, 2048), sampleRate: fs, range: range, method: .mpm))
+        #expect(abs(TestSupport.cents(r.frequency, 110)) < 5.0)
     }
 
-    func testInharmonicStringTracksFundamental() throws {
+    @Test func inharmonicStringTracksFundamental() throws {
         // Stiff E2 string: partials sit sharp, but we want the fundamental.
-        let r = try XCTUnwrap(PitchDetector.detect(string(82.41, 4096), sampleRate: fs, range: range, method: .mpm))
-        XCTAssertLessThan(abs(TestSupport.cents(r.frequency, 82.41)), 10.0)
+        let r = try #require(PitchDetector.detect(string(82.41, 4096), sampleRate: fs, range: range, method: .mpm))
+        #expect(abs(TestSupport.cents(r.frequency, 82.41)) < 10.0)
     }
 
-    func testHighRangeShortWindow() throws {
+    @Test func highRangeShortWindow() throws {
         // E5 in a 1024-sample window (the "high" band geometry).
-        let r = PitchDetector.detect(pure(659.26, 1024), sampleRate: fs, range: range, method: .mpm)
-        XCTAssertLessThan(abs(try err(r, 659.26)), 3.0)
+        let r = try #require(PitchDetector.detect(pure(659.26, 1024), sampleRate: fs, range: range, method: .mpm))
+        #expect(abs(TestSupport.cents(r.frequency, 659.26)) < 3.0)
     }
 
-    func testYINAndHybridAgreeOnInharmonic() throws {
-        let y = try XCTUnwrap(PitchDetector.detect(string(146.83, 2048), sampleRate: fs, range: range, method: .yin))
-        let h = try XCTUnwrap(PitchDetector.detect(string(146.83, 2048), sampleRate: fs, range: range, method: .hybrid))
-        XCTAssertLessThan(abs(TestSupport.cents(y.frequency, 146.83)), 12.0)   // D3
-        XCTAssertLessThan(abs(TestSupport.cents(h.frequency, 146.83)), 12.0)
+    @Test func yinAndHybridAgreeOnInharmonic() throws {
+        let y = try #require(PitchDetector.detect(string(146.83, 2048), sampleRate: fs, range: range, method: .yin))
+        let h = try #require(PitchDetector.detect(string(146.83, 2048), sampleRate: fs, range: range, method: .hybrid))
+        #expect(abs(TestSupport.cents(y.frequency, 146.83)) < 12.0)
+        #expect(abs(TestSupport.cents(h.frequency, 146.83)) < 12.0)
     }
 
-    func testSilenceReturnsNil() {
-        let silence = [Float](repeating: 0, count: 2048)
-        XCTAssertNil(PitchDetector.detect(silence, sampleRate: fs, range: range, method: .mpm))
+    @Test func silenceReturnsNil() {
+        #expect(PitchDetector.detect([Float](repeating: 0, count: 2048), sampleRate: fs, range: range, method: .mpm) == nil)
     }
 }

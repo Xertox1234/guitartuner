@@ -211,7 +211,7 @@ final class RadialStrobeRenderer: NSObject, MTKViewDelegate {
             let phase = Double(input.phase)
             if lastPhase < 0 { lastPhase = phase; phaseChangeTime = now }
             if phase != lastPhase {
-                let d = AuroraStrobe.wrappedDelta(lastPhase, phase)
+                let d = StrobeMath.wrappedDelta(lastPhase, phase)
                 let elapsed = now - phaseChangeTime
                 if elapsed > 1e-4 { rotVel = d / elapsed }
                 lastPhase = phase

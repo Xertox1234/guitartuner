@@ -84,7 +84,7 @@ public struct RadialStrobe: View {
             let phase = Double(input.phase)
             if clock.lastPhase < 0 { clock.lastPhase = phase; clock.phaseChangeTime = time }
             if phase != clock.lastPhase {
-                let d = AuroraStrobe.wrappedDelta(clock.lastPhase, phase)
+                let d = StrobeMath.wrappedDelta(clock.lastPhase, phase)
                 let elapsed = time - clock.phaseChangeTime
                 if elapsed > 1e-4 { clock.rotVel = d / elapsed }
                 clock.lastPhase = phase

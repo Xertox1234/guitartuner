@@ -49,4 +49,14 @@ enum StrobeMath {
     static func gaugeAngle(cents: Double) -> Double {
         max(-gaugeSpan, min(gaugeSpan, (cents / 50) * gaugeSpan))
     }
+
+    // MARK: Phase math
+
+    /// Shortest signed distance between two wrapped 0…1 phases, in (−0.5, 0.5].
+    /// Called by all phase-scroll renderers (Aurora, Radial, Metal).
+    static func wrappedDelta(_ a: Double, _ b: Double) -> Double {
+        var d = b - a
+        d -= d.rounded()
+        return d
+    }
 }

@@ -44,13 +44,6 @@ public struct AuroraStrobe: View {
         self.phaseScroll = phaseScroll
     }
 
-    /// Shortest signed distance between two wrapped 0…1 phases, in (−0.5, 0.5].
-    static func wrappedDelta(_ a: Double, _ b: Double) -> Double {
-        var d = b - a
-        d -= d.rounded()
-        return d
-    }
-
     public var body: some View {
         TimelineView(.animation(paused: !animated)) { timeline in
             Canvas { context, size in
@@ -87,7 +80,7 @@ public struct AuroraStrobe: View {
             let phase = Double(input.phase)
             if clock.lastPhase < 0 { clock.lastPhase = phase; clock.phaseChangeTime = time }
             if phase != clock.lastPhase {
-                let d = AuroraStrobe.wrappedDelta(clock.lastPhase, phase)
+                let d = StrobeMath.wrappedDelta(clock.lastPhase, phase)
                 let elapsed = time - clock.phaseChangeTime
                 if elapsed > 1e-4 { clock.scrollVel = d / elapsed }
                 clock.lastPhase = phase

@@ -497,6 +497,8 @@ Search the file for other `AnalysisConfig`-typed uses of `config` (e.g. `config.
         let (emit, stable) = gate.step(confidence: det.clarity, floor: config.sustainConfidence)
 ```
 
+> **Retype note (verified):** the only three `config` mutations in the file are `= .acquire` (line 96, in `reset`), `= nextConfig(...)` (line 234), and `= .acquire` (line 259, in `handleUnvoiced`) — all rewritten in this task. There are no `config ==` comparisons or `AnalysisConfig.all` iterations to break, so retyping `config` to `BandSpec` is contained.
+
 (g) Replace `config = nextConfig(for: smoothed)` (line 234) and the whole `nextConfig` method (lines 297-318) with the testable `nextBand`:
 
 ```swift
@@ -703,6 +705,8 @@ git commit -m "chore(bench): confirm zero-delta after DetectionPolicy refactor" 
 
 > After creating new files under `App/`, regenerate the Xcode project: `xcodegen generate`.
 > App tests run on the macOS host: `xcodebuild test -project LUMA.xcodeproj -scheme LUMA -destination 'platform=macOS'` (confirm the scheme name with `xcodebuild -list -project LUMA.xcodeproj`). Validate edits with `XcodeRefreshCodeIssuesInFile` then `BuildProject` if those MCP tools are available.
+>
+> **Harness confirmed:** `LUMA/Tests/LockGateTests.swift` already uses this exact pattern — `import Testing` + `@testable import LUMA` + `import TunerEngine` + `import LumaDesignSystem`, `@Suite`/`@Test` — and unit-tests an app-internal logic type (`LockGate`). So testability is effectively on and app-layer logic is testable. **`LiveTunerModel` is `@MainActor`, so its test suite must be annotated `@MainActor`** (as written in Tasks 9–10). Constructing `LiveTunerModel()` builds the engine/tone/haptics but touches no audio hardware until `start()`/`prepare()`, so it is safe to construct and mutate in a headless test.
 
 ### Task 8: `InstrumentProfile` type + built-in registry
 
@@ -1006,6 +1010,8 @@ Add the restore method (after `init`), mapping the stored ids back to a profile/
 
 Note: `setInstrument` early-returns if the instrument is unchanged (guitar→guitar on first launch), so call `setTuning` after it regardless — the code above does. Wire `restoreLastSession()` into the app's root view `.task`/`.onAppear` (e.g. `LiveTunerScreen`); add that call where the model is created.
 
+> **Known limitation (Slice 1):** a custom `TuningCard` stores `lastTuningId` as `"card-<id>"`, which is not in `Tunings.presets(for:)`, so `restoreLastSession` falls back to the instrument's standard tuning — custom cards restore via their own UI (`BottomDrawer.loadCard`), not this path. Acceptable for Slice 1; the test covers only built-in presets, so document the gap here rather than letting it look covered.
+
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `xcodebuild test -project LUMA.xcodeproj -scheme LUMA -destination 'platform=macOS' -only-testing:LUMATests/LiveTunerModelProfileTests`
@@ -1069,4 +1075,4 @@ git commit -m "chore(xcode): regenerate project for InstrumentProfile sources" -
 
 **Type consistency:** `DetectionPolicy`, `BandSpec`, `PitchPipeline.nextBand`, `setPolicy`, `setDetectionPolicy`, `detectionPolicy`, `InstrumentProfile.builtIn(_:)`, `strobeInput(lockCents:minLockConfidence:)`, `restoreLastSession()`, and `lockConfidence(forFrequency:)`/`sustainConfidence(forFrequency:)` are used consistently across tasks. `config` retyped `AnalysisConfig → BandSpec` in Task 4 (members `window`/`hop`/`label` preserved).
 
-**Known acceptable divergence:** `nextBand`'s "drop" uses pure-floor lookup for all bands, whereas legacy `nextConfig` dropped mid/low to the fixed adjacent band. These differ only on an implausible multi-band single-hop drop (blocked by the octave guard + 120¢ snap), never on the fine/monotonic trajectories the sweep test and real signals produce — so the benchmark (running `.fullRange`) stays byte-identical. Documented in Task 4.
+**Known acceptable divergence:** `nextBand`'s "drop" uses pure-floor lookup for all bands, whereas legacy `nextConfig` dropped mid/low to the fixed *adjacent* band. These differ only when f0 falls more than one band in a single hop. This is zero-delta for the benchmark/tests because **the benchmark runs a fresh pipeline per constant-frequency case (no in-case band transitions), and no existing multi-tone test crosses more than one band** (`octaveGuardAllowsCleanJump` is 110→220 Hz = low→mid, a single step). Note: the divergence is *not* prevented by the octave guard or snap — a clean, large note change passes the guard and the 120¢ snap resets the EMA to the new pitch, which is exactly what *enables* a multi-band jump. It's harmless because (a) nothing in CI crosses >1 band, and (b) in real app use a mid-note→low-bass jump merely picks `ultralow` for one hop instead of `low`, then self-corrects on the next — arguably more correct. Documented in Task 4.

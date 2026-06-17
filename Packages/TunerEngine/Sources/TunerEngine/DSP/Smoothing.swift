@@ -72,16 +72,20 @@ struct SustainGate {
     }
 
     /// Returns whether to emit this frame and whether it's reached stable sustain.
-    /// We emit voiced frames immediately (so the UI fades in) but only mark
-    /// `stable` once the streak clears — callers can gate "locked" on `stable`.
-    mutating func step(confidence: Double) -> (emit: Bool, stable: Bool) {
-        if confidence >= minConfidence {
+    /// `floor` is the per-band confidence threshold (from the active `DetectionPolicy`).
+    mutating func step(confidence: Double, floor: Double) -> (emit: Bool, stable: Bool) {
+        if confidence >= floor {
             confidentStreak = min(confidentStreak + 1, sustainFrames * 4)
             return (true, confidentStreak >= sustainFrames)
         } else {
             confidentStreak = 0
             return (false, false)
         }
+    }
+
+    /// Back-compatible overload using the gate's configured `minConfidence`.
+    mutating func step(confidence: Double) -> (emit: Bool, stable: Bool) {
+        step(confidence: confidence, floor: minConfidence)
     }
 
     mutating func reset() { confidentStreak = 0 }

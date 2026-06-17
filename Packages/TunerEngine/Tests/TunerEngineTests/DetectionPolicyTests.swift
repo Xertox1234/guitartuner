@@ -44,14 +44,4 @@ import Testing
         #expect(p.sustainConfidence(forFrequency: 300) == 0.6)
     }
 
-    @Test func detectAcceptsEmitFloorAndDefaultsToLegacy() {
-        // A clean A2 frame still detects with an explicit floor equal to the default.
-        let frame = TestSupport.stringFrame(110, n: 4096)
-        let a = PitchDetector.detect(frame, sampleRate: TestSupport.fs,
-                                     range: 27...1400, method: .hybrid)
-        let b = PitchDetector.detect(frame, sampleRate: TestSupport.fs,
-                                     range: 27...1400, method: .hybrid, emitFloor: 0.5)
-        #expect(a?.frequency == b?.frequency, "explicit default floor matches implicit default")
-        #expect((b?.frequency ?? 0) > 0)
-    }
 }

@@ -176,6 +176,14 @@ enum PitchDetector {
             // Trust the lower fundamental if it's reasonably clear.
             let lower = m.frequency < y.frequency ? m : y
             let higher = m.frequency < y.frequency ? y : m
+            // NOTE: emitFloor is reused here as the octave-rescue clarity bar
+            // (picking the lower/fundamental candidate). It equals the pipeline
+            // emit gate today (default 0.5). When the deferred bass-fix raises a
+            // per-instrument emitFloor for noise rejection, raising it ALSO makes
+            // this branch favor the higher (octave) candidate — a latent trade
+            // against the CI-gated 0.00% octave-error spec. Decide there whether
+            // the octave-rescue bar should decouple from emitFloor.
+            // (docs/todos/bass-detection-policy-tuning.md)
             let pick = lower.clarity > emitFloor ? lower : higher
             return relabel(pick, .hybrid)
         }

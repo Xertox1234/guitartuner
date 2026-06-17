@@ -118,8 +118,9 @@ public struct DetectionPolicy: Sendable, Equatable {
     public var smoothingMedianCount: Int           // outlier-rejection window
     public var emitFloor: Double                   // unvoiced threshold (RC2; see note below)
 
-    public static let guitar = DetectionPolicy(/* today's exact constants */)
-    public static let bass   = DetectionPolicy(/* = guitar values in Slice 1; tuned later */)
+    public static let fullRange = DetectionPolicy(/* guitar bands/gates + full 27…1400 range */)
+    public static let guitar    = DetectionPolicy(/* = fullRange, searchRange clamped to ~60…1400 */)
+    public static let bass      = DetectionPolicy(/* = fullRange bands/gates; searchRange ~25…420; tuned later */)
 }
 
 public struct BandSpec: Sendable, Equatable {
@@ -211,7 +212,15 @@ Codable then; not now — YAGNI.)
 
 ## 6. Engine threading
 
-- **`PitchPipeline`** gains `policy: DetectionPolicy` (default `.guitar`) and `setPolicy(_:)`
+- **Default policy is `.fullRange`, not `.guitar`.** `CaseRunner.run` (shared by the benchmark
+  *and* the bass unit tests) and `PitchPipeline.init` build the pipeline with no instrument
+  context, and the benchmark runs guitar *and* bass cases through one pipeline. If that default
+  were the clamped `.guitar` (60 Hz floor), every bass case (30–41 Hz) would fail detection.
+  So `PitchPipeline.init(policy:)` and `CaseRunner.run(policy:)` default to **`.fullRange`** —
+  byte-identical to today's global constants — leaving all existing headless/benchmark/test
+  paths unchanged with zero churn. The **app** sets `.guitar`/`.bass` explicitly per instrument
+  (`TunerEngine`'s stored `detectionPolicy` defaults to `.guitar`, the app's launch instrument).
+- **`PitchPipeline`** gains `policy: DetectionPolicy` (default `.fullRange`) and `setPolicy(_:)`
   that resets smoother/gate/band state.
   - `nextConfig(for:)` iterates `policy.bands` (+ `policy.acquire`) instead of the static
     `AnalysisConfig` configs/thresholds — same selection logic, data-driven.
@@ -260,21 +269,26 @@ headroom. Constraint that fixes the naive choice: the guitar presets include **D
 (C2 = 65.4 Hz)**, so the floor must sit *below* C2 with margin — ~60 Hz, **not** 70 Hz (70
 would stop the detector from ever finding Drop C → regression).
 
-**Hard rule:** the clamp must verify as **zero benchmark delta** (no guitar fundamental lives
-below 65.4 Hz, so clamping out 27–60 Hz removes only spurious sub-bass candidates). If any
-guitar case regresses in CI, revert guitar to `27…1400`. Bass keeps a wide range (down to
-~25 Hz for 5-string Drop A's A0 ≈ 27.5 Hz), tuned in the deferred work.
+**Verification (note: the benchmark runs `.fullRange`, so it does not exercise the clamp).**
+The clamp is verified by a **targeted guitar-range parity test**: for guitar-range frequencies
+(incl. **C2 = 65.4 Hz**, Drop C's binding constraint), `.guitar` (60…1400) must produce the
+same readings as `.fullRange` (27…1400) — true because no guitar fundamental lives below
+65.4 Hz, so clamping out 27–60 Hz removes only spurious sub-bass candidates. If the parity test
+shows any divergence on a real guitar note, lower the floor or revert guitar to `27…1400`. Bass
+keeps a wide range (down to ~25 Hz for 5-string Drop A's A0 ≈ 27.5 Hz), tuned in the deferred
+work.
 
 ## 11. Slice plan & the zero-delta safety property
 
-**Slice 1 (this work): the lever, DSP-inert.** Ship the full architecture with **both
-`.guitar` and `.bass` policies set to today's exact constants**, plus persistence (§9) and the
-guitar clamp (§10). The **accuracy benchmark must report identical numbers to `main`** for both
-guitar and bass — the CI accuracy gate cannot break. The clamp is the one element *verified*
-inert against the benchmark (not assumed), and reverted if any case regresses; persistence is
-an intended UX change that does not touch the DSP path. Consolidates `M2`/`M3`/`M7`. Includes
-unit tests proving the threading works (a profile with a different band plan changes windowing;
-`.guitar` ≡ legacy).
+**Slice 1 (this work): the lever, DSP-inert.** Ship the full architecture with `.fullRange`
+(the headless/benchmark default) reproducing today's constants exactly, plus `.guitar`/`.bass`
+presets, persistence (§9), and the guitar clamp (§10). The **accuracy benchmark must report
+identical numbers to `main`** (it runs `.fullRange`) — the CI accuracy gate cannot break with
+zero churn. The clamp lands in-app via `.guitar` and is *verified* by the targeted parity test
+(§10), reverted if it diverges on a real guitar note; persistence is an intended UX change that
+does not touch the DSP path. Consolidates `M2`/`M3`/`M7`. Includes unit tests proving the
+threading works (a profile with a different band plan changes windowing; `.fullRange` ≡ legacy
+via the bidirectional boundary sweep).
 
 **Expectation check — Slice 1 ships *zero perceptible bass improvement*.** Under option A the
 free `.lock` default flip is also deferred, so at the end of this PR bass still "won't settle"
@@ -298,11 +312,13 @@ See `docs/todos/bass-detection-policy-tuning.md` and
 
 ## 12. Testing strategy
 
-- **Zero-delta gate:** the existing accuracy benchmark must report identical numbers for
-  guitar and bass after Slice 1 (default `.guitar`/`.bass` policies == today's constants).
-  **Confirm a Drop-C / C2 (65.4 Hz) guitar case is in the verification set** (or add one) — the
-  60 Hz clamp's binding constraint is C2, so without it the gate goes green without ever
-  exercising the constraint (false confidence).
+- **Zero-delta gate:** the existing accuracy benchmark must report identical numbers after
+  Slice 1. It runs `.fullRange` (the default), which == today's constants, so this is byte-for-
+  byte with zero churn.
+- **Clamp parity test (covers what the benchmark can't):** assert `.guitar` (60…1400) and
+  `.fullRange` (27…1400) produce identical readings on guitar-range stimuli, **including a
+  C2 = 65.4 Hz (Drop C) case** — the clamp's binding constraint. The benchmark never exercises
+  the clamp, so this targeted test is the verifier.
 - **New unit tests:**
   (a) **bidirectional f0 sweep** across all three band boundaries (235/265, 110/130, 35/45),
   asserting the new `[BandSpec]`-driven `nextConfig` picks the *same* band as `main`'s
@@ -326,6 +342,10 @@ See `docs/todos/bass-detection-policy-tuning.md` and
 - Band transitions pinned to `floorHz ± hysteresisHz` semantics + exact guitar value table, so
   the flat `[BandSpec]` reproduces the stateful `switch` bit-for-bit. ✔
 - Built-in profiles code-defined, not persisted; `DetectionPolicy` not `Codable`. ✔
+- Pipeline/`CaseRunner` default policy = `.fullRange` (today's constants, full 27…1400 range),
+  so benchmark + all existing tests are byte-identical with zero churn; the app selects
+  `.guitar`/`.bass`. The clamp is verified by a targeted `.guitar`-vs-`.fullRange` parity test
+  (incl. C2), since the benchmark runs `.fullRange` and never exercises the clamp. ✔
 - Slice 1 DSP-inert — bass `.lock` default flip deferred (option A); PR description must state
   no perceptible bass change. ✔
 - Persist last-used instrument/tuning. ✔

@@ -139,4 +139,32 @@ import Testing
         #expect(last.note.description == "A4")
         #expect(abs(last.cents) < 1.0)
     }
+
+    @Test func nextBandReproducesLegacyTransitionsOnSweep() {
+        let p = DetectionPolicy.fullRange
+        func label(_ f0: Double, from: String) -> String {
+            let cur = (p.bands.first { $0.label == from }) ?? p.acquire
+            return PitchPipeline.nextBand(for: f0, current: cur, in: p).label
+        }
+        // Rising edges (band-above floor + hysteresis): 45 / 130 / 265.
+        #expect(label(46, from: "ultralow") == "low")
+        #expect(label(131, from: "low") == "mid")
+        #expect(label(266, from: "mid") == "high")
+        // Falling edges (current floor − hysteresis): 235 / 110 / 35.
+        #expect(label(234, from: "high") == "mid")
+        #expect(label(109, from: "mid") == "low")
+        #expect(label(34, from: "low") == "ultralow")
+        // Inside hysteresis → stays put (no chatter).
+        #expect(label(250, from: "mid") == "mid")
+        #expect(label(40, from: "low") == "low")
+    }
+
+    @Test func customBandPlanChangesChosenWindow() {
+        // A one-band policy with a huge window proves the plumbing is live.
+        let band = BandSpec(window: 16384, hop: 4096, floorHz: 0, hysteresisHz: 0,
+                            sustainConfidence: 0.6, lockConfidence: 0.75, label: "only")
+        let custom = DetectionPolicy(searchRange: 27...1400, bands: [band], acquire: band,
+                                     smoothingAlpha: 0.35, smoothingMedianCount: 5, emitFloor: 0.5)
+        #expect(PitchPipeline.nextBand(for: 200, current: band, in: custom).window == 16384)
+    }
 }

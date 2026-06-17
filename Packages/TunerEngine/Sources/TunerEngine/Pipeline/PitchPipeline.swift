@@ -37,11 +37,13 @@ public final class PitchPipeline {
     private var filled = 0        // valid samples in `ring`
     private var totalSamples = 0  // absolute count of preprocessed samples
 
+    /// Active per-instrument detection policy (default = full-range = legacy).
+    public var policy: DetectionPolicy
     private var preproc: Preprocessor
-    private var smoother = FrequencySmoother()
-    private var gate = SustainGate(minConfidence: AnalysisConfig.sustainMinConfidence)
+    private var smoother: FrequencySmoother
+    private var gate = SustainGate()
     private var hannCache: [Int: [Float]] = [:]      // per-instance window cache
-    private var config: AnalysisConfig = .acquire
+    private var config: BandSpec
     private var lastAnalyzedAt = 0
     private var trackedFrequency: Double?      // last confident estimate (band + reset)
     private var unvoicedStreak = 0
@@ -58,14 +60,32 @@ public final class PitchPipeline {
         sampleRate: Double = 48_000,
         a4: Double = Pitch.standardA4,
         method: DetectionMethod = .mpm,
-        targetNote: Note? = nil
+        targetNote: Note? = nil,
+        policy: DetectionPolicy = .fullRange
     ) {
         self.sampleRate = sampleRate
         self.a4 = a4
         self.method = method
         self.targetNote = targetNote
+        self.policy = policy
         self.preproc = Preprocessor(sampleRate: sampleRate)
         self.ring = [Float](repeating: 0, count: cap)
+        self.smoother = FrequencySmoother(medianCount: policy.smoothingMedianCount,
+                                          alpha: policy.smoothingAlpha)
+        self.config = policy.acquire
+    }
+
+    /// Swap the detection policy (e.g. on instrument change). Resets smoother/gate
+    /// and band state so the new geometry takes effect cleanly.
+    public func setPolicy(_ newPolicy: DetectionPolicy) {
+        policy = newPolicy
+        smoother = FrequencySmoother(medianCount: newPolicy.smoothingMedianCount,
+                                     alpha: newPolicy.smoothingAlpha)
+        gate.reset()
+        config = newPolicy.acquire
+        trackedFrequency = nil
+        prevFrame = nil
+        phaseIntegrator.reset()
     }
 
     /// Push samples; returns any readings produced this call. Safe with any chunk
@@ -93,7 +113,7 @@ public final class PitchPipeline {
     public func reset() {
         head = 0; filled = 0; totalSamples = 0; lastAnalyzedAt = 0
         preproc.reset(); smoother.reset(); gate.reset()
-        config = .acquire; trackedFrequency = nil; unvoicedStreak = 0
+        config = policy.acquire; trackedFrequency = nil; unvoicedStreak = 0
         prevFrame = nil; phaseIntegrator.reset()
         for i in ring.indices { ring[i] = 0 }
     }
@@ -110,8 +130,9 @@ public final class PitchPipeline {
         let frame = recent(window)
 
         guard let det = PitchDetector.detect(
-            frame, sampleRate: sampleRate, range: Self.searchRange, method: method
-        ), det.clarity >= AnalysisConfig.emitFloor else {
+            frame, sampleRate: sampleRate, range: policy.searchRange,
+            method: method, emitFloor: policy.emitFloor
+        ), det.clarity >= policy.emitFloor else {
             return handleUnvoiced()
         }
 
@@ -176,7 +197,7 @@ public final class PitchPipeline {
         ) ?? 0
 
         // Sustain gate + confidence.
-        let (emit, stable) = gate.step(confidence: det.clarity)
+        let (emit, stable) = gate.step(confidence: det.clarity, floor: config.sustainConfidence)
 
         // Timestamp = centre of the analysed window, in seconds.
         let timestamp = (Double(frameStart) + Double(window) / 2) / sampleRate
@@ -231,7 +252,7 @@ public final class PitchPipeline {
         prevWindow = window
         prevHop = config.hop
         trackedFrequency = smoothed
-        config = nextConfig(for: smoothed)
+        config = Self.nextBand(for: smoothed, current: config, in: policy)
 
         guard emit else { return nil }
 
@@ -256,7 +277,7 @@ public final class PitchPipeline {
         if unvoicedStreak >= 8 {
             smoother.reset()
             trackedFrequency = nil
-            config = .acquire
+            config = policy.acquire
             prevFrame = nil
             phaseIntegrator.reset()
         }
@@ -294,26 +315,22 @@ public final class PitchPipeline {
         #endif
     }
 
-    /// Band selection with hysteresis so we don't chatter at the boundaries.
-    private func nextConfig(for f0: Double) -> AnalysisConfig {
-        let hmLo = AnalysisConfig.highMidHz      - AnalysisConfig.highMidHysteresis      // 235
-        let hmHi = AnalysisConfig.highMidHz      + AnalysisConfig.highMidHysteresis      // 265
-        let mlLo = AnalysisConfig.midLowHz       - AnalysisConfig.midLowHysteresis       // 110
-        let mlHi = AnalysisConfig.midLowHz       + AnalysisConfig.midLowHysteresis       // 130
-        let ulLo = AnalysisConfig.lowUltraLowHz  - AnalysisConfig.lowUltraLowHysteresis  //  35
-        let ulHi = AnalysisConfig.lowUltraLowHz  + AnalysisConfig.lowUltraLowHysteresis  //  45
-        switch config.label {
-        case "high": return f0 < hmLo ? AnalysisConfig.band(forFrequency: f0) : .high
-        case "mid":
-            if f0 >= hmHi { return .high }
-            if f0 < mlLo  { return .low }
-            return .mid
-        case "low":
-            if f0 >= mlHi { return .mid }
-            if f0 < ulLo  { return .ultraLow }
-            return .low
-        case "ultralow": return f0 >= ulHi ? .low : .ultraLow
-        default: return AnalysisConfig.band(forFrequency: f0)   // acquire → settle
+    /// Pure band-transition step (testable). Reproduces the former stateful
+    /// `switch`-based selection from a flat band plan: rise one band when f0 clears
+    /// the band-above floor + its hysteresis; drop (to the pure-floor band) when f0
+    /// falls below the current floor − its hysteresis; else stay (anti-chatter).
+    static func nextBand(for f0: Double, current: BandSpec, in policy: DetectionPolicy) -> BandSpec {
+        let bands = policy.bands
+        guard let i = bands.firstIndex(where: { $0.label == current.label }) else {
+            return policy.band(forFrequency: f0)   // acquire / unknown → settle by lookup
         }
+        if i > 0 {
+            let above = bands[i - 1]
+            if f0 >= above.floorHz + above.hysteresisHz { return above }
+        }
+        if i < bands.count - 1, f0 < current.floorHz - current.hysteresisHz {
+            return policy.band(forFrequency: f0)
+        }
+        return current
     }
 }

@@ -1,0 +1,42 @@
+# Tune the `.bass` DetectionPolicy — pull the lever the profile refactor built
+
+**Severity:** High
+**Source:** 2026-06-17 instrument-profiles design (`docs/superpowers/specs/2026-06-17-instrument-profiles-design.md` §11)
+**Domain:** dsp, pipeline, swiftui
+**Depends on:** Slice 1 (InstrumentProfile + DetectionPolicy threading) landed and inert.
+
+## Problem
+
+The instrument-profiles refactor (Slice 1) ships `.bass` DetectionPolicy set to today's exact
+guitar constants, so it is provably inert. The real bass symptom — "won't settle / jumps
+around on a sustained note" — is still unfixed. Root causes (cited in the design §2):
+
+1. **Guitar-centric bands.** The 8192-sample `ultralow` window only engages below 40 Hz, so
+   bass E1 (41.2 Hz) and A1 (55 Hz) fall into the `low` band's 4096 window — sized for guitar's
+   82 Hz low E (~7 periods); E1 gets only ~3.5. (`PitchPipeline.nextConfig`, `AnalysisConfig`)
+2. **Fragile lock streak.** Each clarity dip below the sustain floor resets `phaseIntegrator`,
+   so the precise lock keeps shattering and re-earning (~0.43 s). (`PitchPipeline.swift:225`)
+3. **Lock flicker.** Bass clarity oscillates around the lock floor → strobe freeze/unfreeze.
+4. **`.auto` default amplifies jitter** into note-name flips; `.lock` is "the robust path for
+   low B/E" per `LiveTunerModel`.
+
+## Fix
+
+- Tune `DetectionPolicy.bass.bands`: extend the long window upward so E1/A1 (and the rest of
+  the bottom strings) get adequate periods, instead of the guitar-sized 4096. Watch the
+  latency trade (longer window = slower lock).
+- Tune `.bass` per-band `sustainConfidence` / `lockConfidence` **and `emitFloor`** so the
+  streak and display lock hold on weak-fundamental bass without admitting noise. (Both the
+  per-band sustain floor *and* the single `emitFloor` scalar gate the lock streak — bass
+  clarity dips through the 0.5–0.6 band, so both matter; see design §2 RC2, §5.)
+- Set bass `InstrumentProfile.defaultMode = .lock`.
+- Widen `.bass.searchRange` down to ~25 Hz (5-string Drop A's A0 ≈ 27.5 Hz needs margin below
+  the current 27 floor).
+- **Verify with the settle-stability harness** (`bass-settle-stability-harness.md`) and
+  re-baseline the accuracy benchmark; confirm guitar remains unchanged.
+
+## Files
+
+- `Packages/TunerEngine/Sources/TunerEngine/DSP/DetectionPolicy.swift` (new, from Slice 1)
+- `App/Engine/InstrumentProfile.swift` (new, from Slice 1) — bass `defaultMode`
+- `docs/benchmarks/accuracy.md` — re-baseline bass rows

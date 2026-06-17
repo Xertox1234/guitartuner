@@ -29,6 +29,22 @@ around on a sustained note" — is still unfixed. Root causes (cited in the desi
   streak and display lock hold on weak-fundamental bass without admitting noise. (Both the
   per-band sustain floor *and* the single `emitFloor` scalar gate the lock streak — bass
   clarity dips through the 0.5–0.6 band, so both matter; see design §2 RC2, §5.)
+- **Decouple decision — `emitFloor` octave-rescue coupling (raised in Slice 1 Task 2 review).**
+  `emitFloor` is dual-used: the pipeline emit gate *and* the octave-rescue trust bar in
+  `PitchDetector.hybrid` (`lower.clarity > emitFloor ? lower : higher`, flagged with a NOTE
+  comment at that line). Raising bass `emitFloor` for noise rejection *also* makes the rescue
+  favor the higher (octave) candidate — a direct trade against the CI-gated 0.00% octave-error
+  spec. **Before this slice raises bass `emitFloor` above 0.5, decide** whether the octave-rescue
+  bar should use its own threshold (e.g. pin it to `AnalysisConfig.emitFloor`, or add a separate
+  `octaveRescueFloor`) instead of the per-instrument value. This is the slice that first passes a
+  non-default floor, so it is where the decision has teeth and the benchmark re-baseline catches
+  any regression.
+- **Add the `emitFloor` routing test deferred from Slice 1 Task 2.** The Slice-1 contract test
+  (`detectAcceptsEmitFloorAndDefaultsToLegacy` in `PitchDetectorTests`) only proves the parameter
+  defaults to legacy — it cannot prove the value is *routed* into the octave-rescue pick (both
+  calls use 0.5). When a non-default floor is first exercised here, add a test that flips the
+  octave-rescue pick on an octave-ambiguous frame (e.g. `emitFloor: 0.0` → fundamental vs
+  `emitFloor: 1.0` → octave) to prove routing.
 - Set bass `InstrumentProfile.defaultMode = .lock`.
 - Widen `.bass.searchRange` down to ~25 Hz (5-string Drop A's A0 ≈ 27.5 Hz needs margin below
   the current 27 floor).

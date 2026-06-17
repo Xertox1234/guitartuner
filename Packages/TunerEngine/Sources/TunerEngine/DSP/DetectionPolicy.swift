@@ -91,7 +91,7 @@ public struct DetectionPolicy: Sendable, Equatable {
                           floorHz: 0, hysteresisHz: 0,
                           sustainConfidence: AnalysisConfig.sustainMinConfidence, lockConfidence: 0.75, label: "acquire"),
         smoothingAlpha: AnalysisConfig.smoothingAlpha,
-        smoothingMedianCount: 5,
+        smoothingMedianCount: AnalysisConfig.smoothingMedianCount,
         emitFloor: AnalysisConfig.emitFloor
     )
 

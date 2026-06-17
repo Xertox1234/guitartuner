@@ -89,6 +89,10 @@ public struct AnalysisConfig: Sendable, Equatable {
     /// Jumps larger than this (¢) bypass EMA smoothing in FrequencySmoother (new-note transient).
     public static let smoothingSnapCents: Double = 120
 
+    /// Median-filter window for FrequencySmoother (single source of truth shared by
+    /// the smoother's default and DetectionPolicy presets — guards zero-delta).
+    public static let smoothingMedianCount: Int = 5
+
     /// Minimum NSDF clarity required to accept a detection that is ≥ one octave from
     /// the tracked frequency. Below this threshold the jump is treated as an alias or
     /// harmonic artefact and the frame is handled as unvoiced.

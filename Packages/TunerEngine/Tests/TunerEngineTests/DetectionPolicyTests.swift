@@ -8,7 +8,7 @@ import Testing
         let p = DetectionPolicy.fullRange
         #expect(p.searchRange == PitchPipeline.searchRange)          // 27...1400
         #expect(p.smoothingAlpha == AnalysisConfig.smoothingAlpha)   // 0.35
-        #expect(p.smoothingMedianCount == 5)
+        #expect(p.smoothingMedianCount == AnalysisConfig.smoothingMedianCount)
         #expect(p.emitFloor == AnalysisConfig.emitFloor)             // 0.5
         #expect(p.bands.map(\.label) == ["high", "mid", "low", "ultralow"])
         #expect(p.bands[0].window == 1024 && p.bands[0].hop == 256)
@@ -26,6 +26,11 @@ import Testing
         #expect(p.band(forFrequency: 150).label == "mid")
         #expect(p.band(forFrequency: 80).label == "low")
         #expect(p.band(forFrequency: 31).label == "ultralow")
+
+        // Exact floor boundaries are inclusive of the higher band (>= semantics).
+        #expect(p.band(forFrequency: 250).label == "high")
+        #expect(p.band(forFrequency: 120).label == "mid")
+        #expect(p.band(forFrequency: 40).label == "low")
     }
 
     @Test func confidenceFloorsMatchLegacySplit() {

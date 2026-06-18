@@ -34,7 +34,8 @@ final class LiveTunerModel {
     private(set) var permissionDenied = false
 
     // MARK: Targeting / tuning
-    private(set) var instrument: Instrument = .guitar
+    private(set) var profile: InstrumentProfile = .builtIn(.guitar)
+    var instrument: Instrument { profile.id }
     private(set) var tuning: Tuning = Tunings.standard(for: .guitar)
     private(set) var mode: TargetMode = .auto
     /// The selected string's `idx` (string-lock target / tone source); `nil` = none.
@@ -49,6 +50,8 @@ final class LiveTunerModel {
     /// Adjustable reference pitch (430…450, default 440), shared by engine + tone.
     var a4: Double = 440 { didSet { applyA4() } }
     @ObservationIgnored @AppStorage("a4Calibration") private var storedA4: Double = 440
+    @ObservationIgnored @AppStorage("lastInstrument") private var lastInstrument = Instrument.guitar.rawValue
+    @ObservationIgnored @AppStorage("lastTuningId") private var lastTuningId = Tunings.guitar.id
 
     // MARK: Clock calibration (P4)
     /// True once the engine has accumulated ≥30 s of samples and ppm is converged.
@@ -78,6 +81,20 @@ final class LiveTunerModel {
         self.a4 = storedA4
     }
 
+    /// Restore the last-used instrument + tuning (call once at launch). First launch
+    /// keeps the guitar defaults. Unknown ids fall back to the instrument's standard.
+    func restoreLastSession() {
+        let instrument = Instrument(rawValue: lastInstrument) ?? .guitar
+        // Capture the saved id BEFORE setInstrument runs: when the instrument actually
+        // changes, setInstrument's internal setTuning(profile.defaultTuning) overwrites
+        // lastTuningId with the standard tuning, clobbering the value we need to look up.
+        let savedTuningId = lastTuningId
+        setInstrument(instrument)
+        if let saved = Tunings.presets(for: instrument).first(where: { $0.id == savedTuningId }) {
+            setTuning(saved)
+        }
+    }
+
     // MARK: - Lifecycle
 
     /// Start capture + analysis. Surfaces permission / availability errors as
@@ -88,6 +105,7 @@ final class LiveTunerModel {
         tone.prepare()
         do {
             await engine.setA4(a4)
+            await engine.setDetectionPolicy(profile.detection)
             await engine.setInputPreference(inputKind == .mic ? .mic : .auto)
             await engine.setTargetNote(targetNote)
             try await engine.start()
@@ -153,9 +171,15 @@ final class LiveTunerModel {
     }
 
     func setInstrument(_ newValue: Instrument) {
-        guard newValue != instrument else { return }
-        instrument = newValue
-        setTuning(Tunings.standard(for: newValue))
+        guard newValue != profile.id else { return }
+        profile = .builtIn(newValue)
+        mode = profile.defaultMode
+        inputKind = profile.defaultInput
+        let e = engine
+        let pol = profile.detection
+        Task { await e.setDetectionPolicy(pol) }
+        setTuning(profile.defaultTuning)   // keeps activeIdx valid, updates target + tone
+        lastInstrument = newValue.rawValue
     }
 
     func setTuning(_ newTuning: Tuning) {
@@ -166,6 +190,7 @@ final class LiveTunerModel {
         }
         updateTarget()
         updateTone()
+        lastTuningId = newTuning.id
     }
 
     func setInputKind(_ kind: InputKind) {
@@ -231,7 +256,8 @@ final class LiveTunerModel {
             // referenced to it by the engine. Octave errors can't cause a false
             // lock here because a wrong octave lands far outside lockCents.
             let c = target.cents(of: adjFreq, a4: a4)
-            let locked = abs(c) <= LumaMusic.lockCents && r.confidence >= r.minLockConfidence
+            let floor = profile.detection.lockConfidence(forFrequency: adjFreq)
+            let locked = abs(c) <= LumaMusic.lockCents && r.confidence >= floor
             note = target.name
             octave = target.octave
             cents = c
@@ -246,7 +272,8 @@ final class LiveTunerModel {
             cents = r.cents + centsShift
             frequency = adjFreq
             confidence = r.confidence
-            let si = r.strobeInput()
+            let floor = profile.detection.lockConfidence(forFrequency: adjFreq)
+            let si = r.strobeInput(minLockConfidence: floor)
             strobeInput = si
             handleLock(si.locked, noteFreq: r.note.frequency(a4: a4))
         }

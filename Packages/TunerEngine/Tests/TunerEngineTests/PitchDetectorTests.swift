@@ -61,4 +61,20 @@ import Testing
     @Test func silenceReturnsNil() {
         #expect(PitchDetector.detect([Float](repeating: 0, count: 2048), sampleRate: fs, range: range, method: .mpm) == nil)
     }
+
+    // Contract test: an explicit emitFloor equal to the default produces the same
+    // result as omitting it — i.e. the parameter exists, defaults to the legacy
+    // constant, and is backward-compatible. This does NOT prove the value is routed
+    // into the octave-rescue pick (both calls use 0.5, so determinism alone passes
+    // it). True routing coverage arrives when the deferred bass-fix first exercises
+    // a non-default floor (docs/todos/bass-detection-policy-tuning.md).
+    @Test func detectAcceptsEmitFloorAndDefaultsToLegacy() {
+        let frame = TestSupport.stringFrame(110, n: 4096)
+        let a = PitchDetector.detect(frame, sampleRate: TestSupport.fs,
+                                     range: 27...1400, method: .hybrid)
+        let b = PitchDetector.detect(frame, sampleRate: TestSupport.fs,
+                                     range: 27...1400, method: .hybrid, emitFloor: 0.5)
+        #expect(a?.frequency == b?.frequency, "explicit default floor matches implicit default")
+        #expect((b?.frequency ?? 0) > 0)
+    }
 }

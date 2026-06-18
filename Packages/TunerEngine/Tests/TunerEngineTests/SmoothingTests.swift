@@ -55,4 +55,11 @@ import Testing
         #expect(after.emit)
         #expect(!after.stable)                       // streak restarted
     }
+
+    @Test func sustainGateUsesPerCallFloor() {
+        var gate = SustainGate(sustainFrames: 3)
+        // confidence 0.7 passes a 0.6 floor but fails a 0.8 floor.
+        #expect(gate.step(confidence: 0.7, floor: 0.6).emit == true)
+        #expect(gate.step(confidence: 0.7, floor: 0.8).emit == false)
+    }
 }

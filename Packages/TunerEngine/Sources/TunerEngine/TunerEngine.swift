@@ -32,6 +32,8 @@ public actor TunerEngine {
     public private(set) var method: DetectionMethod
     /// Optional string-lock hint; `nil` = chromatic.
     public private(set) var targetNote: Note?
+    /// Active per-instrument detection policy (the app sets this per instrument).
+    public private(set) var detectionPolicy: DetectionPolicy
 
     // MARK: Output
 
@@ -85,12 +87,14 @@ public actor TunerEngine {
         a4: Double = Pitch.standardA4,
         inputPreference: InputPreference = .auto,
         method: DetectionMethod = .mpm,
-        targetNote: Note? = nil
+        targetNote: Note? = nil,
+        detectionPolicy: DetectionPolicy = .guitar
     ) {
         self.a4 = min(Pitch.maxA4, max(Pitch.minA4, a4))
         self.inputPreference = inputPreference
         self.method = method
         self.targetNote = targetNote
+        self.detectionPolicy = detectionPolicy
     }
 
     // MARK: Lifecycle
@@ -124,7 +128,8 @@ public actor TunerEngine {
         calibration = cal
 
         let pipeline = PitchPipeline(
-            sampleRate: capture.sampleRate, a4: a4, method: method, targetNote: targetNote
+            sampleRate: capture.sampleRate, a4: a4, method: method,
+            targetNote: targetNote, policy: detectionPolicy
         )
         self.pipeline = pipeline
         isRunning = true
@@ -167,6 +172,11 @@ public actor TunerEngine {
     public func setTargetNote(_ value: Note?) {
         targetNote = value
         pipeline?.targetNote = value
+    }
+
+    public func setDetectionPolicy(_ value: DetectionPolicy) {
+        detectionPolicy = value
+        pipeline?.setPolicy(value)
     }
 
     // MARK: Consumer loop (off the audio thread)

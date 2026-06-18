@@ -78,6 +78,7 @@ struct LiveTunerScreen: View {
         .foregroundStyle(Color.lumaInk)
         .task {
             guard ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" else { return }
+            model.restoreLastSession()
             await model.start()
         }
         .onChange(of: stageMode) { _, active in setStageHold(active) }

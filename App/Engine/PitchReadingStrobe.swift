@@ -4,17 +4,14 @@ import TunerEngine
 /// The seam between the engine and the design system, kept in the **app layer** so
 /// `TunerEngine` stays UI-free and `LumaDesignSystem` stays logic-free (DESIGN §5).
 ///
-/// `phase` passes straight through: the engine defines it as a normalized 0…1
-/// cycle position of the tracked fundamental against the nearest-note reference,
-/// which is exactly what the Aurora strobe scrolls by (`phaseScroll: true`).
+/// `phase` passes straight through. The lock-confidence floor is now supplied by
+/// the active `InstrumentProfile`'s `DetectionPolicy` (caller passes it in) rather
+/// than a hardcoded frequency split — single source of truth (docs/todos M3).
 extension PitchReading {
-    /// Per-frequency confidence floor: bass strings (f0 < 120 Hz) top out at
-    /// ~0.75–0.85 NSDF clarity; mid/high strings reach ~0.95. Single source of
-    /// truth for both the strobe lock gate and the lock-mode confidence check.
-    var minLockConfidence: Double { frequency < 120 ? 0.75 : PitchReading.defaultLockConfidence }
-
-    /// Map a reading to the strobe's render contract.
-    func strobeInput(lockCents: Double = LumaMusic.lockCents) -> StrobeInput {
+    /// Map a reading to the strobe's render contract, gating `locked` on the
+    /// profile-supplied confidence floor.
+    func strobeInput(lockCents: Double = LumaMusic.lockCents,
+                     minLockConfidence: Double) -> StrobeInput {
         StrobeInput(
             cents: Float(cents),
             phase: Float(phase),

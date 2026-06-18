@@ -33,7 +33,8 @@ enum PitchDetector {
         _ frame: [Float],
         sampleRate: Double,
         range: ClosedRange<Double>,
-        method: DetectionMethod
+        method: DetectionMethod,
+        emitFloor: Double = AnalysisConfig.emitFloor
     ) -> DetectorResult? {
         let n = frame.count
         guard n >= 64 else { return nil }
@@ -55,7 +56,7 @@ enum PitchDetector {
         case .yin:
             return yin(corr, sampleRate: sampleRate, minLag: minLag, maxLag: maxLag)
         case .hybrid:
-            return hybrid(corr, sampleRate: sampleRate, minLag: minLag, maxLag: maxLag)
+            return hybrid(corr, sampleRate: sampleRate, minLag: minLag, maxLag: maxLag, emitFloor: emitFloor)
         }
     }
 
@@ -161,7 +162,8 @@ enum PitchDetector {
         _ corr: Correlation,
         sampleRate: Double,
         minLag: Int,
-        maxLag: Int
+        maxLag: Int,
+        emitFloor: Double = AnalysisConfig.emitFloor
     ) -> DetectorResult? {
         let m = mpm(corr, sampleRate: sampleRate, minLag: minLag, maxLag: maxLag)
         let y = yin(corr, sampleRate: sampleRate, minLag: minLag, maxLag: maxLag)
@@ -174,7 +176,15 @@ enum PitchDetector {
             // Trust the lower fundamental if it's reasonably clear.
             let lower = m.frequency < y.frequency ? m : y
             let higher = m.frequency < y.frequency ? y : m
-            let pick = lower.clarity > AnalysisConfig.emitFloor ? lower : higher
+            // NOTE: emitFloor is reused here as the octave-rescue clarity bar
+            // (picking the lower/fundamental candidate). It equals the pipeline
+            // emit gate today (default 0.5). When the deferred bass-fix raises a
+            // per-instrument emitFloor for noise rejection, raising it ALSO makes
+            // this branch favor the higher (octave) candidate — a latent trade
+            // against the CI-gated 0.00% octave-error spec. Decide there whether
+            // the octave-rescue bar should decouple from emitFloor.
+            // (docs/todos/bass-detection-policy-tuning.md)
+            let pick = lower.clarity > emitFloor ? lower : higher
             return relabel(pick, .hybrid)
         }
         // Agree → keep MPM's value but average the clarity for a fair score.

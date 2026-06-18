@@ -92,7 +92,8 @@ struct SaveCardSheet: View {
     }
 
     private func save() async {
-        isSaving = true; defer { isSaving = false }
+        isSaving = true
+        defer { isSaving = false }
         errorMessage = nil
         do {
             try await cardStore.save(

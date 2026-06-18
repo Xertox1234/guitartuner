@@ -86,6 +86,12 @@ if flag("--ci") {
     if s.lockSigma > 0.30 { failures.append("lock σ \(s.lockSigma)¢ > 0.30") }              // P3: ~0.12¢
     if s.lockMSMedian > 350 { failures.append("median lock \(s.lockMSMedian)ms > 350") }    // today 43 ms
 
+    // Bass-settling gates (bass notes under .bass). Thresholds = tuned result + margin;
+    // ratcheted, never red-lighting on landing (see docs/benchmarks/bass-baseline.md).
+    if s.bassLockSigma > 0.30 { failures.append("bass lock σ \(String(format: "%.4f", s.bassLockSigma))¢ > 0.30") }
+    if s.bassLockRetention < 0.80 { failures.append("bass lock retention \(String(format: "%.4f", s.bassLockRetention)) < 0.80") }
+    if s.bassLockDrops > 2 { failures.append("bass lock drops \(s.bassLockDrops) > 2") }
+
     // TODO gates, unlocked phase-by-phase (assert-ready, kept off until earned):
     //   P3 multi-partial Fisher gain:    lock σ < 0.05¢ (requires reliable B and clean partials)
     //   P4 (clock calibration):          absolute-pitch honesty copy + calibration flow
@@ -97,6 +103,7 @@ if flag("--ci") {
     let pass = "benchmark CI gate passed (clean abs \(String(format: "%.2f", s.cleanAbsCents))¢, "
         + "high \(String(format: "%.2f", s.highAbsCents))¢, mid \(String(format: "%.2f", s.midAbsCents))¢, "
         + "bass \(String(format: "%.2f", s.bassAbsCents))¢, lock σ \(String(format: "%.2f", s.lockSigma))¢, "
-        + "worst \(String(format: "%.2f", s.worstAbsCents))¢, octave \(s.octaveErrorRate * 100)% / stress \(s.stressOctaveErrors))\n"
+        + "worst \(String(format: "%.2f", s.worstAbsCents))¢, octave \(s.octaveErrorRate * 100)% / stress \(s.stressOctaveErrors), "
+        + "bass lock σ \(String(format: "%.4f", s.bassLockSigma))¢ retention \(String(format: "%.4f", s.bassLockRetention)) drops \(s.bassLockDrops))\n"
     FileHandle.standardError.write(pass.data(using: .utf8)!)
 }

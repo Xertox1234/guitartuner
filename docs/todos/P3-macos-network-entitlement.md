@@ -1,7 +1,8 @@
 ---
-severity: low
-audit: 2026-06-14-monetization-pr29
-finding: L8
+priority: P3
+status: needs-spec
+domain: other
+source: 2026-06-14 monetization audit (PR29, finding L8)
 ---
 
 # L8 — macOS App Sandbox Missing Network Client Entitlement

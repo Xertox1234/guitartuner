@@ -1,3 +1,10 @@
+---
+priority: P1
+status: open
+domain: testing, dsp
+source: 2026-06-17 instrument-profiles design §11–§12
+---
+
 # Build a settle-stability harness — the benchmark can't see "won't settle"
 
 **Severity:** High

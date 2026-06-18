@@ -22,21 +22,21 @@ Deduplication index for all findings surfaced across audit runs. Before adding a
 | No post-NSDF octave-history guard | `TunerEngine/DSP/PitchDetector.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | UserDefaults bypass in BottomDrawer | `App/Views/Monetization/BottomDrawer.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | Palette Color(hue:) magic values in two views | `BottomDrawer.swift`, `SaveCardSheet.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
-| System fonts in monetization screens | multiple monetization views | Medium | ⏸ todo: docs/todos/medium-M6-system-fonts-monetization.md (BottomDrawer residual) |
+| System fonts in monetization screens | multiple monetization views | Medium | ⏸ todo: docs/todos/P2-system-fonts-monetization.md (BottomDrawer residual) |
 | DispatchQueue.main.async in @MainActor view | `App/Views/Monetization/BottomDrawer.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | swiftui.md "no networking" rule stale | `docs/rules/swiftui.md` | Medium | ✅ resolved (2026-06-18 sweep) |
 | StringRow.activeIdx dead no-op write | `LumaDesignSystem/Components/StringRow.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | MetalStrobe no Metal path for Radial | `LumaDesignSystem/Strobe/StrobeField.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | StrobeLab uses Combine | `LumaDesignSystem/Strobe/StrobeLab.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | useMetalRenderer silently ignored for Radial | `LumaDesignSystem/Strobe/StrobeField.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
-| Pervasive XCTest in 16 of 19 test files | `TunerEngine/Tests/` | Medium | ⏸ todo: docs/todos/medium-M13-xctest-pervasive.md (needs-spec) |
+| Pervasive XCTest in 16 of 19 test files | `TunerEngine/Tests/` | Medium | ⏸ todo: docs/todos/P2-xctest-pervasive.md (needs-spec) |
 | PitchDetectorTests copy-paste, needs parameterization | `TunerEngineTests/PitchDetectorTests.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | PipelineTests tolerances 12–40× loose | `TunerEngineTests/PipelineTests.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | No low-B octave-safety test under stress in swift test | `TunerEngine/Tests/` | Medium | ✅ resolved (2026-06-18 sweep) |
 | StimulusTests bypasses full pipeline | `TunerEngineTests/StimulusTests.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | Networking without CLAUDE.md annotation | `App/Networking/LumaAPI.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
 | Autocorrelation prefix-energy scalar loop | `TunerEngine/DSP/Autocorrelation.swift` | Low | ✅ resolved (2026-06-18 sweep) |
-| PhaseIntegrator.lsSlope scalar loops | `TunerEngine/DSP/PhaseIntegrator.swift` | Low | ⏸ partial: docs/todos/low-L2-phaseintegrator-lsslope-scalar.md (dot products vectorized; centering/means residual) |
+| PhaseIntegrator.lsSlope scalar loops | `TunerEngine/DSP/PhaseIntegrator.swift` | Low | ⏸ partial: docs/todos/P3-phaseintegrator-lsslope-scalar.md (dot products vectorized; centering/means residual) |
 | recent() circular-buffer scalar copy | `TunerEngine/Pipeline/PitchPipeline.swift` | Low | ✅ resolved (2026-06-18 sweep) |
 | LumaConfig URL force-unwrap | `App/Networking/LumaConfig.swift` | Low | ✅ resolved (2026-06-18 sweep) |
 | StrobeRenderer.configure() clearColor double-write | `LumaDesignSystem/Strobe/MetalStrobe.swift` | Low | ✅ resolved (2026-06-18 sweep) |

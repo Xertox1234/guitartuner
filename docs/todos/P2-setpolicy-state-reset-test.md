@@ -1,3 +1,10 @@
+---
+priority: P2
+status: open
+domain: testing, pipeline
+source: 2026-06-17 instrument-profiles Slice 1 review (Task 6)
+---
+
 # Test `PitchPipeline.setPolicy` actually resets detection state on swap
 
 **Severity:** Medium

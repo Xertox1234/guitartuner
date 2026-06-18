@@ -1,3 +1,11 @@
+---
+priority: P1
+status: open
+domain: dsp, pipeline, swiftui
+source: 2026-06-17 instrument-profiles design §11
+depends_on: P1-bass-settle-stability-harness (verify the fix); instrument-profiles Slice 1 (landed)
+---
+
 # Tune the `.bass` DetectionPolicy — pull the lever the profile refactor built
 
 **Severity:** High

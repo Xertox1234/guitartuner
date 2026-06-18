@@ -29,7 +29,8 @@ final class GearStoreModel {
     }
 
     func fetch() async {
-        isLoading = true; defer { isLoading = false }
+        isLoading = true
+        defer { isLoading = false }
         do {
             let response: ProductsResponse = try await api.get("store/products")
             products = response.products

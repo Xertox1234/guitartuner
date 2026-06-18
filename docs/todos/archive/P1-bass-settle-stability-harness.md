@@ -7,6 +7,18 @@ source: 2026-06-17 instrument-profiles design §11–§12
 
 # Build a settle-stability harness — the benchmark can't see "won't settle"
 
+> **✅ COMPLETED 2026-06-18** via `docs/superpowers/plans/2026-06-18-bass-detection-policy-tuning.md`
+> (branch `feat/bass-detection-policy-tuning`). Done: made the benchmark policy-aware (`policy:` param
+> on `CaseRunner.run` → `PitchPipeline`, default `.fullRange`) + a dedicated `.bass`-policy pass;
+> added lock-retention % and lock-drop-count metrics (`CaseRunner.lockTrajectory`, `CaseResult`);
+> CI-gated bass lock σ / retention / drops in `Benchmark/main.swift`; recorded a baseline
+> (`docs/benchmarks/bass-baseline.md`) and a guitar-vs-bass comparison. **Key finding:** the synthetic
+> `inharmonicString` family already settles (98 %+ retention, 0 drops) — the "won't settle" shatter is
+> a real-DI phenomenon, so the new retention/drop metrics are regression guards and the σ win is the
+> measurable improvement. **Deferred (hardening, not a blocker):** committing real recorded bass WAVs —
+> the loader exists; synthetic remains the spec-backing methodology. See also
+> `P2-accuracy-md-stale-vibrato-regression.md`.
+
 **Severity:** High
 **Source:** 2026-06-17 instrument-profiles design (`docs/superpowers/specs/2026-06-17-instrument-profiles-design.md` §11–§12)
 **Domain:** testing, dsp

@@ -8,6 +8,17 @@ depends_on: P1-bass-settle-stability-harness (verify the fix); instrument-profil
 
 # Tune the `.bass` DetectionPolicy — pull the lever the profile refactor built
 
+> **✅ COMPLETED 2026-06-18** via `docs/superpowers/plans/2026-06-18-bass-detection-policy-tuning.md`
+> (branch `feat/bass-detection-policy-tuning`). Done: bass band geometry (long 8192 window down to
+> 40 Hz so E1/A1 get ~7+ periods), relaxed bass low/ultralow/acquire sustain 0.6→0.55 & lock
+> 0.75→0.70, `searchRange` already 25…420, `defaultMode = .lock` + `setInstrument` arm-target fix.
+> Result: bass-weak-fund lock σ 0.17→0.13 ¢, octave 0.00%, guitar zero-delta, CI gate added.
+> **Deliberately SKIPPED** per the decision gate (synthetic already settles; no noise/octave
+> regression to counter): the `emitFloor`↔octave-rescue decoupling and the `phaseIntegrator.reset()`
+> grace period — both shared-code changes that the data did not justify. See the spec's
+> "Decision gate (2026-06-18)" section. Real-DI WAV validation remains deferred (see
+> `P2-accuracy-md-stale-vibrato-regression.md` and the harness todo).
+
 **Severity:** High
 **Source:** 2026-06-17 instrument-profiles design (`docs/superpowers/specs/2026-06-17-instrument-profiles-design.md` §11)
 **Domain:** dsp, pipeline, swiftui

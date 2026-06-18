@@ -52,6 +52,15 @@ Real-world realities the default model omits — the families P1–P3 must impro
 | 10 | 628 | 0.27 | 0.09 | 0.01 | 0 |
 | 5 | 628 | 0.27 | 0.11 | 0.03 | 0 |
 
+## Bass policy (bass notes under `.bass`)
+
+Bass strings driven through the **`.bass`** DetectionPolicy (the rest of the report uses `.fullRange`). Lock retention = fraction of held-window frames holding the phase-integrator lock; drops = mid-sustain lock losses. This is the bass-settling signal the Phase 4 gate reads.
+
+| Family | n | abs ¢ | lock σ ¢ | lock retention | lock drops |
+|---|---|---|---|---|---|
+| bass-clean | 241 | 0.24 | 0.02 | 100.00% | 0 |
+| bass-weak-fund | 241 | 0.25 | 0.13 | 98.29% | 0 |
+
 ## CRLB floor & efficiency (held E2, N=4096)
 
 Physical limit (single-tone vs harmonic, ∝1/k weight 6.45), and the measured held-note σ as a multiple of it. The quiet-signal gap to the floor is the P2/P3 headroom, now visible. (The bound is per *single* N=4096 window; the measured lock σ comes after median+EMA smoothing, which integrates across windows — so at very low SNR it can legitimately sit below the single-window floor.)

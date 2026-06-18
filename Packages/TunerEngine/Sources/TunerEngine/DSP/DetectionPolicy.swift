@@ -107,7 +107,7 @@ public struct DetectionPolicy: Sendable, Equatable {
 
     /// Bass — in Slice 1 identical to `.fullRange` except the search range (wide
     /// enough for A0 ≈ 27.5 Hz). Bands/gates are tuned in the deferred bass-fix
-    /// (docs/todos/bass-detection-policy-tuning.md).
+    /// (docs/todos/P1-bass-detection-policy-tuning.md).
     public static let bass = DetectionPolicy(
         searchRange: 25...420,
         bands: fullRange.bands, acquire: fullRange.acquire,

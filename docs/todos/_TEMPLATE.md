@@ -1,4 +1,3 @@
-<!-- TEMPLATE — copy to docs/todos/P<n>-<slug>.md and fill in. Not a real todo (leading _). -->
 ---
 priority: P2          # P0 blocker · P1 high · P2 medium · P3 low (MUST match the P<n>- filename prefix)
 status: open          # open · needs-spec · partial · blocked
@@ -6,6 +5,8 @@ domain: dsp           # dsp · pipeline · capture · strobe · swiftui · desig
 source:               # audit / spec / PR that surfaced it (optional)
 depends_on:           # another todo or work this waits on (optional)
 ---
+
+<!-- Copy this file to docs/todos/P<n>-<slug>.md, then delete this line. _TEMPLATE.md is not itself a todo. -->
 
 # <Title: what + why, in one line>
 

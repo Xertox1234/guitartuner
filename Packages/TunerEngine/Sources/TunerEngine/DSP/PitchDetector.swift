@@ -183,7 +183,7 @@ enum PitchDetector {
             // this branch favor the higher (octave) candidate — a latent trade
             // against the CI-gated 0.00% octave-error spec. Decide there whether
             // the octave-rescue bar should decouple from emitFloor.
-            // (docs/todos/bass-detection-policy-tuning.md)
+            // (docs/todos/P1-bass-detection-policy-tuning.md)
             let pick = lower.clarity > emitFloor ? lower : higher
             return relabel(pick, .hybrid)
         }

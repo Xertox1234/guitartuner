@@ -10,20 +10,20 @@ source: 2026-06-17 instrument-profiles design §11–§12
 **Severity:** High
 **Source:** 2026-06-17 instrument-profiles design (`docs/superpowers/specs/2026-06-17-instrument-profiles-design.md` §11–§12)
 **Domain:** testing, dsp
-**Related:** `docs/todos/medium-M17-stimulustests-bypass-pipeline.md`
+**Related:** medium-M17 (StimulusTests → full-pipeline driving) — resolved in the 2026-06-18 sweep.
 
 ## Problem
 
 The reported bass symptom is *temporal* — the reading won't settle / jumps around on a
 sustained note. The accuracy benchmark measures per-estimate cents error on clean/inharmonic
 synthetic tones; it is blind to settling behavior. We cannot prove the bass-policy fix
-(`bass-detection-policy-tuning.md`) works, or guard against regressions, without a metric that
+(`P1-bass-detection-policy-tuning.md`) works, or guard against regressions, without a metric that
 observes stability over time on realistic stimulus.
 
 ## Fix
 
 - Add a settle-stability metric driven through the **full `PitchPipeline`** (not `PitchDetector`
-  directly — this also closes `medium-M17`):
+  directly — the full-pipeline driving medium-M17 also called for, now resolved):
   - **cents σ** over a steady sustained window (post-attack),
   - **lock-retention %** — fraction of frames where lock holds once first achieved,
   - **lock-drop count** — number of times lock is lost mid-sustain.

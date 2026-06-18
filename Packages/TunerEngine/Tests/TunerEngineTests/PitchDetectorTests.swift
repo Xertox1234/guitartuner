@@ -67,7 +67,7 @@ import Testing
     // constant, and is backward-compatible. This does NOT prove the value is routed
     // into the octave-rescue pick (both calls use 0.5, so determinism alone passes
     // it). True routing coverage arrives when the deferred bass-fix first exercises
-    // a non-default floor (docs/todos/bass-detection-policy-tuning.md).
+    // a non-default floor (docs/todos/P1-bass-detection-policy-tuning.md).
     @Test func detectAcceptsEmitFloorAndDefaultsToLegacy() {
         let frame = TestSupport.stringFrame(110, n: 4096)
         let a = PitchDetector.detect(frame, sampleRate: TestSupport.fs,

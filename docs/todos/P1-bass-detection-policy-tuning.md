@@ -48,7 +48,7 @@ symptom — "won't settle / jumps around on a sustained note" — is still unfix
     transition logic, decide deliberately whether to keep it; if you change band geometry, re-confirm
     the guitar/benchmark zero-delta still holds and consider pinning the `nextBand(from: mid, f0 < 40)`
     case with a unit test. (`PitchPipeline.nextBand`.) See also the deferred identity-match hardening
-    in `nextband-identity-not-label-match.md` (still uses `firstIndex(where: label ==)`).
+    in `P3-nextband-identity-not-label-match.md` (still uses `firstIndex(where: label ==)`).
 - Tune `.bass` per-band `sustainConfidence` / `lockConfidence` **and `emitFloor`** so the
   streak and display lock hold on weak-fundamental bass without admitting noise. (Both the
   per-band sustain floor *and* the single `emitFloor` scalar gate the lock streak — bass
@@ -83,7 +83,7 @@ symptom — "won't settle / jumps around on a sustained note" — is still unfix
     `App/Engine/LiveTunerModel.swift` (`setInstrument`, `setMode`, `setInputKind`).
 - Widen `.bass.searchRange` down to ~25 Hz (5-string Drop A's A0 ≈ 27.5 Hz needs margin below
   the current 27 floor).
-- **Verify with the settle-stability harness** (`bass-settle-stability-harness.md`) and
+- **Verify with the settle-stability harness** (`P1-bass-settle-stability-harness.md`) and
   re-baseline the accuracy benchmark; confirm guitar remains unchanged.
 
 ## Files

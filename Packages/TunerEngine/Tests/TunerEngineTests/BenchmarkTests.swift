@@ -80,6 +80,14 @@ final class BenchmarkTests: XCTestCase {
         XCTAssertNotEqual(clamped.stats.meanAbs, full.stats.meanAbs, "narrow searchRange must change the estimate")
     }
 
+    func testBenchmarkExposesBassPolicySummary() {
+        let report = BenchmarkSuite.run(method: .mpm, dateLabel: "test")
+        XCTAssertGreaterThan(report.summary.bassPolicyCases, 0, "bass-policy pass must run cases")
+        XCTAssertGreaterThanOrEqual(report.summary.bassLockRetention, 0)
+        XCTAssertLessThanOrEqual(report.summary.bassLockRetention, 1)
+        XCTAssertTrue(report.markdown.contains("Bass policy"), "markdown has a bass-policy section")
+    }
+
     func testLockTrajectoryComputesRetentionAndDrops() {
         func r(_ t: TimeInterval, _ locked: Bool) -> PitchReading {
             PitchReading(frequency: 110, note: Note(midi: 45), cents: 0, confidence: 0.9,

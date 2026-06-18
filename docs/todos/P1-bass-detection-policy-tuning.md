@@ -12,6 +12,10 @@ depends_on: P1-bass-settle-stability-harness (verify the fix); instrument-profil
 **Source:** 2026-06-17 instrument-profiles design (`docs/superpowers/specs/2026-06-17-instrument-profiles-design.md` §11)
 **Domain:** dsp, pipeline, swiftui
 **Depends on:** Slice 1 (InstrumentProfile + DetectionPolicy threading) landed and inert.
+**Verified:** 2026-06-18 against current code — all claims confirmed (bass policy still aliased to
+`fullRange`; `nextBand`/`band(forFrequency:)` threading, the `emitFloor` octave-rescue NOTE, the
+defaults-only test, `.auto` bass default, the `setInstrument` direct-assignment gap, and the
+`nextBand` label-match all present). The only stale item is the `searchRange` bullet below — now done.
 
 ## Problem
 
@@ -81,8 +85,10 @@ symptom — "won't settle / jumps around on a sustained note" — is still unfix
     `setInstrument` through `setMode(profile.defaultMode)` / `setInputKind(profile.defaultInput)` (or hoist
     those side-effects — arm `activeIdx`, push `setInputPreference` — into `setInstrument`). Files:
     `App/Engine/LiveTunerModel.swift` (`setInstrument`, `setMode`, `setInputKind`).
-- Widen `.bass.searchRange` down to ~25 Hz (5-string Drop A's A0 ≈ 27.5 Hz needs margin below
-  the current 27 floor).
+- ~~Widen `.bass.searchRange` down to ~25 Hz (5-string Drop A's A0 ≈ 27.5 Hz needs margin below
+  the current 27 floor).~~ **DONE (verified 2026-06-18)** — `DetectionPolicy.bass.searchRange` is
+  already `25...420` (`DetectionPolicy.swift:112`). Note the global `PitchPipeline.searchRange`
+  default is still `27...1400` (`PitchPipeline.swift:30`), but the bass policy overrides it.
 - **Verify with the settle-stability harness** (`P1-bass-settle-stability-harness.md`) and
   re-baseline the accuracy benchmark; confirm guitar remains unchanged.
 

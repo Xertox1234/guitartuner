@@ -13,9 +13,12 @@ around on a sustained note" — is still unfixed. Root causes (cited in the desi
 
 1. **Guitar-centric bands.** The 8192-sample `ultralow` window only engages below 40 Hz, so
    bass E1 (41.2 Hz) and A1 (55 Hz) fall into the `low` band's 4096 window — sized for guitar's
-   82 Hz low E (~7 periods); E1 gets only ~3.5. (`PitchPipeline.nextConfig`, `AnalysisConfig`)
+   82 Hz low E (~7 periods); E1 gets only ~3.5. (`PitchPipeline.nextBand` — renamed from
+   `nextConfig` in Slice 1; band selection now flows through `DetectionPolicy.band(forFrequency:)`;
+   `AnalysisConfig`)
 2. **Fragile lock streak.** Each clarity dip below the sustain floor resets `phaseIntegrator`,
-   so the precise lock keeps shattering and re-earning (~0.43 s). (`PitchPipeline.swift:225`)
+   so the precise lock keeps shattering and re-earning (~0.43 s).
+   (`PitchPipeline.process` — `phaseIntegrator.reset()` on the non-lock-integrated frame path)
 3. **Lock flicker.** Bass clarity oscillates around the lock floor → strobe freeze/unfreeze.
 4. **`.auto` default amplifies jitter** into note-name flips; `.lock` is "the robust path for
    low B/E" per `LiveTunerModel`.
@@ -25,6 +28,17 @@ around on a sustained note" — is still unfixed. Root causes (cited in the desi
 - Tune `DetectionPolicy.bass.bands`: extend the long window upward so E1/A1 (and the rest of
   the bottom strings) get adequate periods, instead of the guitar-sized 4096. Watch the
   latency trade (longer window = slower lock).
+  - **Slice 1 transition artifact to account for (final-review FU-1).** The `nextConfig`→`nextBand`
+    refactor introduced one behavioral change on the `current == mid` path: when smoothed f0 drops
+    below 40 Hz, `nextBand` now returns `ultralow` (8192) where the old `nextConfig` returned `low`
+    (4096) unconditionally for any f0 < 110. This is **unreachable on guitar** (60 Hz search floor),
+    **unexercised by the benchmark** (steady tones never sweep mid→sub-40 — why the Slice 1 sha256
+    zero-delta proof legitimately held), and on **bass** it is currently dormant and arguably *more*
+    correct (reaches the long window one frame sooner). Because this slice rewrites exactly this
+    transition logic, decide deliberately whether to keep it; if you change band geometry, re-confirm
+    the guitar/benchmark zero-delta still holds and consider pinning the `nextBand(from: mid, f0 < 40)`
+    case with a unit test. (`PitchPipeline.nextBand`.) See also the deferred identity-match hardening
+    in `nextband-identity-not-label-match.md` (still uses `firstIndex(where: label ==)`).
 - Tune `.bass` per-band `sustainConfidence` / `lockConfidence` **and `emitFloor`** so the
   streak and display lock hold on weak-fundamental bass without admitting noise. (Both the
   per-band sustain floor *and* the single `emitFloor` scalar gate the lock streak — bass

@@ -46,6 +46,17 @@ around on a sustained note" — is still unfixed. Root causes (cited in the desi
   octave-rescue pick on an octave-ambiguous frame (e.g. `emitFloor: 0.0` → fundamental vs
   `emitFloor: 1.0` → octave) to prove routing.
 - Set bass `InstrumentProfile.defaultMode = .lock`.
+  - **Side-effect gap (raised in Slice 1 Task 9 code-quality review).** `LiveTunerModel.setInstrument`
+    assigns `mode = profile.defaultMode` and `inputKind = profile.defaultInput` **directly**, bypassing
+    the `setMode(_:)` / `setInputKind(_:)` setters. That is inert in Slice 1 (both built-in profiles
+    default to `.auto`/`.di`), but the moment bass defaults to `.lock` it skips `setMode`'s arming of
+    `activeIdx` to the lowest string — so `updateTarget()` yields `targetNote == nil` and the strobe
+    stays chromatic despite nominal lock mode. Likewise, a future `.mic`-defaulting profile would skip
+    `setInputKind`'s `setInputPreference` push to the engine and the "Restart to apply…" status, leaving
+    the engine on the wrong input until the next `start()`. **When flipping bass to `.lock` here**, route
+    `setInstrument` through `setMode(profile.defaultMode)` / `setInputKind(profile.defaultInput)` (or hoist
+    those side-effects — arm `activeIdx`, push `setInputPreference` — into `setInstrument`). Files:
+    `App/Engine/LiveTunerModel.swift` (`setInstrument`, `setMode`, `setInputKind`).
 - Widen `.bass.searchRange` down to ~25 Hz (5-string Drop A's A0 ≈ 27.5 Hz needs margin below
   the current 27 floor).
 - **Verify with the settle-stability harness** (`bass-settle-stability-harness.md`) and

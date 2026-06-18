@@ -1,6 +1,6 @@
 ---
 priority: P1
-status: open
+status: partial
 domain: testing, dsp
 source: 2026-06-17 instrument-profiles design §11–§12
 ---

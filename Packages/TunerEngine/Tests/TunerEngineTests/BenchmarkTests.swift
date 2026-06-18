@@ -81,11 +81,27 @@ final class BenchmarkTests: XCTestCase {
     }
 
     func testBenchmarkExposesBassPolicySummary() {
-        let report = BenchmarkSuite.run(method: .mpm, dateLabel: "test")
-        XCTAssertGreaterThan(report.summary.bassPolicyCases, 0, "bass-policy pass must run cases")
-        XCTAssertGreaterThanOrEqual(report.summary.bassLockRetention, 0)
-        XCTAssertLessThanOrEqual(report.summary.bassLockRetention, 1)
-        XCTAssertTrue(report.markdown.contains("Bass policy"), "markdown has a bass-policy section")
+        // Exercise the bass-policy wiring on the 10 bass cases directly (~seconds),
+        // not the full BenchmarkSuite.run() matrix (~11 min). run() calls this exact
+        // helper, so this proves the same path it ships.
+        let result = BenchmarkSuite.bassPolicyPass(method: .mpm, sampleRate: fs,
+                                                    a4: Pitch.standardA4,
+                                                    lockWindowStart: BenchmarkSuite.lockWindowStart)
+        XCTAssertFalse(result.isEmpty, "bass-policy pass must run cases")
+        let categories = Set(result.map { $0.category })
+        XCTAssertTrue(categories.contains("bass-clean"), "bass-clean category present")
+        XCTAssertTrue(categories.contains("bass-weak-fund"), "bass-weak-fund category present")
+        for r in result {
+            XCTAssertGreaterThanOrEqual(r.lockRetention, 0)
+            XCTAssertLessThanOrEqual(r.lockRetention, 1)
+        }
+
+        // Feed the small result through the Summary aggregation to prove the wiring
+        // cheaply (bassPolicyCases populated, retention in range).
+        let summary = BenchmarkSuite.summarize(clean: [], stress: [], bassPolicy: result, method: .mpm)
+        XCTAssertGreaterThan(summary.bassPolicyCases, 0, "Summary aggregates bass-policy cases")
+        XCTAssertGreaterThanOrEqual(summary.bassLockRetention, 0)
+        XCTAssertLessThanOrEqual(summary.bassLockRetention, 1)
     }
 
     func testLockTrajectoryComputesRetentionAndDrops() {

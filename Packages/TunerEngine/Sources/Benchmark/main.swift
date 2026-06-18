@@ -75,6 +75,7 @@ if flag("--ci") {
     // Hard invariants — never regress.
     if s.octaveErrorRate > 0 { failures.append("clean octave-error rate \(s.octaveErrorRate * 100)% > 0") }
     if s.stressOctaveErrors > 0 { failures.append("stress octave errors \(s.stressOctaveErrors) > 0 (weak/missing-fund/vibrato must hold the octave)") }
+    if s.bassOctaveErrors > 0 { failures.append("bass octave errors \(s.bassOctaveErrors) > 0 (.bass policy must hold the octave on B0/E1/A1)") }
 
     // Non-regression gates (today's numbers in comments; P1+P2+P3+P2r baseline).
     if s.cleanAbsCents > 0.25 { failures.append("clean abs \(s.cleanAbsCents)¢ > 0.25") }   // P1+P3: ~0.10¢
@@ -103,7 +104,7 @@ if flag("--ci") {
     let pass = "benchmark CI gate passed (clean abs \(String(format: "%.2f", s.cleanAbsCents))¢, "
         + "high \(String(format: "%.2f", s.highAbsCents))¢, mid \(String(format: "%.2f", s.midAbsCents))¢, "
         + "bass \(String(format: "%.2f", s.bassAbsCents))¢, lock σ \(String(format: "%.2f", s.lockSigma))¢, "
-        + "worst \(String(format: "%.2f", s.worstAbsCents))¢, octave \(s.octaveErrorRate * 100)% / stress \(s.stressOctaveErrors), "
+        + "worst \(String(format: "%.2f", s.worstAbsCents))¢, octave \(s.octaveErrorRate * 100)% / stress \(s.stressOctaveErrors) / bass octave \(s.bassOctaveErrors), "
         + "bass lock σ \(String(format: "%.4f", s.bassLockSigma))¢ retention \(String(format: "%.4f", s.bassLockRetention)) drops \(s.bassLockDrops))\n"
     FileHandle.standardError.write(pass.data(using: .utf8)!)
 }

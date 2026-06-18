@@ -43,6 +43,7 @@ public enum BenchmarkSuite {
         public let bassLockRetention: Double    // mean held-window lock retention, bass under .bass
         public let bassLockDrops: Int           // total lock drops, bass under .bass
         public let bassPolicyCases: Int
+        public let bassOctaveErrors: Int        // octave errors across the .bass policy pass (HARD gate: must be 0)
     }
 
     // The bench matrix: low B (5-string) up to high frets.
@@ -125,6 +126,30 @@ public enum BenchmarkSuite {
         }
 
         // Bass-policy pass (under .bass): clean inharmonic + weak-fund, the settle stressors.
+        let bassPolicy = bassPolicyPass(method: method, sampleRate: sampleRate, a4: a4,
+                                        lockWindowStart: lockWindowStart)
+
+        let summary = summarize(clean: clean, stress: stress, bassPolicy: bassPolicy, method: method)
+        let all = clean + noise
+        return Report(
+            csv: csv(all + stress + bassPolicy),
+            markdown: markdown(clean: clean, noise: noise, stress: stress, bassPolicy: bassPolicy,
+                               summary: summary, sampleRate: sampleRate, a4: a4, dateLabel: dateLabel),
+            summary: summary
+        )
+    }
+
+    /// Bass-policy pass: bass strings run under the shipping `.bass` policy (not the
+    /// default `.fullRange`), scored separately so the guitar clean matrix stays
+    /// byte-identical. Extracted so tests can exercise the wiring on the 10 bass cases
+    /// (~seconds) without paying for the full `run()` matrix (~11 min). `run` threads
+    /// its own params in explicitly, so its output is unchanged.
+    static func bassPolicyPass(
+        method: DetectionMethod,
+        sampleRate: Double,
+        a4: Double,
+        lockWindowStart: TimeInterval
+    ) -> [CaseResult] {
         var bassPolicy: [CaseResult] = []
         for midi in bassPolicyNotes {
             let base = Pitch.frequency(midi: midi, a4: a4)
@@ -141,15 +166,7 @@ public enum BenchmarkSuite {
                                              method: method, a4: a4, lockWindowStart: lockWindowStart,
                                              policy: .bass))
         }
-
-        let summary = summarize(clean: clean, stress: stress, bassPolicy: bassPolicy, method: method)
-        let all = clean + noise
-        return Report(
-            csv: csv(all + stress + bassPolicy),
-            markdown: markdown(clean: clean, noise: noise, stress: stress, bassPolicy: bassPolicy,
-                               summary: summary, sampleRate: sampleRate, a4: a4, dateLabel: dateLabel),
-            summary: summary
-        )
+        return bassPolicy
     }
 
     /// Compact MPM vs YIN vs hybrid comparison (let the benchmark pick a default).
@@ -194,8 +211,8 @@ public enum BenchmarkSuite {
 
     // MARK: - Aggregation
 
-    private static func summarize(clean: [CaseResult], stress: [CaseResult],
-                                  bassPolicy: [CaseResult], method: DetectionMethod) -> Summary {
+    static func summarize(clean: [CaseResult], stress: [CaseResult],
+                          bassPolicy: [CaseResult], method: DetectionMethod) -> Summary {
         let pooled = ErrorStats.from(clean.flatMap { $0.errors })
         let lockPooled = ErrorStats.from(clean.flatMap { $0.lockErrors })
         let bassPooled = ErrorStats.from(clean.filter { bucket($0.trueFrequency) == bands[0] }.flatMap { $0.errors })
@@ -209,6 +226,7 @@ public enum BenchmarkSuite {
         let bassRetention = bassPolicy.isEmpty ? 0
             : bassPolicy.map { $0.lockRetention }.reduce(0, +) / Double(bassPolicy.count)
         let bassDrops = bassPolicy.reduce(0) { $0 + $1.lockDrops }
+        let bassOctaveErrors = bassPolicy.filter { $0.octaveError }.count
         return Summary(
             method: method,
             cleanAbsCents: pooled.meanAbs,
@@ -227,7 +245,8 @@ public enum BenchmarkSuite {
             bassLockSigma: bassLock.sigma,
             bassLockRetention: bassRetention,
             bassLockDrops: bassDrops,
-            bassPolicyCases: bassPolicy.count
+            bassPolicyCases: bassPolicy.count,
+            bassOctaveErrors: bassOctaveErrors
         )
     }
 

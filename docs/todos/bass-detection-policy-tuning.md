@@ -7,9 +7,11 @@
 
 ## Problem
 
-The instrument-profiles refactor (Slice 1) ships `.bass` DetectionPolicy set to today's exact
-guitar constants, so it is provably inert. The real bass symptom — "won't settle / jumps
-around on a sustained note" — is still unfixed. Root causes (cited in the design §2):
+The instrument-profiles refactor (Slice 1) ships the `.bass` DetectionPolicy *constants* set to
+today's exact guitar values, so the policy itself is inert (the only exception is the
+policy-agnostic `nextBand` mid→sub-40 transition — see FU-1 in the Fix section). The real bass
+symptom — "won't settle / jumps around on a sustained note" — is still unfixed. Root causes
+(cited in the design §2):
 
 1. **Guitar-centric bands.** The 8192-sample `ultralow` window only engages below 40 Hz, so
    bass E1 (41.2 Hz) and A1 (55 Hz) fall into the `low` band's 4096 window — sized for guitar's

@@ -44,4 +44,11 @@ import Testing
         #expect(p.sustainConfidence(forFrequency: 300) == 0.6)
     }
 
+    @Test func engineStoresAndUpdatesPolicy() async {
+        let engine = TunerEngine(detectionPolicy: .bass)
+        #expect(await engine.detectionPolicy == .bass)
+        await engine.setDetectionPolicy(.guitar)
+        #expect(await engine.detectionPolicy == .guitar)
+    }
+
 }

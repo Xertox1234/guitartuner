@@ -58,7 +58,7 @@ public struct PitchReading: Sendable, Equatable {
     }
 
     /// Confidence floor for mid/high strings (f0 ≥ 120 Hz). Bass uses a lower
-    /// per-band value in the app layer (see DetectionPolicy.lockConfidence(forFrequency:)).
+    /// per-band value from DetectionPolicy.lockConfidence(forFrequency:).
     public static let defaultLockConfidence: Double = 0.9
 
     /// In-tune window half-width in cents. Matches LumaDesignSystem.LumaMusic.lockCents

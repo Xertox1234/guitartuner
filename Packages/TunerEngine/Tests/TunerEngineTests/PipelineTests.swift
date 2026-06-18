@@ -159,6 +159,20 @@ import Testing
         #expect(label(40, from: "low") == "low")
     }
 
+    /// Pins the ONE place `nextBand` intentionally diverges from the legacy
+    /// `nextConfig`: from `mid`, a fundamental below 40 Hz now settles to
+    /// `ultralow` (8192 window) where the old switch returned `low` (4096) for any
+    /// f0 < 110. Unreachable on guitar (60 Hz search floor) and unbenchmarked
+    /// (steady tones never sweep mid→sub-40), so Slice 1's zero-delta proof holds.
+    /// Reachable on bass (searchRange 25…420); the deferred bass-fix rewrites this
+    /// transition — if it changes, update this expectation deliberately.
+    /// (docs/todos/bass-detection-policy-tuning.md, FU-1.)
+    @Test func nextBandFromMidBelow40SettlesToUltralow() {
+        let p = DetectionPolicy.fullRange
+        let mid = (p.bands.first { $0.label == "mid" }) ?? p.acquire
+        #expect(PitchPipeline.nextBand(for: 30, current: mid, in: p).label == "ultralow")
+    }
+
     @Test func customBandPlanChangesChosenWindow() {
         // Two custom bands with distinct windows: nextBand must pick the band (and
         // thus the window/hop) from the *custom* policy's geometry, not hardcoded

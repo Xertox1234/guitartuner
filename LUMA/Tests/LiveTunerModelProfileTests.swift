@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 import LumaDesignSystem
 import TunerEngine
 @testable import LUMA
@@ -27,5 +28,18 @@ import TunerEngine
         model.setInstrument(.bass)
         #expect(model.profile.detection.searchRange == 25...420)
         #expect(model.profile.detection.lockConfidence(forFrequency: 82) == 0.75)
+    }
+
+    @Test func restoresPersistedInstrumentAndTuning() {
+        // Simulate a prior session having stored bass + Drop D.
+        let d = UserDefaults.standard
+        d.set(Instrument.bass.rawValue, forKey: "lastInstrument")
+        d.set("bass-drop-d", forKey: "lastTuningId")
+        defer { d.removeObject(forKey: "lastInstrument"); d.removeObject(forKey: "lastTuningId") }
+
+        let model = LiveTunerModel()
+        model.restoreLastSession()
+        #expect(model.profile.id == .bass)
+        #expect(model.tuning.id == "bass-drop-d")
     }
 }

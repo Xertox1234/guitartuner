@@ -50,6 +50,8 @@ final class LiveTunerModel {
     /// Adjustable reference pitch (430…450, default 440), shared by engine + tone.
     var a4: Double = 440 { didSet { applyA4() } }
     @ObservationIgnored @AppStorage("a4Calibration") private var storedA4: Double = 440
+    @ObservationIgnored @AppStorage("lastInstrument") private var lastInstrument = Instrument.guitar.rawValue
+    @ObservationIgnored @AppStorage("lastTuningId") private var lastTuningId = Tunings.guitar.id
 
     // MARK: Clock calibration (P4)
     /// True once the engine has accumulated ≥30 s of samples and ppm is converged.
@@ -77,6 +79,20 @@ final class LiveTunerModel {
     init() {
         // didSet not called during init; engine.setA4 is called on start().
         self.a4 = storedA4
+    }
+
+    /// Restore the last-used instrument + tuning (call once at launch). First launch
+    /// keeps the guitar defaults. Unknown ids fall back to the instrument's standard.
+    func restoreLastSession() {
+        let instrument = Instrument(rawValue: lastInstrument) ?? .guitar
+        // Capture the saved id BEFORE setInstrument runs: when the instrument actually
+        // changes, setInstrument's internal setTuning(profile.defaultTuning) overwrites
+        // lastTuningId with the standard tuning, clobbering the value we need to look up.
+        let savedTuningId = lastTuningId
+        setInstrument(instrument)
+        if let saved = Tunings.presets(for: instrument).first(where: { $0.id == savedTuningId }) {
+            setTuning(saved)
+        }
     }
 
     // MARK: - Lifecycle
@@ -163,6 +179,7 @@ final class LiveTunerModel {
         let pol = profile.detection
         Task { await e.setDetectionPolicy(pol) }
         setTuning(profile.defaultTuning)   // keeps activeIdx valid, updates target + tone
+        lastInstrument = newValue.rawValue
     }
 
     func setTuning(_ newTuning: Tuning) {
@@ -173,6 +190,7 @@ final class LiveTunerModel {
         }
         updateTarget()
         updateTone()
+        lastTuningId = newTuning.id
     }
 
     func setInputKind(_ kind: InputKind) {

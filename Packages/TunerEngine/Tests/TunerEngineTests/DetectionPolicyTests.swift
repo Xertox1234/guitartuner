@@ -44,6 +44,15 @@ import Testing
         #expect(p.sustainConfidence(forFrequency: 300) == 0.6)
     }
 
+    @Test func bassUsesLongWindowDownTo40Hz() {
+        let p = DetectionPolicy.bass
+        #expect(p.band(forFrequency: 55).window == 8192, "A1 uses the long window")
+        #expect(p.band(forFrequency: 41).window == 8192, "E1 uses the long window")
+        #expect(p.acquire.window == 8192, "cold start is octave-safe")
+        // Guitar is unchanged.
+        #expect(DetectionPolicy.fullRange.band(forFrequency: 55).window == 4096)
+    }
+
     @Test func engineStoresAndUpdatesPolicy() async {
         let engine = TunerEngine(detectionPolicy: .bass)
         #expect(await engine.detectionPolicy == .bass)

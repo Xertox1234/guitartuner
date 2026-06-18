@@ -105,13 +105,32 @@ public struct DetectionPolicy: Sendable, Equatable {
         emitFloor: fullRange.emitFloor
     )
 
-    /// Bass — in Slice 1 identical to `.fullRange` except the search range (wide
-    /// enough for A0 ≈ 27.5 Hz). Bands/gates are tuned in the deferred bass-fix
-    /// (docs/todos/P1-bass-detection-policy-tuning.md).
-    public static let bass = DetectionPolicy(
-        searchRange: 25...420,
-        bands: fullRange.bands, acquire: fullRange.acquire,
-        smoothingAlpha: fullRange.smoothingAlpha, smoothingMedianCount: fullRange.smoothingMedianCount,
-        emitFloor: fullRange.emitFloor
-    )
+    /// Bass — wide search range (A0 ≈ 27.5 Hz) plus an explicit band plan that
+    /// gives the bottom strings the long analysis window. E1 (41.2 Hz) and A1
+    /// (55 Hz) fall in guitar's `low` 4096 window (sized for 82 Hz low E ≈ 7
+    /// periods; E1 gets only ~3.5). Here the `low` band uses the 8192/2048 long
+    /// window down to 40 Hz so E1/A1/D2 all get ~7+ periods, and `acquire` is the
+    /// long window for octave-safe cold start. `high`/`mid` keep guitar geometry
+    /// (bass rarely goes there; short windows are fine). `maxWindow` (8192, shared
+    /// ring buffer) caps the long window. Bass-isolated — does not touch
+    /// `.fullRange`/`.guitar`. (docs/todos/P1-bass-detection-policy-tuning.md.)
+    public static let bass: DetectionPolicy = {
+        let high = BandSpec(window: 1024, hop: 256, floorHz: 250, hysteresisHz: 15,
+                            sustainConfidence: 0.6, lockConfidence: 0.90, label: "high")
+        let mid = BandSpec(window: 2048, hop: 512, floorHz: 120, hysteresisHz: 10,
+                           sustainConfidence: 0.6, lockConfidence: 0.90, label: "mid")
+        // Long window down to 40 Hz so E1/A1/D2 get ~7+ periods (was guitar's 4096).
+        let low = BandSpec(window: 8192, hop: 2048, floorHz: 40, hysteresisHz: 5,
+                           sustainConfidence: 0.6, lockConfidence: 0.75, label: "low")
+        let ultralow = BandSpec(window: 8192, hop: 2048, floorHz: 0, hysteresisHz: 0,
+                                sustainConfidence: 0.6, lockConfidence: 0.75, label: "ultralow")
+        let acquire = BandSpec(window: 8192, hop: 2048, floorHz: 0, hysteresisHz: 0,
+                               sustainConfidence: 0.6, lockConfidence: 0.75, label: "acquire")
+        return DetectionPolicy(
+            searchRange: 25...420, bands: [high, mid, low, ultralow], acquire: acquire,
+            smoothingAlpha: AnalysisConfig.smoothingAlpha,
+            smoothingMedianCount: AnalysisConfig.smoothingMedianCount,
+            emitFloor: AnalysisConfig.emitFloor
+        )
+    }()
 }

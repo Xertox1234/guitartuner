@@ -59,7 +59,9 @@ public struct AnalysisConfig: Sendable, Equatable {
     public static let lowUltraLowHz:  Double = 40
 
     /// ±Hysteresis window around each boundary. Prevents chattering when f0 hovers
-    /// at a band edge. Derived thresholds in PitchPipeline.nextConfig must use these.
+    /// at a band edge. `PitchPipeline.nextBand` derives rise/fall thresholds from
+    /// `DetectionPolicy.bands`' per-band `floorHz` and `hysteresisHz` fields; the
+    /// legacy constants below remain as reference values for the default `.fullRange` preset.
     public static let highMidHysteresis:     Double = 15
     public static let midLowHysteresis:      Double = 10
     public static let lowUltraLowHysteresis: Double = 5

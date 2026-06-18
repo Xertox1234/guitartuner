@@ -38,7 +38,7 @@ public final class PitchPipeline {
     private var totalSamples = 0  // absolute count of preprocessed samples
 
     /// Active per-instrument detection policy (default = full-range = legacy).
-    public var policy: DetectionPolicy
+    public private(set) var policy: DetectionPolicy
     private var preproc: Preprocessor
     private var smoother: FrequencySmoother
     private var gate = SustainGate()
@@ -84,6 +84,7 @@ public final class PitchPipeline {
         gate.reset()
         config = newPolicy.acquire
         trackedFrequency = nil
+        unvoicedStreak = 0
         prevFrame = nil
         phaseIntegrator.reset()
     }

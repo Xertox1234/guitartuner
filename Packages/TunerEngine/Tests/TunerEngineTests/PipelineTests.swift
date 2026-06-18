@@ -160,11 +160,19 @@ import Testing
     }
 
     @Test func customBandPlanChangesChosenWindow() {
-        // A one-band policy with a huge window proves the plumbing is live.
-        let band = BandSpec(window: 16384, hop: 4096, floorHz: 0, hysteresisHz: 0,
-                            sustainConfidence: 0.6, lockConfidence: 0.75, label: "only")
-        let custom = DetectionPolicy(searchRange: 27...1400, bands: [band], acquire: band,
+        // Two custom bands with distinct windows: nextBand must pick the band (and
+        // thus the window/hop) from the *custom* policy's geometry, not hardcoded
+        // constants — proving the policy drives band selection. (Full window→analysis
+        // integration is covered by the .fullRange pipeline tests at various pitches.)
+        let lo = BandSpec(window: 16384, hop: 4096, floorHz: 0,   hysteresisHz: 0,
+                          sustainConfidence: 0.6, lockConfidence: 0.75, label: "lo")
+        let hi = BandSpec(window: 2048,  hop: 512,  floorHz: 100, hysteresisHz: 5,
+                          sustainConfidence: 0.6, lockConfidence: 0.75, label: "hi")
+        let custom = DetectionPolicy(searchRange: 27...1400, bands: [hi, lo], acquire: lo,
                                      smoothingAlpha: 0.35, smoothingMedianCount: 5, emitFloor: 0.5)
-        #expect(PitchPipeline.nextBand(for: 200, current: band, in: custom).window == 16384)
+        // From lo, an f0 above hi's floor+hysteresis (>=105) rises to hi (window 2048).
+        #expect(PitchPipeline.nextBand(for: 200, current: lo, in: custom).window == 2048)
+        // From hi, an f0 below hi's floor-hysteresis (<95) drops to lo (window 16384).
+        #expect(PitchPipeline.nextBand(for: 50, current: hi, in: custom).window == 16384)
     }
 }

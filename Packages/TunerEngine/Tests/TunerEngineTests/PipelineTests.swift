@@ -175,4 +175,22 @@ import Testing
         // From hi, an f0 below hi's floor-hysteresis (<95) drops to lo (window 16384).
         #expect(PitchPipeline.nextBand(for: 50, current: hi, in: custom).window == 16384)
     }
+
+    @Test(arguments: [65.41, 82.41, 110.0, 196.0, 329.63])   // C2 (Drop C) … E4
+    func guitarClampMatchesFullRangeOnGuitarNotes(_ f: Double) throws {
+        func lastNote(_ policy: DetectionPolicy) throws -> (String, Double) {
+            let p = PitchPipeline(sampleRate: fs, a4: 440, method: .mpm, policy: policy)
+            let sig = Synth.inharmonicString(fundamental: f, sampleRate: fs, seconds: 1.0)
+            let block = 480
+            var rs: [PitchReading] = []
+            var i = 0
+            while i < sig.count { let e = min(i + block, sig.count); rs += p.process(Array(sig[i..<e])); i = e }
+            let last = try #require(rs.last)
+            return (last.note.description, last.cents)
+        }
+        let full = try lastNote(.fullRange)
+        let guitar = try lastNote(.guitar)
+        #expect(full.0 == guitar.0, "note identical under clamp at \(f) Hz")
+        #expect(abs(full.1 - guitar.1) < 0.01, "cents identical under clamp at \(f) Hz")
+    }
 }

@@ -120,12 +120,15 @@ public struct DetectionPolicy: Sendable, Equatable {
         let mid = BandSpec(window: 2048, hop: 512, floorHz: 120, hysteresisHz: 10,
                            sustainConfidence: 0.6, lockConfidence: 0.90, label: "mid")
         // Long window down to 40 Hz so E1/A1/D2 get ~7+ periods (was guitar's 4096).
+        // sustainConfidence relaxed to 0.55 (vs. guitar's 0.6) so weak-fundamental
+        // clarity dips don't shatter the lock streak (RC2 defensive lever — real DI).
+        // lockConfidence lowered to 0.70 to reduce visible strobe flicker on bass.
         let low = BandSpec(window: 8192, hop: 2048, floorHz: 40, hysteresisHz: 5,
-                           sustainConfidence: 0.6, lockConfidence: 0.75, label: "low")
+                           sustainConfidence: 0.55, lockConfidence: 0.70, label: "low")
         let ultralow = BandSpec(window: 8192, hop: 2048, floorHz: 0, hysteresisHz: 0,
-                                sustainConfidence: 0.6, lockConfidence: 0.75, label: "ultralow")
+                                sustainConfidence: 0.55, lockConfidence: 0.70, label: "ultralow")
         let acquire = BandSpec(window: 8192, hop: 2048, floorHz: 0, hysteresisHz: 0,
-                               sustainConfidence: 0.6, lockConfidence: 0.75, label: "acquire")
+                               sustainConfidence: 0.55, lockConfidence: 0.70, label: "acquire")
         return DetectionPolicy(
             searchRange: 25...420, bands: [high, mid, low, ultralow], acquire: acquire,
             smoothingAlpha: AnalysisConfig.smoothingAlpha,

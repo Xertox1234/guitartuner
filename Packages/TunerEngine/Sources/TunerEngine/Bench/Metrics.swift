@@ -66,9 +66,10 @@ public enum CaseRunner {
         a4: Double = Pitch.standardA4,
         lockTolerance: Double = 5,
         steadyStateStart: TimeInterval = 0.30,
-        lockWindowStart: TimeInterval = 1.0
+        lockWindowStart: TimeInterval = 1.0,
+        policy: DetectionPolicy = .fullRange
     ) -> CaseResult {
-        let pipeline = PitchPipeline(sampleRate: sampleRate, a4: a4, method: method)
+        let pipeline = PitchPipeline(sampleRate: sampleRate, a4: a4, method: method, policy: policy)
 
         // Feed in realistic ~10 ms blocks so analysis fires on true hop cadence.
         let block = max(64, Int(sampleRate * 0.01))

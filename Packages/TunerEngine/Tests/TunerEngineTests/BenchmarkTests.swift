@@ -55,4 +55,28 @@ final class BenchmarkTests: XCTestCase {
             XCTAssertLessThan(r.stats.meanAbs, 1.0, "\(method) accuracy")
         }
     }
+
+    func testCaseRunnerPolicyParamRoutesToPipeline() {
+        let fs = 48_000.0
+        let sig = Synth.inharmonicString(fundamental: 110, sampleRate: fs, seconds: 1.2)
+
+        // Default policy == .fullRange (backward-compatible, zero-delta).
+        let dflt = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 110,
+                                  category: "t", centsTarget: 0, snrDB: .infinity, method: .mpm)
+        let full = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 110,
+                                  category: "t", centsTarget: 0, snrDB: .infinity, method: .mpm,
+                                  policy: .fullRange)
+        XCTAssertEqual(dflt.readings, full.readings)
+        XCTAssertEqual(dflt.stats, full.stats)
+
+        // A policy whose searchRange excludes 110 Hz must change the result —
+        // proves the parameter actually reaches the pipeline.
+        let narrow = DetectionPolicy(searchRange: 200...400, bands: DetectionPolicy.fullRange.bands,
+                                     acquire: DetectionPolicy.fullRange.acquire,
+                                     smoothingAlpha: 0.35, smoothingMedianCount: 5, emitFloor: 0.5)
+        let clamped = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 110,
+                                     category: "t", centsTarget: 0, snrDB: .infinity, method: .mpm,
+                                     policy: narrow)
+        XCTAssertNotEqual(clamped.stats.meanAbs, full.stats.meanAbs, "narrow searchRange must change the estimate")
+    }
 }

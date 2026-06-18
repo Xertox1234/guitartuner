@@ -307,8 +307,8 @@ of pure UX — the user's call, not a gap.)
    lock-retention %, lock-drop count) on realistic/real-DI bass stimulus, then re-baseline.
    Also closes `medium-M17` (stress tests bypassing the full pipeline).
 
-See `docs/todos/bass-detection-policy-tuning.md` and
-`docs/todos/bass-settle-stability-harness.md`.
+See `docs/todos/P1-bass-detection-policy-tuning.md` and
+`docs/todos/P1-bass-settle-stability-harness.md`.
 
 ## 12. Testing strategy
 

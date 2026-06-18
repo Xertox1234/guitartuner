@@ -1,3 +1,10 @@
+---
+priority: P3
+status: open
+domain: pipeline, dsp
+source: 2026-06-17 instrument-profiles Slice 1 review (Task 4)
+---
+
 # `PitchPipeline.nextBand` should match the current band by identity, not by label string
 
 **Severity:** Low (latent footgun — not reachable by any current policy)

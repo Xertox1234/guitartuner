@@ -188,3 +188,4 @@ Recommend: /codify to preserve any non-obvious patterns discovered during implem
 - Never skip Phase 1 (baseline). Implementing on a broken test suite hides regressions.
 - Never relax an accuracy gate to make a test pass. If a DSP change causes regression, that is signal — investigate, don't suppress.
 - Phase 4 worktree isolation is optional for solo work, but strongly recommended when implementing two unrelated features simultaneously.
+- **Todo file convention** (`docs/todos/README.md`): one `P<n>-<slug>.md` per todo (P0 blocker … P3 low), frontmatter copied from `_TEMPLATE.md`. When triaging, **verify each open todo against current code** — these files go stale (a prior sweep found 45 of 52 already done). On completion, `git mv` the file into `docs/todos/archive/` instead of deleting it (preserves the resolution trail). Skip `README.md`, `_TEMPLATE.md`, and `archive/` when listing open todos.

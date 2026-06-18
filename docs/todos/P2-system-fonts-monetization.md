@@ -1,3 +1,10 @@
+---
+priority: P2
+status: open
+domain: swiftui
+source: 2026-06-15-full audit (M6)
+---
+
 # System fonts used in monetization screens instead of LumaFont tokens
 
 **Severity:** Medium  

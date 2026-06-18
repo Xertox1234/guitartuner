@@ -1,3 +1,10 @@
+---
+priority: P3
+status: partial
+domain: dsp
+source: 2026-06-15-full audit (L2), re-scoped 2026-06-18 sweep
+---
+
 # PhaseIntegrator.lsSlope — centering/means still scalar (vDSP partial)
 
 **Severity:** Low

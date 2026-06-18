@@ -64,6 +64,7 @@ open Packages/LumaDesignSystem/Package.swift
 
 - **Domain rules auto-inject** at edit time via `.claude/hooks/inject-patterns.sh` — rules live in `docs/rules/<domain>.md`
 - **After finding something non-obvious**, run `/codify` to write it into `docs/solutions/`
+- **Backlog todos** live in `docs/todos/` — one `P<n>-<slug>.md` per item (P0 blocker … P3 low). Start from `_TEMPLATE.md`; on completion `git mv` the file into `docs/todos/archive/` (never delete). See `docs/todos/README.md`.
 - **Never break CI** — accuracy benchmark is CI-blocking; `swift test` must pass
 - **Validate Swift edits** with `XcodeRefreshCodeIssuesInFile` (fast) then `BuildProject` when uncertain
 - **Audio never leaves the device** — `TunerEngine` has no networking; audio privacy is architectural. The opt-in account/monetization stack (`LumaAPI`, `AccountModel`, `TuningCardStore`, `GearStoreModel`) uses URLSession for backend calls with explicit user consent — this is intentional. Do not add networking outside of `LumaAPI`.

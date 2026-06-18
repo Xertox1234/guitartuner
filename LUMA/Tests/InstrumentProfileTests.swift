@@ -19,7 +19,7 @@ import TunerEngine
         #expect(p.id == .bass)
         #expect(p.detection == DetectionPolicy.bass)
         #expect(p.defaultTuning.id == Tunings.bass.id)
-        // Slice 1 defers the .lock flip (docs/todos/bass-detection-policy-tuning.md).
+        // Slice 1 defers the .lock flip (docs/todos/P1-bass-detection-policy-tuning.md).
         #expect(p.defaultMode == .auto)
     }
 

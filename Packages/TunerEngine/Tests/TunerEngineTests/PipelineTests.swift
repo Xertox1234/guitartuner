@@ -166,7 +166,7 @@ import Testing
     /// (steady tones never sweep mid→sub-40), so Slice 1's zero-delta proof holds.
     /// Reachable on bass (searchRange 25…420); the deferred bass-fix rewrites this
     /// transition — if it changes, update this expectation deliberately.
-    /// (docs/todos/bass-detection-policy-tuning.md, FU-1.)
+    /// (docs/todos/P1-bass-detection-policy-tuning.md, FU-1.)
     @Test func nextBandFromMidBelow40SettlesToUltralow() {
         let p = DetectionPolicy.fullRange
         let mid = (p.bands.first { $0.label == "mid" }) ?? p.acquire

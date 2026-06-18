@@ -1,3 +1,10 @@
+---
+priority: P2
+status: needs-spec
+domain: testing
+source: 2026-06-15-full audit (M13)
+---
+
 # Pervasive XCTest usage — 16 of 19 TunerEngine test files use legacy framework
 
 **Severity:** Medium  

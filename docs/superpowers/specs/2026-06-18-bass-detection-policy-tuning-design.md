@@ -169,3 +169,37 @@ the shared-code work is neither skipped nor done unconditionally.
 - `timeToLock` regression bounded and documented (a longer window on the lowest strings is physics,
   not a bug).
 - CI gate added with an empirically-grounded threshold; `swift test` + accuracy benchmark green.
+
+## Decision gate (2026-06-18)
+
+**Phase 1 result (measured, post-Task-6, `.bass` policy):**
+
+| Metric | Baseline (inert) | Post-Phase-1 | Target |
+|--------|------------------|--------------|--------|
+| bass-weak-fund lock σ | 0.17 ¢ | **0.13 ¢** | < 0.30 ✅ |
+| bass-clean lock σ | 0.02 ¢ | 0.02 ¢ | < 0.30 ✅ |
+| bass-weak-fund retention | 98.31 % | 98.29 % | ≥ 0.85 ✅ |
+| lock drops | 0 | 0 | 0 ✅ |
+| octave-error rate | 0.00 % | 0.00 % | 0.00 % ✅ |
+| guitar (`.fullRange`) | — | byte-identical to main | unchanged ✅ |
+
+**Finding (shapes the decision):** the synthetic `inharmonicString` family **already settles** under the
+inert policy (98 %+ retention, 0 drops). The bass "won't settle / shatter" pathology is a *real-DI*
+phenomenon the synthetic family does not reproduce. So Phase 1's value on synthetic stimulus is the
+measurable **weak-fund lock σ win (0.17 → 0.13 ¢, ~24 %)** from the longer window (more periods); the
+confidence-floor relaxation (Task 6) is a **defensive real-DI lever** with no synthetic benchmark
+coverage (there is no bass-noise case), carrying a small, flagged real-DI permissiveness risk
+(50/60 Hz mains hum). The retention/drop metrics are now **regression guards**, not fix-demonstrators.
+
+**Decision: SKIP Phase 2 (Tasks 8 and 9).** The bass-isolated levers (band geometry + confidence
+floors) met every success criterion. There is no lock-shatter to fix on the measurable stimulus and
+no octave/noise regression to counter, so neither the `octaveRescueFloor` decoupling (Task 8) nor the
+phase-integrator grace period (Task 9) is warranted — both would be shared-code changes taken without
+data justifying them. The `emitFloor` octave-rescue coupling is therefore left intact (bass `emitFloor`
+stays 0.5), and `phaseIntegrator.reset()` is unchanged.
+
+**Note for re-baseline (Task 12):** the committed `docs/benchmarks/accuracy.md` is **stale vs main's
+current engine** — the clean-matrix bass(<82 Hz) bucket reads 0.14 ¢ / σ 0.29 / max 3.79 there but
+0.13 ¢ / σ 0.20 / max 1.72 today, while mid/high are byte-identical. Since this branch changes no
+shared DSP path, that improvement is main's (a prior commit not followed by a doc regen), not this
+branch's. Task 12's regenerated diff will surface it; do not misread it as a guitar change here.

@@ -173,12 +173,12 @@ final class LiveTunerModel {
     func setInstrument(_ newValue: Instrument) {
         guard newValue != profile.id else { return }
         profile = .builtIn(newValue)
-        mode = profile.defaultMode
-        inputKind = profile.defaultInput
         let e = engine
         let pol = profile.detection
         Task { await e.setDetectionPolicy(pol) }
-        setTuning(profile.defaultTuning)   // keeps activeIdx valid, updates target + tone
+        setTuning(profile.defaultTuning)         // new tuning first (validates/clears activeIdx)
+        setMode(profile.defaultMode)             // arms activeIdx to lowest string when .lock
+        setInputKind(profile.defaultInput)       // pushes input preference + restart status
         lastInstrument = newValue.rawValue
     }
 

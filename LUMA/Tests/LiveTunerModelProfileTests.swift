@@ -38,6 +38,17 @@ import TunerEngine
         #expect(model.profile.detection.lockConfidence(forFrequency: 82) == 0.75)
     }
 
+    @Test func switchingToBassArmsLockTarget() {
+        let model = LiveTunerModel()
+        model.setInstrument(.bass)
+        #expect(model.mode == .lock, "bass defaults to string-lock")
+        let lowest = model.tuning.strings.first
+        #expect(lowest != nil)
+        // .lock must arm the lowest string so the strobe judges a target, not chromatic.
+        #expect(model.targetNote == lowest.map { Note(midi: $0.midi) },
+                "lock target armed to the lowest bass string after instrument switch")
+    }
+
     @Test func restoresPersistedInstrumentAndTuning() {
         // Simulate a prior session having stored bass + Drop D.
         let d = UserDefaults.standard

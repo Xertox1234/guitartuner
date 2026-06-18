@@ -22,4 +22,10 @@ import TunerEngine
         // Slice 1 defers the .lock flip (docs/todos/bass-detection-policy-tuning.md).
         #expect(p.defaultMode == .auto)
     }
+
+    @Test func builtInIsTotalAndKeyedByInstrument() {
+        for instrument in Instrument.allCases {
+            #expect(InstrumentProfile.builtIn(instrument).id == instrument)
+        }
+    }
 }

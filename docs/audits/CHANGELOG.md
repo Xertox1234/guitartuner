@@ -17,31 +17,31 @@ Deduplication index for all findings surfaced across audit runs. Before adding a
 | AudioCapture force-unwrap on RT thread | `TunerEngine/Capture/AudioCapture.swift` | High | ✅ verified |
 | BenchmarkTests tolerance 48× too loose | `TunerEngineTests/BenchmarkTests.swift` | High | ✅ verified |
 | testCaseRunnerScoresCleanTone lockStats always empty | `TunerEngineTests/BenchmarkTests.swift` | High | ✅ verified |
-| spectralRefineMinHz duplicates AnalysisConfig.midLowHz | `TunerEngine/Pipeline/PitchPipeline.swift` | Medium | ⏸ todo: docs/todos/medium-M1-spectralRefineMinHz-duplicate.md |
-| Gate thresholds scattered outside AnalysisConfig | `PitchPipeline.swift`, `Smoothing.swift`, `PitchDetector.swift` | Medium | ⏸ todo: docs/todos/medium-M2-gate-thresholds-outside-AnalysisConfig.md |
-| No post-NSDF octave-history guard | `TunerEngine/DSP/PitchDetector.swift` | Medium | ⏸ todo: docs/todos/medium-M3-no-octave-history-guard.md |
-| UserDefaults bypass in BottomDrawer | `App/Views/Monetization/BottomDrawer.swift` | Medium | ⏸ todo: docs/todos/medium-M4-userdefaults-bypass-bottomdrawer.md |
-| Palette Color(hue:) magic values in two views | `BottomDrawer.swift`, `SaveCardSheet.swift` | Medium | ⏸ todo: docs/todos/medium-M5-palette-color-hue-magic-values.md |
-| System fonts in monetization screens | multiple monetization views | Medium | ⏸ todo: docs/todos/medium-M6-system-fonts-monetization-screens.md |
-| DispatchQueue.main.async in @MainActor view | `App/Views/Monetization/BottomDrawer.swift` | Medium | ⏸ todo: docs/todos/medium-M7-dispatchqueue-main-async.md |
-| swiftui.md "no networking" rule stale | `docs/rules/swiftui.md` | Medium | ⏸ todo: docs/todos/medium-M8-swiftui-rule-networking-stale.md |
-| StringRow.activeIdx dead no-op write | `LumaDesignSystem/Components/StringRow.swift` | Medium | ⏸ todo: docs/todos/medium-M9-stringrow-activeidx-dead-write.md |
-| MetalStrobe no Metal path for Radial | `LumaDesignSystem/Strobe/StrobeField.swift` | Medium | ⏸ todo: docs/todos/medium-M10-metal-radial-parity-gap.md |
-| StrobeLab uses Combine | `LumaDesignSystem/Strobe/StrobeLab.swift` | Medium | ⏸ todo: docs/todos/medium-M11-strobelab-uses-combine.md |
-| useMetalRenderer silently ignored for Radial | `LumaDesignSystem/Strobe/StrobeField.swift` | Medium | ⏸ todo: docs/todos/medium-M12-usemetalrenderer-ignored-radial.md |
-| Pervasive XCTest in 16 of 19 test files | `TunerEngine/Tests/` | Medium | ⏸ todo: docs/todos/medium-M13-xctest-migration.md |
-| PitchDetectorTests copy-paste, needs parameterization | `TunerEngineTests/PitchDetectorTests.swift` | Medium | ⏸ todo: docs/todos/medium-M14-pitchdetectortests-parameterization.md |
-| PipelineTests tolerances 12–40× loose | `TunerEngineTests/PipelineTests.swift` | Medium | ⏸ todo: docs/todos/medium-M15-pipelinetests-tolerances-loose.md |
-| No low-B octave-safety test under stress in swift test | `TunerEngine/Tests/` | Medium | ⏸ todo: docs/todos/medium-M16-no-lowB-octave-stress-test.md |
-| StimulusTests bypasses full pipeline | `TunerEngineTests/StimulusTests.swift` | Medium | ⏸ todo: docs/todos/medium-M17-stimulustests-bypasses-pipeline.md |
-| Networking without CLAUDE.md annotation | `App/Networking/LumaAPI.swift` | Medium | ⏸ todo: docs/todos/medium-M18-networking-claudemd-annotation.md |
-| Autocorrelation prefix-energy scalar loop | `TunerEngine/DSP/Autocorrelation.swift` | Low | ⏸ todo: docs/todos/low-L1-autocorrelation-scalar-loop.md |
-| PhaseIntegrator.lsSlope scalar loops | `TunerEngine/DSP/PhaseIntegrator.swift` | Low | ⏸ todo: docs/todos/low-L2-phaseintegrator-lsslope-scalar-loops.md |
-| recent() circular-buffer scalar copy | `TunerEngine/Pipeline/PitchPipeline.swift` | Low | ⏸ todo: docs/todos/low-L3-recent-scalar-copy.md |
-| LumaConfig URL force-unwrap | `App/Networking/LumaConfig.swift` | Low | ⏸ todo: docs/todos/low-L4-lumaconfig-url-force-unwrap.md |
-| StrobeRenderer.configure() clearColor double-write | `LumaDesignSystem/Strobe/MetalStrobe.swift` | Low | ⏸ todo: docs/todos/low-L5-stroberenderer-clearcolor-double-write.md |
-| AuroraStrobe.wrappedDelta wrong home | `LumaDesignSystem/Strobe/RadialStrobe.swift` | Low | ⏸ todo: docs/todos/low-L6-wrappeddelta-wrong-home.md |
-| FixturesTests UUID temp path | `TunerEngineTests/FixturesTests.swift` | Low | ⏸ todo: docs/todos/low-L7-fixturestests-uuid-temp-path.md |
+| spectralRefineMinHz duplicates AnalysisConfig.midLowHz | `TunerEngine/Pipeline/PitchPipeline.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Gate thresholds scattered outside AnalysisConfig | `PitchPipeline.swift`, `Smoothing.swift`, `PitchDetector.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| No post-NSDF octave-history guard | `TunerEngine/DSP/PitchDetector.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| UserDefaults bypass in BottomDrawer | `App/Views/Monetization/BottomDrawer.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Palette Color(hue:) magic values in two views | `BottomDrawer.swift`, `SaveCardSheet.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| System fonts in monetization screens | multiple monetization views | Medium | ⏸ todo: docs/todos/medium-M6-system-fonts-monetization.md (BottomDrawer residual) |
+| DispatchQueue.main.async in @MainActor view | `App/Views/Monetization/BottomDrawer.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| swiftui.md "no networking" rule stale | `docs/rules/swiftui.md` | Medium | ✅ resolved (2026-06-18 sweep) |
+| StringRow.activeIdx dead no-op write | `LumaDesignSystem/Components/StringRow.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| MetalStrobe no Metal path for Radial | `LumaDesignSystem/Strobe/StrobeField.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| StrobeLab uses Combine | `LumaDesignSystem/Strobe/StrobeLab.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| useMetalRenderer silently ignored for Radial | `LumaDesignSystem/Strobe/StrobeField.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Pervasive XCTest in 16 of 19 test files | `TunerEngine/Tests/` | Medium | ⏸ todo: docs/todos/medium-M13-xctest-pervasive.md (needs-spec) |
+| PitchDetectorTests copy-paste, needs parameterization | `TunerEngineTests/PitchDetectorTests.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| PipelineTests tolerances 12–40× loose | `TunerEngineTests/PipelineTests.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| No low-B octave-safety test under stress in swift test | `TunerEngine/Tests/` | Medium | ✅ resolved (2026-06-18 sweep) |
+| StimulusTests bypasses full pipeline | `TunerEngineTests/StimulusTests.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Networking without CLAUDE.md annotation | `App/Networking/LumaAPI.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Autocorrelation prefix-energy scalar loop | `TunerEngine/DSP/Autocorrelation.swift` | Low | ✅ resolved (2026-06-18 sweep) |
+| PhaseIntegrator.lsSlope scalar loops | `TunerEngine/DSP/PhaseIntegrator.swift` | Low | ⏸ partial: docs/todos/low-L2-phaseintegrator-lsslope-scalar.md (dot products vectorized; centering/means residual) |
+| recent() circular-buffer scalar copy | `TunerEngine/Pipeline/PitchPipeline.swift` | Low | ✅ resolved (2026-06-18 sweep) |
+| LumaConfig URL force-unwrap | `App/Networking/LumaConfig.swift` | Low | ✅ resolved (2026-06-18 sweep) |
+| StrobeRenderer.configure() clearColor double-write | `LumaDesignSystem/Strobe/MetalStrobe.swift` | Low | ✅ resolved (2026-06-18 sweep) |
+| AuroraStrobe.wrappedDelta wrong home | `LumaDesignSystem/Strobe/RadialStrobe.swift` | Low | ✅ resolved (2026-06-18 sweep) |
+| FixturesTests UUID temp path | `TunerEngineTests/FixturesTests.swift` | Low | ✅ resolved (2026-06-18 sweep) |
 
 ---
 
@@ -52,20 +52,20 @@ Deduplication index for all findings surfaced across audit runs. Before adding a
 | Bass lock never fires — 0.9 confidence gate unreachable for low strings | `App/Engine/LiveTunerModel.swift` | High | ✅ verified |
 | Confirmation ping fires rapidly near lock boundary — no hysteresis | `App/Engine/LiveTunerModel.swift` | High | ✅ verified |
 | `ToneGenerator.start()` reconfigures live `AVAudioSession` mid-capture | `App/Engine/ToneGenerator.swift` | High | ✅ verified |
-| Confirmation-ping logic has no test coverage | `App/Engine/LiveTunerModel.swift` | High | ⏸ seam extracted; test target pending (see docs/todos/H4) |
-| `ReducedGauge` not palette-threaded | `LumaDesignSystem/Strobe/ReducedGauge.swift` | Medium | ⏸ open |
-| Lock bloom color diverges from all other lock affordances under non-default palettes | `LumaDesignSystem/Strobe/AuroraStrobe.swift` | Medium | ⏸ open |
-| `minLockConfidence` hardcoded in two unlinked places | `App/Engine/LiveTunerModel.swift` | Medium | ⏸ open |
-| `LumaPalette` AppStorage round-trip untested | `LumaDesignSystem/Tests/` | Medium | ⏸ open |
-| Unused `import TunerEngine` in app views (pre-existing) | `App/LiveTunerScreen.swift` | Medium | ⏸ open |
-| `hapticsEnabled` and `a4` stored in model not `@AppStorage` (pre-existing) | `App/Engine/LiveTunerModel.swift` | Medium | ⏸ open |
-| Hardcoded band-transition hysteresis in `nextConfig` (pre-existing) | `TunerEngine/Pipeline/PitchPipeline.swift` | Medium | ⏸ open |
-| `StrobePhase.bin` uses per-sample cos/sin — no vDSP (pre-existing) | `TunerEngine/DSP/StrobePhase.swift` | Medium | ⏸ open |
-| `applyHann` inner loop not using vDSP multiply (pre-existing) | `TunerEngine/Pipeline/PitchPipeline.swift` | Medium | ⏸ open |
-| Spring animation keys only on `active`, not `locked` | `LumaDesignSystem/Components/StringRow.swift` | Low | ⏸ open |
-| `StrobeLab` palette picker missing `pickerStyle` | `LumaDesignSystem/Strobe/StrobeLab.swift` | Low | ⏸ open |
-| `MetalStrobe.configure(_:)` ignores palette for `MTKView.clearColor` | `LumaDesignSystem/Strobe/MetalStrobe.swift` | Low | ⏸ open |
-| `PitchReading.isLocked` default `lockCents` not linked to `LumaMusic.lockCents` (pre-existing) | `TunerEngine/PitchReading.swift` | Low | ⏸ open |
+| Confirmation-ping logic has no test coverage | `App/Engine/LiveTunerModel.swift` | High | ✅ resolved (2026-06-18 sweep; H4 — LUMATests + LockGate tests) |
+| `ReducedGauge` not palette-threaded | `LumaDesignSystem/Strobe/ReducedGauge.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Lock bloom color diverges from all other lock affordances under non-default palettes | `LumaDesignSystem/Strobe/AuroraStrobe.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| `minLockConfidence` hardcoded in two unlinked places | `App/Engine/LiveTunerModel.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| `LumaPalette` AppStorage round-trip untested | `LumaDesignSystem/Tests/` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Unused `import TunerEngine` in app views (pre-existing) | `App/LiveTunerScreen.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| `hapticsEnabled` and `a4` stored in model not `@AppStorage` (pre-existing) | `App/Engine/LiveTunerModel.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Hardcoded band-transition hysteresis in `nextConfig` (pre-existing) | `TunerEngine/Pipeline/PitchPipeline.swift` | Medium | ✅ resolved (2026-06-18 sweep; Slice 1 nextBand) |
+| `StrobePhase.bin` uses per-sample cos/sin — no vDSP (pre-existing) | `TunerEngine/DSP/StrobePhase.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| `applyHann` inner loop not using vDSP multiply (pre-existing) | `TunerEngine/Pipeline/PitchPipeline.swift` | Medium | ✅ resolved (2026-06-18 sweep) |
+| Spring animation keys only on `active`, not `locked` | `LumaDesignSystem/Components/StringRow.swift` | Low | ✅ resolved (2026-06-18 sweep) |
+| `StrobeLab` palette picker missing `pickerStyle` | `LumaDesignSystem/Strobe/StrobeLab.swift` | Low | ✅ resolved (2026-06-18 sweep) |
+| `MetalStrobe.configure(_:)` ignores palette for `MTKView.clearColor` | `LumaDesignSystem/Strobe/MetalStrobe.swift` | Low | ✅ resolved (2026-06-18 sweep) |
+| `PitchReading.isLocked` default `lockCents` not linked to `LumaMusic.lockCents` (pre-existing) | `TunerEngine/PitchReading.swift` | Low | ✅ resolved (2026-06-18 sweep; L4) |
 
 ---
 
@@ -79,17 +79,17 @@ Deduplication index for all findings surfaced across audit runs. Before adding a
 | Bass never locks in chromatic mode — prior fix incomplete (lock-mode only) | `App/Engine/PitchReadingStrobe.swift`, `App/Engine/LiveTunerModel.swift` | High | ✅ verified (frequency-adaptive minConf in strobeInput(); si.locked drives handleLock, 2026-06-14) |
 | Lock state desync — `TunerVisualState` cents-only vs confidence-gated `strobeInput.locked` | `LumaDesignSystem/Model/TunerVisualState.swift` + all callers | High | ✅ verified (locked: Bool param added; all live screens thread strobeInput.locked; tests updated, 2026-06-14) |
 | On-device verification incomplete (mic deep-link, signed mac build, tone-while-listening) | `todos/on-device-verification.md` | High | ⏸ open |
-| Confirmation-ping / `LockGate` no test coverage — no `LUMATests` target | `App/Engine/LockGate.swift` | High | ⏸ open (H4 carried forward) |
+| Confirmation-ping / `LockGate` no test coverage — no `LUMATests` target | `App/Engine/LockGate.swift` | High | ✅ resolved (2026-06-18 sweep; H4 — LUMATests target added) |
 | Audio session lifecycle entirely untested | `TunerEngine/TunerEngine.swift`, `Capture/AudioCapture.swift` | High | ⏸ open |
 | Stale `strobeInput` persists through silence — bloom lingers on idle | `App/Engine/LiveTunerModel.swift` lines 239–248 | Medium | ⏸ open |
 | Default SwiftUI Canvas render path allocates per-frame at 120fps | `LumaDesignSystem/Strobe/AuroraStrobe.swift`, `RadialStrobe.swift` | Medium | ⏸ open |
 | `ReducedGauge` receives no idle signal — silence invisible under Reduce Motion | `LumaDesignSystem/Strobe/StrobeField.swift` line 42 | Medium | ⏸ open |
 | `SustainGate.stable` computed and immediately discarded | `TunerEngine/Pipeline/PitchPipeline.swift` line 173 | Medium | ⏸ open |
 | No App Store category (`LSApplicationCategoryType`) in Info.plist | `App/Info.plist` | Medium | ⏸ open |
-| `LumaPalette` AppStorage round-trip untested | `LumaDesignSystem/Tests/` | Medium | ⏸ open (M4 carried forward) |
+| `LumaPalette` AppStorage round-trip untested | `LumaDesignSystem/Tests/` | Medium | ✅ resolved (2026-06-18 sweep; M4) |
 | `StrobeInput` conversion path (`PitchReadingStrobe`) untested | `App/Engine/PitchReadingStrobe.swift` | Medium | ⏸ open |
 | `PipelineTests` tolerances 13–200× looser than published spec | `TunerEngine/Tests/TunerEngineTests/PipelineTests.swift` | Medium | ⏸ open |
-| `import TunerEngine` in app views (pre-existing) | `App/LiveTunerScreen.swift`, `App/SettingsView.swift` | Medium | ⏸ open (M5 carried forward) |
+| `import TunerEngine` in app views (pre-existing) | `App/LiveTunerScreen.swift`, `App/SettingsView.swift` | Medium | ✅ resolved (2026-06-18 sweep; M5) |
 | Phase-vocoder/strobe phase decoupled — contradicts `docs/rules/dsp.md` (doc gap) | `TunerEngine/Pipeline/PitchPipeline.swift`, `docs/rules/dsp.md` | Medium | ⏸ open |
 | Force-unwraps in DSP production paths (CLAUDE.md violation) | `DSP/PitchDetector.swift` line 93, `DSP/Autocorrelation.swift` line 61, `DSP/HarmonicEstimator.swift` line 98 | Low | ⏸ open |
 | NSDF k = 0.90 vs. McLeod cited 0.93 | `DSP/PitchDetector.swift` line 91 | Low | ⏸ open |

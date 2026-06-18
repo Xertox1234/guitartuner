@@ -7,6 +7,14 @@ import TunerEngine
 @MainActor
 @Suite struct LiveTunerModelProfileTests {
 
+    /// Each Swift Testing run gets a fresh suite instance, so this clears the
+    /// persistence keys before every test — isolating the starting state now that
+    /// setInstrument/setTuning write to UserDefaults.standard (Task 10).
+    init() {
+        UserDefaults.standard.removeObject(forKey: "lastInstrument")
+        UserDefaults.standard.removeObject(forKey: "lastTuningId")
+    }
+
     @Test func setInstrumentSwapsProfileAndTuning() {
         let model = LiveTunerModel()
         #expect(model.profile.id == .guitar)          // launch default

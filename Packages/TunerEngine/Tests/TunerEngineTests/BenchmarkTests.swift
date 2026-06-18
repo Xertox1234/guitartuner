@@ -79,4 +79,24 @@ final class BenchmarkTests: XCTestCase {
                                      policy: narrow)
         XCTAssertNotEqual(clamped.stats.meanAbs, full.stats.meanAbs, "narrow searchRange must change the estimate")
     }
+
+    func testLockTrajectoryComputesRetentionAndDrops() {
+        func r(_ t: TimeInterval, _ locked: Bool) -> PitchReading {
+            PitchReading(frequency: 110, note: Note(midi: 45), cents: 0, confidence: 0.9,
+                         phase: 0, timestamp: t, inharmonicityB: nil,
+                         precisionCents: locked ? 0.1 : nil, isLockIntegrated: locked)
+        }
+        // Pre-window frames (t < 1.0) are ignored. In-window: L, L, unlocked, L → one drop,
+        // 3/4 locked.
+        let readings = [r(0.5, true), r(1.0, true), r(1.2, true), r(1.4, false), r(1.6, true)]
+        let (retention, drops) = CaseRunner.lockTrajectory(readings, windowStart: 1.0)
+        XCTAssertEqual(retention, 0.75, accuracy: 1e-9)
+        XCTAssertEqual(drops, 1)
+
+        // Never locks in window → 0 retention, 0 drops.
+        let none = [r(1.0, false), r(1.2, false)]
+        let (ret2, drops2) = CaseRunner.lockTrajectory(none, windowStart: 1.0)
+        XCTAssertEqual(ret2, 0)
+        XCTAssertEqual(drops2, 0)
+    }
 }

@@ -109,3 +109,11 @@ jobs:
             -scheme LUMA \
             -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO
+
+  invariants:
+    name: Security invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run security invariant scan
+        run: ./scripts/ci-invariants.sh

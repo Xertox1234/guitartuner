@@ -1,7 +1,9 @@
 import Foundation
 import LumaDesignSystem
+import os
 
 struct TuningCard: Identifiable, Codable, Hashable, Sendable {
+    private static let logger = Logger(subsystem: "com.luma.app", category: "tunings")
     let id: String
     var name: String
     var notes: String
@@ -24,7 +26,7 @@ struct TuningCard: Identifiable, Codable, Hashable, Sendable {
             // Non-fatal: a corrupt card degrades to an empty tuning rather than
             // crashing. (A debug assertionFailure here would terminate the app on
             // the fetch() decode path the same way the cache writes did.)
-            print("[LUMA] TuningCard: failed to decode strings_json — card id=\(id) may be corrupt")
+            Self.logger.error("TuningCard: failed to decode strings_json — card id=\(id, privacy: .public) may be corrupt")
             return []
         }
         return result

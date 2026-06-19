@@ -1,9 +1,11 @@
 import SwiftUI
 import AuthenticationServices
 import LumaDesignSystem
+import os
 
 /// Registration / sign-in flow. Presented when unauthenticated user tries to save a card.
 struct AccountSheet: View {
+    private static let logger = Logger(subsystem: "com.luma.app", category: "account")
     @Bindable var accountModel: AccountModel
     @Environment(\.dismiss) private var dismiss
 
@@ -196,16 +198,16 @@ struct AccountSheet: View {
         switch result {
         case .success(let auth):
             guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else {
-                print("[LUMA] Apple sign-in: unexpected credential type")
+                Self.logger.error("Apple sign-in: unexpected credential type")
                 return
             }
             Task {
                 do {
                     try await accountModel.signInWithApple(credential)
-                    print("[LUMA] Apple sign-in: success")
+                    Self.logger.notice("Apple sign-in: success")
                     dismiss()
                 } catch {
-                    print("[LUMA] Apple sign-in: failed — \(error)")
+                    Self.logger.error("Apple sign-in: failed — \(String(describing: error), privacy: .private)")
                     errorMessage = error.localizedDescription
                 }
             }

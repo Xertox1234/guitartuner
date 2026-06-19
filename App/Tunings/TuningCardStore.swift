@@ -1,8 +1,10 @@
 import Foundation
 import LumaDesignSystem
+import os
 
 @MainActor @Observable
 final class TuningCardStore {
+    private static let logger = Logger(subsystem: "com.luma.app", category: "tunings")
     var cards: [TuningCard] = []
     var isLoading = false
     var error: String?
@@ -71,7 +73,7 @@ final class TuningCardStore {
             // Non-fatal: stale cache on next launch; no user-visible failure.
             // (Must not crash — a debug assertionFailure here was terminating the
             // app on a fresh install before Application Support existed.)
-            print("[LUMA] TuningCardStore: cache write failed — \(error)")
+            Self.logger.error("TuningCardStore: cache write failed — \(String(describing: error), privacy: .private)")
         }
     }
 }

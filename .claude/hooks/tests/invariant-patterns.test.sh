@@ -28,14 +28,14 @@ silent "append fs ok"      "$(mk App/Tunings/TuningCardStore.swift 'self.cacheUR
 expect "net leak"      "$(mk App/Views/SomeView.swift 'let s = URLSession.shared')" HARD 'networking'
 silent "net allowed"   "$(mk App/Networking/LumaAPI.swift 'let s = URLSession.shared')"
 
-# print / debugPrint (REVIEW)
-expect "print flagged"     "$(mk App/Engine/LiveTunerModel.swift 'print("[LUMA] hi")')" REVIEW 'print'
-expect "debugPrint flagged" "$(mk App/Engine/X.swift 'debugPrint(thing)')" REVIEW 'print'
+# print / debugPrint (HARD)
+expect "print flagged"     "$(mk App/Engine/LiveTunerModel.swift 'print("[LUMA] hi")')" HARD 'print'
+expect "debugPrint flagged" "$(mk App/Engine/X.swift 'debugPrint(thing)')" HARD 'print'
 silent "fingerprint ok"    "$(mk App/Engine/Y.swift 'let fingerprint(x) = 1')"
 silent "print in tests ok" "$(mk App/EngineTests/Z.swift 'print("[LUMA] hi")')"
 
-# Keychain (REVIEW) — substring trap
-expect "keychain bad"  "$(mk App/Account/KeychainStore.swift 'add[k] = kSecAttrAccessibleAfterFirstUnlock')" REVIEW 'Keychain'
+# Keychain (HARD) — substring trap
+expect "keychain bad"  "$(mk App/Account/KeychainStore.swift 'add[k] = kSecAttrAccessibleAfterFirstUnlock')" HARD 'Keychain'
 silent "keychain good" "$(mk App/Account/Good.swift 'add[k] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly')"
 
 # Test/benchmark files are excluded from enforcement — they reference forbidden

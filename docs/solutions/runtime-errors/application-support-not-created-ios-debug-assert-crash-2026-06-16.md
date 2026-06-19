@@ -57,8 +57,9 @@ reads) did not blow up first. The crash needed `fetch()` to succeed and reach
 ## Fix
 
 In each store's `persistCache()`, create the directory before writing, and
-downgrade the assert to a non-fatal log (matching the codebase: `print("[LUMA] …")`
-is the established convention — there is no `os.Logger` in `App/`):
+downgrade the assert to a non-fatal log via `os.Logger` with `.private` on any
+interpolated error (`docs/rules/security.md`; each `App/` file declares its own
+`private static let logger = Logger(subsystem: "com.luma.app", category: …)`):
 
 ```swift
 private func persistCache() {
@@ -72,7 +73,7 @@ private func persistCache() {
         try JSONEncoder().encode(cards).write(to: cacheURL, options: .atomic)
     } catch {
         // Non-fatal: stale cache on next launch; no user-visible failure.
-        print("[LUMA] TuningCardStore: cache write failed — \(error)")
+        Self.logger.error("TuningCardStore: cache write failed — \(String(describing: error), privacy: .private)")
     }
 }
 ```
@@ -99,7 +100,7 @@ correct fallback, never a crash. `assertionFailure` in those catch blocks
 contradicts the "non-fatal" intent: it crashes Debug and no-ops Release, giving you
 the worst of both (dev-time crashes + silent prod failure). Rule of thumb for this
 codebase: **never `assertionFailure`/`fatalError`/`precondition` on a cache,
-network-response, or external-data path — log with `print("[LUMA] …")` and degrade.**
+network-response, or external-data path — log with `os.Logger` (`.private` on any interpolated error) and degrade.**
 
 ## Verification
 

@@ -64,19 +64,19 @@ inv_check_networking_scope() {
   [ -n "$hit" ] && echo "HARD:$1:${hit%%:*}: networking outside the LumaAPI layer — all backend calls go through LumaAPI (docs/rules/security.md)"
 }
 
-# REVIEW: print/debugPrint in App production code
+# HARD: print/debugPrint in App production code (use os.Logger with .private)
 inv_check_print_in_app() {
   inv_is_app_production_swift "$1" || return 0
   local hit; hit=$(inv_code_lines "$1" | grep -nE '\b(print|debugPrint)\(' | head -1)
-  [ -n "$hit" ] && echo "REVIEW:$1:${hit%%:*}: print/debugPrint in App/ — use os.Logger with .private for PII/secret paths (docs/rules/security.md)"
+  [ -n "$hit" ] && echo "HARD:$1:${hit%%:*}: print/debugPrint in App/ — use os.Logger with .private for PII/secret paths (docs/rules/security.md)"
 }
 
-# REVIEW: Keychain AfterFirstUnlock without ThisDeviceOnly (substring-trap safe)
+# HARD: Keychain AfterFirstUnlock without ThisDeviceOnly (substring-trap safe)
 inv_check_keychain() {
   case "$1" in *.swift) ;; *) return 0 ;; esac
   inv_is_test_file "$1" && return 0
   local hit; hit=$(inv_code_lines "$1" | grep -nE 'kSecAttrAccessibleAfterFirstUnlock' | grep -vE 'ThisDeviceOnly' | head -1)
-  [ -n "$hit" ] && echo "REVIEW:$1:${hit%%:*}: Keychain AfterFirstUnlock without ThisDeviceOnly — backup-restore-eligible; prefer …AfterFirstUnlockThisDeviceOnly (docs/rules/security.md)"
+  [ -n "$hit" ] && echo "HARD:$1:${hit%%:*}: Keychain AfterFirstUnlock without ThisDeviceOnly — backup-restore-eligible; prefer …AfterFirstUnlockThisDeviceOnly (docs/rules/security.md)"
 }
 
 # Run every check against one file.

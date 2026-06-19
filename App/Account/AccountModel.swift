@@ -68,6 +68,9 @@ final class AccountModel {
         guard response.deleted == true else {
             throw LumaAPIError.server("Account deletion failed", 0)
         }
+        // Local purge: clearJWT() deletes the only Keychain item ("jwt"). There
+        // is no separate account-JSON cache; the tuning/gear caches are not
+        // account-scoped and intentionally survive deletion (docs/rules/security.md).
         await api.clearJWT()
         isSignedIn = false
     }

@@ -1,7 +1,9 @@
 import Foundation
+import os
 
 @MainActor @Observable
 final class GearStoreModel {
+    private static let logger = Logger(subsystem: "com.luma.app", category: "store")
     var products: [GearProduct] = []
     var selectedCategory = "all"
     var isLoading = false
@@ -54,7 +56,7 @@ final class GearStoreModel {
             try CacheFile.write(products, to: cacheURL)
         } catch {
             // Non-fatal: stale cache on next launch; no user-visible failure.
-            print("[LUMA] GearStoreModel: cache write failed — \(error)")
+            Self.logger.error("GearStoreModel: cache write failed — \(String(describing: error), privacy: .private)")
         }
     }
 }

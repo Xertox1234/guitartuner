@@ -2,7 +2,7 @@
 title: "Use appending(path:) not appending(component:) for multi-segment API paths"
 track: bug
 category: logic-errors
-tags: [swiftui]
+tags: [swiftui, security]
 module: App
 applies_to: ["App/Networking/LumaAPI.swift"]
 created: 2026-06-15

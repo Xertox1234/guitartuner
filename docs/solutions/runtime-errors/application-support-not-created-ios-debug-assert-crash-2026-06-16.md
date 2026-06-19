@@ -2,7 +2,7 @@
 title: "Never assertionFailure/fatalError in a catch labeled 'non-fatal'; create Application Support before cache writes on iOS"
 track: bug
 category: runtime-errors
-tags: [swiftui]
+tags: [swiftui, security]
 module: App
 applies_to: ["App/Persistence/CacheFile.swift", "App/Tunings/TuningCardStore.swift", "App/Store/GearStoreModel.swift", "App/Tunings/TuningCard.swift"]
 created: 2026-06-16

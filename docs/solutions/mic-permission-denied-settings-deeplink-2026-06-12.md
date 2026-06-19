@@ -2,7 +2,7 @@
 title: "Mic-denied UX: platform-fenced Settings deep link + permissionDenied flag must clear on successful start only"
 track: knowledge
 category: best-practices
-tags: [swiftui]
+tags: [swiftui, security]
 module: App
 applies_to:
   - "App/LiveTunerScreen.swift"

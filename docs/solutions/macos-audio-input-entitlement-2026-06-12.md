@@ -2,7 +2,7 @@
 title: "macOS sandboxed/hardened-runtime build needs com.apple.security.device.audio-input or AVAudioEngine.start() silently fails"
 track: knowledge
 category: conventions
-tags: [capture, pipeline]
+tags: [capture, pipeline, security]
 module: TunerEngine
 applies_to:
   - "App/LUMA.entitlements"

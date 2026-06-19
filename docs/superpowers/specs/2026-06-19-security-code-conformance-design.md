@@ -13,7 +13,10 @@ Make `App/` conform to the three security rules that `docs/rules/security.md`
 **already mandates** (lines 9–11), then promote the two deferred REVIEW invariant
 gates to HARD so the conformance is enforced going forward.
 
-- **No rule changes** — `security.md` already requires all three behaviours.
+- **No rule *behaviour* changes** — `security.md` already requires all three
+  behaviours. The one permitted doc edit is a clarifying parenthetical on
+  `security.md` line 10 (B-4 below), which resolves a latent misread, not a
+  behaviour change.
 - **No networking-logic changes** — the `LumaAPI` actor's request/refresh logic
   is untouched; B-4 adds only an injection seam on the keychain dependency.
 
@@ -113,6 +116,10 @@ Test fake (in `LUMA/Tests`):
 - `final class InMemoryKeychain: KeychainStoring, @unchecked Sendable` with an
   `NSLock` guarding a backing dictionary. (A mutable-dict value type cannot be
   `Sendable`; the `@unchecked` + lock is the required pattern, not a shortcut.)
+- **It must be a class + lock, NOT an `actor`.** `AccountModel.init` reads
+  `api.keychain.read(...)` synchronously and `LumaAPI.jwt` is a synchronous
+  computed property; an `actor` fake forces those reads async and cascades the
+  change through every call site. This is load-bearing, not stylistic.
 
 Tests (network-free — `deleteAccount` and `signOut` share the same `clearJWT`
 purge primitive; the network leg is the *server* delete and is not relevant to
@@ -121,9 +128,19 @@ the *local* purge guarantee):
   and the fake no longer holds `jwt`.
 - Build `AccountModel` over the fake with a seeded `jwt`, call `signOut()` →
   assert `isSignedIn == false`.
-- Document (in the test and/or the deletion path) that `deleteAccount` reuses the
-  same `clearJWT` after a successful server delete, and that the tuning/gear
-  caches are account-independent and survive deletion by design.
+
+Documentation deliverables (the honest closure of B-4 — concrete, not "and/or"):
+- **`docs/rules/security.md` line 10** — append a clarifying parenthetical so the
+  rule no longer reads as if a purge step is missing: "(no separate account-JSON
+  cache exists — account state derives from the Keychain token; the
+  `luma_tuning_cards.json` / `luma_gear_products.json` caches are not
+  account-scoped and survive deletion by design)." Without this, an auditor
+  reading line 10's "purge Keychain tokens *and* cached account JSON," then
+  seeing those caches survive a delete, can reasonably misread non-compliance —
+  the exact misread that triggered B-4.
+- A one-line comment at the `deleteAccount()` purge site noting it reuses
+  `clearJWT` after a successful server delete (so the local-purge intent is
+  legible where the code lives).
 
 Rejected alternatives:
 - Real-Keychain integration test — CI-unsafe (see above).
@@ -159,6 +176,14 @@ Rejected alternatives:
 - On completion, `git mv` the three todos
   (`P1-keychain-thisdeviceonly`, `P1-logging-oslogger-app`,
   `P2-account-delete-purge-verify`) into `docs/todos/archive/`.
+- **Transparency at the seam:** the PR body and the
+  `P2-account-delete-purge-verify` archive note must state the test-scope
+  deviation explicitly — the todo's words are "invoke delete, assert both gone,"
+  but the tests exercise the shared network-free purge primitive
+  (`clearJWT`/`signOut`) that `deleteAccount` reuses, because the `LumaAPI`
+  actor's `session` is not injectable and `deleteAccount`'s only *local* purge
+  action is `clearJWT()`. This is a deliberate, documented choice, not a quiet
+  downscope.
 
 ## Verification
 

@@ -43,7 +43,7 @@ public final class PitchPipeline {
     private var smoother: FrequencySmoother
     private var gate = SustainGate()
     private var hannCache: [Int: [Float]] = [:]      // per-instance window cache
-    private var config: BandSpec
+    private var currentBand: BandSpec
     private var lastAnalyzedAt = 0
     private var trackedFrequency: Double?      // last confident estimate (band + reset)
     private var unvoicedStreak = 0
@@ -72,7 +72,7 @@ public final class PitchPipeline {
         self.ring = [Float](repeating: 0, count: cap)
         self.smoother = FrequencySmoother(medianCount: policy.smoothingMedianCount,
                                           alpha: policy.smoothingAlpha)
-        self.config = policy.acquire
+        self.currentBand = policy.acquire
     }
 
     /// Swap the detection policy (e.g. on instrument change). Resets smoother/gate
@@ -82,7 +82,7 @@ public final class PitchPipeline {
         smoother = FrequencySmoother(medianCount: newPolicy.smoothingMedianCount,
                                      alpha: newPolicy.smoothingAlpha)
         gate.reset()
-        config = newPolicy.acquire
+        currentBand = newPolicy.acquire
         trackedFrequency = nil
         unvoicedStreak = 0
         prevFrame = nil
@@ -102,7 +102,7 @@ public final class PitchPipeline {
             if filled < cap { filled += 1 }
             totalSamples += 1
 
-            if totalSamples - lastAnalyzedAt >= config.hop, filled >= config.window {
+            if totalSamples - lastAnalyzedAt >= currentBand.hop, filled >= currentBand.window {
                 lastAnalyzedAt = totalSamples
                 if let reading = analyze() { out.append(reading) }
             }
@@ -114,7 +114,7 @@ public final class PitchPipeline {
     public func reset() {
         head = 0; filled = 0; totalSamples = 0; lastAnalyzedAt = 0
         preproc.reset(); smoother.reset(); gate.reset()
-        config = policy.acquire; trackedFrequency = nil; unvoicedStreak = 0
+        currentBand = policy.acquire; trackedFrequency = nil; unvoicedStreak = 0
         prevFrame = nil; phaseIntegrator.reset()
         for i in ring.indices { ring[i] = 0 }
     }
@@ -122,7 +122,7 @@ public final class PitchPipeline {
     // MARK: - One hop
 
     private func analyze() -> PitchReading? {
-        let window = config.window
+        let window = currentBand.window
         let frameStart = totalSamples - window
         // Raw frame for the time-domain detectors + phase-vocoder: NSDF/YIN want
         // the *periods*, and a Hann taper roughly halves the effective period
@@ -173,12 +173,12 @@ public final class PitchPipeline {
             frequency = result.frequency
             harmonicB = result.inharmonicityB
         } else if let prev = prevFrame,
-                  prevWindow == window, prevHop == config.hop,
-                  prevFrameStart == frameStart - config.hop {
+                  prevWindow == window, prevHop == currentBand.hop,
+                  prevFrameStart == frameStart - currentBand.hop {
             // Fallback: phase-vocoder (used when harmonic fit fails on weak/cold frames).
             frequency = StrobePhase.refineFrequency(
                 current: frame, previous: prev,
-                frequency: det.frequency, sampleRate: sampleRate, hop: config.hop
+                frequency: det.frequency, sampleRate: sampleRate, hop: currentBand.hop
             )
         }
 
@@ -198,7 +198,7 @@ public final class PitchPipeline {
         ) ?? 0
 
         // Sustain gate + confidence.
-        let (emit, stable) = gate.step(confidence: det.clarity, floor: config.sustainConfidence)
+        let (emit, stable) = gate.step(confidence: det.clarity, floor: currentBand.sustainConfidence)
 
         // Timestamp = centre of the analysed window, in seconds.
         let timestamp = (Double(frameStart) + Double(window) / 2) / sampleRate
@@ -251,9 +251,9 @@ public final class PitchPipeline {
         prevFrame = frame
         prevFrameStart = frameStart
         prevWindow = window
-        prevHop = config.hop
+        prevHop = currentBand.hop
         trackedFrequency = smoothed
-        config = Self.nextBand(for: smoothed, current: config, in: policy)
+        currentBand = Self.nextBand(for: smoothed, current: currentBand, in: policy)
 
         guard emit else { return nil }
 
@@ -278,7 +278,7 @@ public final class PitchPipeline {
         if unvoicedStreak >= 8 {
             smoother.reset()
             trackedFrequency = nil
-            config = policy.acquire
+            currentBand = policy.acquire
             prevFrame = nil
             phaseIntegrator.reset()
         }
@@ -322,7 +322,11 @@ public final class PitchPipeline {
     /// falls below the current floor − its hysteresis; else stay (anti-chatter).
     static func nextBand(for f0: Double, current: BandSpec, in policy: DetectionPolicy) -> BandSpec {
         let bands = policy.bands
-        guard let i = bands.firstIndex(where: { $0.label == current.label }) else {
+        // Match by value identity (BandSpec is Equatable), not label string, so a
+        // custom policy carrying two bands with the same label can't return the wrong
+        // index. `current` is always a `bands` member or `acquire`; when it isn't in
+        // `bands` (acquire, in the shipping presets) we fall through to the floor lookup.
+        guard let i = bands.firstIndex(of: current) else {
             return policy.band(forFrequency: f0)   // acquire / unknown → settle by lookup
         }
         if i > 0 {

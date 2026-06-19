@@ -55,4 +55,72 @@ final class BenchmarkTests: XCTestCase {
             XCTAssertLessThan(r.stats.meanAbs, 1.0, "\(method) accuracy")
         }
     }
+
+    func testCaseRunnerPolicyParamRoutesToPipeline() {
+        let fs = 48_000.0
+        let sig = Synth.inharmonicString(fundamental: 110, sampleRate: fs, seconds: 1.2)
+
+        // Default policy == .fullRange (backward-compatible, zero-delta).
+        let dflt = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 110,
+                                  category: "t", centsTarget: 0, snrDB: .infinity, method: .mpm)
+        let full = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 110,
+                                  category: "t", centsTarget: 0, snrDB: .infinity, method: .mpm,
+                                  policy: .fullRange)
+        XCTAssertEqual(dflt.readings, full.readings)
+        XCTAssertEqual(dflt.stats, full.stats)
+
+        // A policy whose searchRange excludes 110 Hz must change the result —
+        // proves the parameter actually reaches the pipeline.
+        let narrow = DetectionPolicy(searchRange: 200...400, bands: DetectionPolicy.fullRange.bands,
+                                     acquire: DetectionPolicy.fullRange.acquire,
+                                     smoothingAlpha: 0.35, smoothingMedianCount: 5, emitFloor: 0.5)
+        let clamped = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 110,
+                                     category: "t", centsTarget: 0, snrDB: .infinity, method: .mpm,
+                                     policy: narrow)
+        XCTAssertNotEqual(clamped.stats.meanAbs, full.stats.meanAbs, "narrow searchRange must change the estimate")
+    }
+
+    func testBenchmarkExposesBassPolicySummary() {
+        // Exercise the bass-policy wiring on the 10 bass cases directly (~seconds),
+        // not the full BenchmarkSuite.run() matrix (~11 min). run() calls this exact
+        // helper, so this proves the same path it ships.
+        let result = BenchmarkSuite.bassPolicyPass(method: .mpm, sampleRate: fs,
+                                                    a4: Pitch.standardA4,
+                                                    lockWindowStart: BenchmarkSuite.lockWindowStart)
+        XCTAssertFalse(result.isEmpty, "bass-policy pass must run cases")
+        let categories = Set(result.map { $0.category })
+        XCTAssertTrue(categories.contains("bass-clean"), "bass-clean category present")
+        XCTAssertTrue(categories.contains("bass-weak-fund"), "bass-weak-fund category present")
+        for r in result {
+            XCTAssertGreaterThanOrEqual(r.lockRetention, 0)
+            XCTAssertLessThanOrEqual(r.lockRetention, 1)
+        }
+
+        // Feed the small result through the Summary aggregation to prove the wiring
+        // cheaply (bassPolicyCases populated, retention in range).
+        let summary = BenchmarkSuite.summarize(clean: [], stress: [], bassPolicy: result, method: .mpm)
+        XCTAssertGreaterThan(summary.bassPolicyCases, 0, "Summary aggregates bass-policy cases")
+        XCTAssertGreaterThanOrEqual(summary.bassLockRetention, 0)
+        XCTAssertLessThanOrEqual(summary.bassLockRetention, 1)
+    }
+
+    func testLockTrajectoryComputesRetentionAndDrops() {
+        func r(_ t: TimeInterval, _ locked: Bool) -> PitchReading {
+            PitchReading(frequency: 110, note: Note(midi: 45), cents: 0, confidence: 0.9,
+                         phase: 0, timestamp: t, inharmonicityB: nil,
+                         precisionCents: locked ? 0.1 : nil, isLockIntegrated: locked)
+        }
+        // Pre-window frames (t < 1.0) are ignored. In-window: L, L, unlocked, L → one drop,
+        // 3/4 locked.
+        let readings = [r(0.5, true), r(1.0, true), r(1.2, true), r(1.4, false), r(1.6, true)]
+        let (retention, drops) = CaseRunner.lockTrajectory(readings, windowStart: 1.0)
+        XCTAssertEqual(retention, 0.75, accuracy: 1e-9)
+        XCTAssertEqual(drops, 1)
+
+        // Never locks in window → 0 retention, 0 drops.
+        let none = [r(1.0, false), r(1.2, false)]
+        let (ret2, drops2) = CaseRunner.lockTrajectory(none, windowStart: 1.0)
+        XCTAssertEqual(ret2, 0)
+        XCTAssertEqual(drops2, 0)
+    }
 }

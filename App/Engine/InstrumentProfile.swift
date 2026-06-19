@@ -27,8 +27,7 @@ struct InstrumentProfile: Identifiable, Sendable {
             return InstrumentProfile(
                 id: .bass, displayName: "Bass",
                 defaultTuning: Tunings.bass, detection: .bass,
-                // Slice 1: bass stays .auto. The deferred bass-fix flips this to .lock.
-                defaultMode: .auto, defaultInput: .di
+                defaultMode: .lock, defaultInput: .di
             )
         }
     }

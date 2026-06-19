@@ -31,11 +31,24 @@ import TunerEngine
         #expect(model.profile.detection.lockConfidence(forFrequency: 82) == 0.75)
         #expect(model.profile.detection.lockConfidence(forFrequency: 330) == 0.90)
         // Swapping instrument re-points detection to the new profile's policy.
-        // Slice 1 keeps bass lock floors identical to guitar (zero-delta), so we
-        // assert bass's distinct searchRange to prove the swap re-sourced the policy.
+        // The bass-fix relaxed bass low/ultralow lockConfidence to 0.70 (vs guitar's
+        // 0.75) to reduce strobe flicker on weak-fundamental bass — so the bass low-band
+        // value now differs from guitar, which (with the distinct searchRange) proves the
+        // swap re-sourced the policy.
         model.setInstrument(.bass)
         #expect(model.profile.detection.searchRange == 25...420)
-        #expect(model.profile.detection.lockConfidence(forFrequency: 82) == 0.75)
+        #expect(model.profile.detection.lockConfidence(forFrequency: 82) == 0.70)
+    }
+
+    @Test func switchingToBassArmsLockTarget() {
+        let model = LiveTunerModel()
+        model.setInstrument(.bass)
+        #expect(model.mode == .lock, "bass defaults to string-lock")
+        let lowest = model.tuning.strings.first
+        #expect(lowest != nil)
+        // .lock must arm the lowest string so the strobe judges a target, not chromatic.
+        #expect(model.targetNote == lowest.map { Note(midi: $0.midi) },
+                "lock target armed to the lowest bass string after instrument switch")
     }
 
     @Test func restoresPersistedInstrumentAndTuning() {

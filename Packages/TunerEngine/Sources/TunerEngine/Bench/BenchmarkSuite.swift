@@ -39,6 +39,11 @@ public enum BenchmarkSuite {
         public let stressOctaveErrors: Int    // octave errors across stress families
         public let stressWorstAbsCents: Double
         public let cases: Int
+        public let bassLockSigma: Double       // held-note lock σ, bass notes under .bass
+        public let bassLockRetention: Double    // mean held-window lock retention, bass under .bass
+        public let bassLockDrops: Int           // total lock drops, bass under .bass
+        public let bassPolicyCases: Int
+        public let bassOctaveErrors: Int        // octave errors across the .bass policy pass (HARD gate: must be 0)
     }
 
     // The bench matrix: low B (5-string) up to high frets.
@@ -57,6 +62,10 @@ public enum BenchmarkSuite {
     private static let vibratoNotes  = [40, 55, 64]       // E2 G3 E4
     private static let noiseNotes    = [28, 40, 55, 64]
     private static let noiseSNRs     = [40.0, 20.0, 10.0, 5.0]
+
+    // Bass-policy pass: bass strings run under .bass (not the default .fullRange),
+    // scored separately so the guitar clean matrix stays byte-identical.
+    private static let bassPolicyNotes = [23, 28, 33, 38, 43]   // B0 E1 A1 D2 G2
 
     /// Held-note lock window opens at 1.0 s; stimuli run long enough to score it.
     static let lockWindowStart: TimeInterval = 1.0
@@ -116,14 +125,48 @@ public enum BenchmarkSuite {
                                   sampleRate, base, "vibrato", 0, .infinity, method, a4))
         }
 
-        let summary = summarize(clean: clean, stress: stress, method: method)
+        // Bass-policy pass (under .bass): clean inharmonic + weak-fund, the settle stressors.
+        let bassPolicy = bassPolicyPass(method: method, sampleRate: sampleRate, a4: a4,
+                                        lockWindowStart: lockWindowStart)
+
+        let summary = summarize(clean: clean, stress: stress, bassPolicy: bassPolicy, method: method)
         let all = clean + noise
         return Report(
-            csv: csv(all + stress),
-            markdown: markdown(clean: clean, noise: noise, stress: stress,
+            csv: csv(all + stress + bassPolicy),
+            markdown: markdown(clean: clean, noise: noise, stress: stress, bassPolicy: bassPolicy,
                                summary: summary, sampleRate: sampleRate, a4: a4, dateLabel: dateLabel),
             summary: summary
         )
+    }
+
+    /// Bass-policy pass: bass strings run under the shipping `.bass` policy (not the
+    /// default `.fullRange`), scored separately so the guitar clean matrix stays
+    /// byte-identical. Extracted so tests can exercise the wiring on the 10 bass cases
+    /// (~seconds) without paying for the full `run()` matrix (~11 min). `run` threads
+    /// its own params in explicitly, so its output is unchanged.
+    static func bassPolicyPass(
+        method: DetectionMethod,
+        sampleRate: Double,
+        a4: Double,
+        lockWindowStart: TimeInterval
+    ) -> [CaseResult] {
+        var bassPolicy: [CaseResult] = []
+        for midi in bassPolicyNotes {
+            let base = Pitch.frequency(midi: midi, a4: a4)
+            let seconds = coreSeconds(base)
+            let clean2 = Synth.inharmonicString(fundamental: base, sampleRate: sampleRate, seconds: seconds)
+            bassPolicy.append(CaseRunner.run(signal: clean2, sampleRate: sampleRate, trueFrequency: base,
+                                             category: "bass-clean", centsTarget: 0, snrDB: .infinity,
+                                             method: method, a4: a4, lockWindowStart: lockWindowStart,
+                                             policy: .bass))
+            let weak = Synth.inharmonicString(fundamental: base, sampleRate: sampleRate, seconds: seconds,
+                                              fundamentalLevel: 0.15)
+            bassPolicy.append(CaseRunner.run(signal: weak, sampleRate: sampleRate, trueFrequency: base,
+                                             category: "bass-weak-fund", centsTarget: 0, snrDB: .infinity,
+                                             method: method, a4: a4, lockWindowStart: lockWindowStart,
+                                             policy: .bass))
+        }
+        return bassPolicy
     }
 
     /// Compact MPM vs YIN vs hybrid comparison (let the benchmark pick a default).
@@ -143,7 +186,7 @@ public enum BenchmarkSuite {
                     }
                 }
             }
-            return summarize(clean: clean, stress: [], method: method)
+            return summarize(clean: clean, stress: [], bassPolicy: [], method: method)
         }
     }
 
@@ -168,7 +211,8 @@ public enum BenchmarkSuite {
 
     // MARK: - Aggregation
 
-    private static func summarize(clean: [CaseResult], stress: [CaseResult], method: DetectionMethod) -> Summary {
+    static func summarize(clean: [CaseResult], stress: [CaseResult],
+                          bassPolicy: [CaseResult], method: DetectionMethod) -> Summary {
         let pooled = ErrorStats.from(clean.flatMap { $0.errors })
         let lockPooled = ErrorStats.from(clean.flatMap { $0.lockErrors })
         let bassPooled = ErrorStats.from(clean.filter { bucket($0.trueFrequency) == bands[0] }.flatMap { $0.errors })
@@ -178,6 +222,11 @@ public enum BenchmarkSuite {
         let locks = clean.compactMap { $0.timeToLockMS }.sorted()
         let lockMedian = locks.isEmpty ? 0 : locks[locks.count / 2]
         let stressWorst = stress.map { $0.stats.maxAbs }.max() ?? 0
+        let bassLock = ErrorStats.from(bassPolicy.flatMap { $0.lockErrors })
+        let bassRetention = bassPolicy.isEmpty ? 0
+            : bassPolicy.map { $0.lockRetention }.reduce(0, +) / Double(bassPolicy.count)
+        let bassDrops = bassPolicy.reduce(0) { $0 + $1.lockDrops }
+        let bassOctaveErrors = bassPolicy.filter { $0.octaveError }.count
         return Summary(
             method: method,
             cleanAbsCents: pooled.meanAbs,
@@ -192,7 +241,12 @@ public enum BenchmarkSuite {
             lockMSMedian: lockMedian,
             stressOctaveErrors: stress.filter { $0.octaveError }.count,
             stressWorstAbsCents: stressWorst,
-            cases: clean.count + stress.count
+            cases: clean.count + stress.count,
+            bassLockSigma: bassLock.sigma,
+            bassLockRetention: bassRetention,
+            bassLockDrops: bassDrops,
+            bassPolicyCases: bassPolicy.count,
+            bassOctaveErrors: bassOctaveErrors
         )
     }
 
@@ -223,7 +277,7 @@ public enum BenchmarkSuite {
     // MARK: - Markdown
 
     private static func markdown(
-        clean: [CaseResult], noise: [CaseResult], stress: [CaseResult],
+        clean: [CaseResult], noise: [CaseResult], stress: [CaseResult], bassPolicy: [CaseResult],
         summary: Summary, sampleRate: Double, a4: Double, dateLabel: String
     ) -> String {
         var md = ""
@@ -280,6 +334,21 @@ public enum BenchmarkSuite {
             let lp = ErrorStats.from(subset.flatMap { $0.lockErrors })
             let oct = subset.filter { $0.octaveError }.count
             md += "| \(Int(snr)) | \(p.count) | \(f2(p.meanAbs)) | \(f2(p.sigma)) | \(f2(lp.sigma)) | \(oct) |\n"
+        }
+
+        md += "\n## Bass policy (bass notes under `.bass`)\n\n"
+        md += "Bass strings driven through the **`.bass`** DetectionPolicy (the rest of the report uses "
+        md += "`.fullRange`). Lock retention = fraction of held-window frames holding the phase-integrator "
+        md += "lock; drops = mid-sustain lock losses. This is the bass-settling signal the Phase 4 gate reads.\n\n"
+        md += "| Family | n | abs ¢ | lock σ ¢ | lock retention | lock drops |\n|---|---|---|---|---|---|\n"
+        for fam in ["bass-clean", "bass-weak-fund"] {
+            let inF = bassPolicy.filter { $0.category == fam }
+            guard !inF.isEmpty else { continue }
+            let p = ErrorStats.from(inF.flatMap { $0.errors })
+            let lp = ErrorStats.from(inF.flatMap { $0.lockErrors })
+            let ret = inF.map { $0.lockRetention }.reduce(0, +) / Double(inF.count)
+            let drops = inF.reduce(0) { $0 + $1.lockDrops }
+            md += "| \(fam) | \(p.count) | \(f2(p.meanAbs)) | \(f2(lp.sigma)) | \(f2(ret * 100))% | \(drops) |\n"
         }
 
         md += crlbSection(noise: noise, sampleRate: sampleRate)

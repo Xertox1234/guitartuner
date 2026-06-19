@@ -83,6 +83,24 @@ import Testing
         #expect(result.readings > 3, "pipeline should produce steady readings at f=\(f) Hz")
     }
 
+    @Test func weakFundE1SettlesUnderBassPolicy() {
+        let f = 41.20   // E1, the canonical bass settle stressor
+        let sig = Synth.inharmonicString(fundamental: f, sampleRate: fs, seconds: 2.6, fundamentalLevel: 0.15)
+        let p = PitchPipeline(sampleRate: fs, a4: 440, method: .mpm, policy: .bass)
+        let block = 480
+        var rs: [PitchReading] = []
+        var i = 0
+        while i < sig.count { let e = min(i + block, sig.count); rs += p.process(Array(sig[i..<e])); i = e }
+
+        let window = rs.filter { $0.timestamp >= 1.0 }
+        #expect(window.count > 5, "must produce a held-note window")
+        let retention = Double(window.filter { $0.isLockIntegrated }.count) / Double(window.count)
+        #expect(retention >= 0.85, "E1 weak-fund should hold DSP lock through the sustain")
+        #expect(sigma(window.map(\.cents)) < 0.30, "held-note jitter must be strobe-grade")
+        // Octave-safety must never regress while tuning.
+        #expect(window.allSatisfy { abs(TestSupport.cents($0.frequency, f)) < 600 }, "no octave slip on E1")
+    }
+
     @Test func noiseRobustness() throws {
         var rng = SeededRNG(seed: 99)
         let clean = Synth.inharmonicString(fundamental: 220, sampleRate: fs, seconds: 0.9)

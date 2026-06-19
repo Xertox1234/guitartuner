@@ -42,12 +42,29 @@ public struct CaseResult: Sendable {
     public let errors: [Double]      // steady-state cents errors (for pooling)
     public let lockStats: ErrorStats // error over the *held* lock window only (later, settled)
     public let lockErrors: [Double]  // lock-window cents errors (for pooling)
+    public let lockRetention: Double // 0…1: held-window frames with isLockIntegrated (RC2/RC3)
+    public let lockDrops: Int        // lock→unlock transitions in the held window
 }
 
 /// Runs one stimulus through a fresh pipeline and scores it. Shared by the
 /// benchmark suite and the tests, so accuracy assertions and the published report
 /// measure the *same* thing.
 public enum CaseRunner {
+
+    /// Held-note lock trajectory: fraction of in-window frames that hold the
+    /// phase-integrator lock, and the count of lock→unlock transitions (the
+    /// "won't settle" symptom σ alone misses). Window = readings at/after windowStart.
+    static func lockTrajectory(_ readings: [PitchReading], windowStart: TimeInterval)
+        -> (retention: Double, drops: Int) {
+        let flags = readings.filter { $0.timestamp >= windowStart }.map { $0.isLockIntegrated }
+        guard !flags.isEmpty else { return (0, 0) }
+        let retention = Double(flags.filter { $0 }.count) / Double(flags.count)
+        var drops = 0
+        if flags.count > 1 {
+            for i in 1..<flags.count where flags[i - 1] && !flags[i] { drops += 1 }
+        }
+        return (retention, drops)
+    }
 
     /// - lockTolerance: cents window counted as "locked" for time-to-lock.
     /// - steadyStateStart: ignore readings before this (skip the attack/acquire).
@@ -66,9 +83,10 @@ public enum CaseRunner {
         a4: Double = Pitch.standardA4,
         lockTolerance: Double = 5,
         steadyStateStart: TimeInterval = 0.30,
-        lockWindowStart: TimeInterval = 1.0
+        lockWindowStart: TimeInterval = 1.0,
+        policy: DetectionPolicy = .fullRange
     ) -> CaseResult {
-        let pipeline = PitchPipeline(sampleRate: sampleRate, a4: a4, method: method)
+        let pipeline = PitchPipeline(sampleRate: sampleRate, a4: a4, method: method, policy: policy)
 
         // Feed in realistic ~10 ms blocks so analysis fires on true hop cadence.
         let block = max(64, Int(sampleRate * 0.01))
@@ -101,13 +119,15 @@ public enum CaseRunner {
         let lockReadings = readings.filter { $0.timestamp >= lockWindowStart }
         let lockErrors = lockReadings.map { ErrorStats.centsError(estimate: $0.frequency, truth: trueFrequency) }
         let lockStats = ErrorStats.from(lockErrors)
+        let (lockRetention, lockDrops) = lockTrajectory(readings, windowStart: lockWindowStart)
 
         return CaseResult(
             category: category, note: noteLabel(trueFrequency, a4: a4),
             trueFrequency: trueFrequency, centsTarget: centsTarget, snrDB: snrDB,
             readings: steady.count, stats: stats,
             octaveError: octaveError, timeToLockMS: timeToLock, errors: errors,
-            lockStats: lockStats, lockErrors: lockErrors
+            lockStats: lockStats, lockErrors: lockErrors,
+            lockRetention: lockRetention, lockDrops: lockDrops
         )
     }
 

@@ -111,7 +111,23 @@ f=$(make_file "App/GearStoreModel.swift" "let s = URLSession.shared")
 run_case "finding4: URLSession in GearStoreModel is permitted" Write "$f" 0 none
 
 f=$(make_file "App/GearStoreScreen.swift" "let s = URLSession.shared")
-run_case "finding4: URLSession in GearStoreScreen (view) is flagged" Write "$f" 0 stdout "networking outside"
+run_case "finding4: URLSession in GearStoreScreen (view) is flagged" Write "$f" 2 stderr "networking outside"
+
+# --- security invariants (Task 6) ---
+ATS=$(make_file "App/Info.plist" '<key>NSAllowsArbitraryLoads</key>' '<true/>')
+run_case "ATS exception is HARD" Edit "$ATS" 2 stderr 'NSAllowsArbitraryLoads'
+
+NETLEAK=$(make_file "App/Views/Leak.swift" 'import SwiftUI' 'let s = URLSession.shared')
+run_case "networking leak is HARD" Edit "$NETLEAK" 2 stderr 'networking outside the LumaAPI'
+
+PRINTF=$(make_file "App/Engine/Logy.swift" 'func f() { print("[LUMA] x") }')
+run_case "print in App is REVIEW" Edit "$PRINTF" 0 stdout 'print/debugPrint'
+
+KC=$(make_file "App/Account/KeychainStore.swift" 'let a = kSecAttrAccessibleAfterFirstUnlock')
+run_case "keychain bare form is REVIEW" Edit "$KC" 0 stdout 'ThisDeviceOnly'
+
+KCOK=$(make_file "App/Account/Good.swift" 'let a = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly')
+run_case "keychain ThisDeviceOnly is clean" Edit "$KCOK" 0 none
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

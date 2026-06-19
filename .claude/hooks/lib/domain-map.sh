@@ -92,6 +92,23 @@ get_domains() {
      [[ "$path" == *Tests.swift ]]; then
     echo "testing"
   fi
+
+  # security — cross-cutting: networking, auth/token storage, persistence, privacy surface
+  if [[ "$path" == */App/Networking/* ]] || [[ "$path" == */App/Account/* ]] || \
+     [[ "$path" == */App/Persistence/* ]] || [[ "$path" == */App/Store/* ]] || \
+     [[ "$path" == *LumaAPI* ]] || [[ "$path" == *LumaConfig* ]] || \
+     [[ "$path" == *Keychain* ]] || [[ "$path" == *CacheFile* ]] || \
+     [[ "$path" == *MicrophonePermission* ]] || \
+     [[ "$path" == *.entitlements ]] || [[ "$path" == *Info.plist ]] || \
+     [[ "$path" == *PrivacyInfo.xcprivacy ]]; then
+    echo "security"
+  fi
+
+  # accessibility — cross-cutting: anything user-facing
+  if [[ "$path" == */App/*.swift ]] || [[ "$path" == */Components/* ]] || \
+     [[ "$path" == */Strobe/* ]] || [[ "$path" == */Gallery/* ]]; then
+    echo "accessibility"
+  fi
 }
 
 # Priority — lower number = higher priority = fills context budget first on spill
@@ -104,6 +121,8 @@ domain_rank() {
     swiftui)       echo 50 ;;
     design-system) echo 60 ;;
     testing)       echo 70 ;;
+    security)      echo 5  ;;
+    accessibility) echo 15 ;;
     *)             echo 99 ;;
   esac
 }

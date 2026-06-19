@@ -21,6 +21,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck source=../../scripts/lib/invariant-patterns.sh
+source "$PROJECT_DIR/scripts/lib/invariant-patterns.sh"
 
 INPUT=$(cat)
 
@@ -32,15 +34,14 @@ esac
 
 FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)
 [[ -z "$FILE_PATH" ]] && exit 0
-[[ "$FILE_PATH" != *.swift ]] && exit 0
+case "$FILE_PATH" in *.swift|*.plist) ;; *) exit 0 ;; esac
 [[ -f "$FILE_PATH" ]] || exit 0
 
 # --- Classify by package / layer (path-based — robust regardless of repo layout) ---
-is_tunerengine=false; is_designsystem=false; is_app=false
+is_tunerengine=false; is_designsystem=false
 case "$FILE_PATH" in
   */Packages/TunerEngine/*)      is_tunerengine=true ;;
   */Packages/LumaDesignSystem/*) is_designsystem=true ;;
-  */App/*)                       is_app=true ;;
 esac
 
 # Tests and benchmarks are not "production code paths"
@@ -49,18 +50,19 @@ case "$FILE_PATH" in
   *Tests/*|*Test.swift|*Tests.swift|*/Bench/*|*Benchmark*) is_production=false ;;
 esac
 
-# Files where backend networking is intentional (the opt-in monetization stack).
-networking_allowed() {
-  case "$1" in
-    */App/Networking/*|*LumaAPI*|*AccountModel*|*TuningCardStore*|*GearStoreModel*|*/App/LumaApp.swift) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 VIOLATIONS=""
 REVIEW=""
 add_violation() { VIOLATIONS="${VIOLATIONS}  ✗ $1"$'\n'; }
 add_review()    { REVIEW="${REVIEW}  • $1"$'\n'; }
+
+# Shared deterministic security invariants (single source of truth — also run in CI).
+while IFS= read -r _inv; do
+  [ -n "$_inv" ] || continue
+  case "$_inv" in
+    HARD:*)   add_violation "${_inv#HARD:}" ;;
+    REVIEW:*) add_review    "${_inv#REVIEW:}" ;;
+  esac
+done < <(inv_check_file "$FILE_PATH")
 
 # Report the first line matching a forbidden `import <module>`.
 # Covers `import Mod`, `@_exported import Mod`, the symbol form
@@ -100,11 +102,6 @@ if $is_designsystem; then
   [ -n "$hit" ] && add_violation "line ${hit%%:*}: URLSession in LumaDesignSystem — the design system must have no networking"
 fi
 
-# --- App layer: flag networking that has escaped the LumaAPI layer (soft) ---
-if $is_app && ! networking_allowed "$FILE_PATH"; then
-  hit=$(first_match_code '\b(URLSession|URLRequest)\b|^[[:space:]]*import[[:space:]]+Network\b')
-  [ -n "$hit" ] && add_review "line ${hit%%:*}: networking outside the LumaAPI layer — confirm it belongs in App/Networking, not a view/model"
-fi
 
 # --- Force operations in production code (heuristic; high-signal subset only) ---
 # try!/as! are reliable to spot. Generic optional force-unwrap (foo!) is NOT done

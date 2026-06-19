@@ -4,6 +4,27 @@ Deduplication index for all findings surfaced across audit runs. Before adding a
 
 ---
 
+## 2026-06-18 — patterns-vs-best-practices (report, no code changes)
+
+Validates the codified pattern set (`docs/rules/`, `docs/solutions/`) against security &
+accessibility best practice. Full report: `docs/audits/2026-06-18-patterns-vs-best-practices.md`.
+Findings are **doc/pattern** recommendations (Tier A/B/C), not new code defects.
+
+| Finding | Pattern / File | Tier | Status |
+|---------|----------------|------|--------|
+| `swiftui.md` codifies `print("[LUMA]…")` for PII/token-handling layer — below `os.Logger` bar | `docs/rules/swiftui.md`, app-support solution | A | ⏸ recommend codify |
+| Token storage uncodified; Keychain class is backup-eligible (not `…ThisDeviceOnly`) | `App/Account/KeychainStore.swift` | B | ⏸ recommend codify |
+| No pattern requires HTTPS/ATS for `LumaAPI` (secure only by default) | `docs/rules/swiftui.md` | B | ⏸ recommend codify |
+| "v1 collects nothing" broader than shipping reality (email via opt-in account) | `CLAUDE.md` | B | ⏸ recommend scope |
+| Account-data lifecycle (delete/retention) implemented but uncodified | `App/Account/AccountModel.swift` | B | ⏸ recommend codify |
+| VoiceOver implemented broadly but no pattern requires labels / live pitch value | `design-system.md`, `strobe.md` | B | ⏸ recommend codify |
+| Reduce Transparency not honored (bloom/wash) and not codified | `strobe.md`, `design-system.md` | C | ⏸ open |
+| Dynamic Type: chrome/settings text doesn't scale (`LumaFont` has no `relativeTo:`) | `LumaDesignSystem/Tokens/LumaFont.swift` | C | ⏸ open |
+| No WCAG contrast budget; `differentiateWithoutColor` unhandled | `design-system.md` | C | ⏸ open |
+| Photosensitivity (WCAG 2.3.1) not considered/recorded for strobe | `docs/rules/strobe.md` | C | ⏸ verify |
+
+---
+
 ## 2026-06-15 — full (automated, 5 agents)
 
 | Finding | File | Severity | Status |

@@ -76,6 +76,7 @@ Any PR that changes these for one frequency band without explicitly checking the
 - Never use hand-rolled loops where a `vDSP` equivalent exists. The performance difference is 4–8× on Apple Silicon.
 - Use `vDSP_normalize` for NSDF normalization, `vDSP_sve` for vector summation, etc.
 - `Accelerate` calls require properly aligned `[Float]` buffers. Do not pass non-contiguous slices.
+- **But vDSP is subordinate to the zero-delta proof.** Vectorizing a *reduction* (sum/mean/dotprod, e.g. `reduce(0,+)` → `vDSP_meanvD`) reorders summation → not bit-preserving → forces an accuracy-spec re-baseline. Do NOT recommend vectorizing a scalar reduction on a CI-gated path unless the perf win is real (dominant arithmetic). Off-hot-path reductions over tiny arrays (e.g. `PhaseIntegrator.lsSlope` means, `k ≤ 140`) are correct to leave scalar. Element-wise non-fused ops (`vsadd`/`vsub`) are bit-preserving; FMA ops (`vsma`) are not. See `docs/solutions/best-practices/vdsp-subordinate-to-zero-delta-reductions-reorder-2026-06-18.md`.
 
 ## LSP Tools
 
@@ -100,7 +101,7 @@ When auditing DSP code:
 - [ ] Is phase unwrapping correct (mod 2π, not naive subtraction)?
 - [ ] Is the smoothing order median-then-EMA?
 - [ ] Is confidence gating metric-based, not time-based?
-- [ ] Are all inner loops using vDSP? Any `for` loops over `Float` arrays that could be vectorized?
+- [ ] Are inner loops over `Float` arrays using vDSP where the perf win is real? (Exception: do NOT flag scalar *reductions* on CI-gated paths — vectorizing them reorders summation and breaks the byte-identical zero-delta proof. See the Accelerate/vDSP note.)
 - [ ] For bass frequencies: is the harmonic estimator using OLS regression (not virtual-Candan)?
 - [ ] Does any change risk octave-error regression? If so, was `BenchmarkSuite.swift` run?
 - [ ] Is `PitchPipeline` still free of `AVAudioEngine` imports?

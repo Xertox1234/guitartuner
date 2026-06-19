@@ -1,7 +1,7 @@
 ---
 priority: P2          # P0 blocker · P1 high · P2 medium · P3 low (MUST match the P<n>- filename prefix)
 status: open          # open · needs-spec · partial · blocked
-domain: dsp           # dsp · pipeline · capture · strobe · swiftui · design-system · testing · hooks · other
+domain: dsp           # dsp · pipeline · capture · strobe · swiftui · design-system · testing · security · accessibility · hooks · other
 source:               # audit / spec / PR that surfaced it (optional)
 depends_on:           # another todo or work this waits on (optional)
 ---

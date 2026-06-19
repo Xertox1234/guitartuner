@@ -89,6 +89,8 @@ open Packages/LumaDesignSystem/Package.swift
 | `swiftui` | `App/*.swift`, `App/Engine/*` | `docs/rules/swiftui.md` |
 | `design-system` | `LumaDesignSystem/Tokens/*`, `Components/*`, `Model/*`, `Modifiers/*` | `docs/rules/design-system.md` |
 | `testing` | `**Tests/*` | `docs/rules/testing.md` |
+| `security` | `App/Networking/*`, `App/Account/*`, `App/Persistence/*`, `App/Store/*`, `*.entitlements`, `Info.plist`, `PrivacyInfo.xcprivacy` (cross-cutting, co-injected) | `docs/rules/security.md` |
+| `accessibility` | `App/*.swift`, `Components/*`, `Strobe/*`, `Gallery/*` (cross-cutting, co-injected) | `docs/rules/accessibility.md` |
 
 ## Cheap-Worker Delegation (from global CLAUDE.md)
 

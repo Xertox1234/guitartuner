@@ -6,7 +6,7 @@ actor LumaAPI {
     private let baseURL: URL
     // nonisolated let: immutable, so safe to read from any concurrency context
     // without await. AccountModel.init reads this synchronously.
-    nonisolated let keychain: KeychainStore
+    nonisolated let keychain: any KeychainStoring
 
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
@@ -15,7 +15,7 @@ actor LumaAPI {
     }()
 
     init(baseURL: URL = LumaConfig.apiBaseURL,
-         keychain: KeychainStore = KeychainStore(service: "com.luma.tuner")) {
+         keychain: any KeychainStoring = KeychainStore(service: "com.luma.tuner")) {
         self.baseURL = baseURL
         self.keychain = keychain
     }

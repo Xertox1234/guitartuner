@@ -38,11 +38,10 @@ case "$FILE_PATH" in *.swift|*.plist) ;; *) exit 0 ;; esac
 [[ -f "$FILE_PATH" ]] || exit 0
 
 # --- Classify by package / layer (path-based — robust regardless of repo layout) ---
-is_tunerengine=false; is_designsystem=false; is_app=false
+is_tunerengine=false; is_designsystem=false
 case "$FILE_PATH" in
   */Packages/TunerEngine/*)      is_tunerengine=true ;;
   */Packages/LumaDesignSystem/*) is_designsystem=true ;;
-  */App/*)                       is_app=true ;;
 esac
 
 # Tests and benchmarks are not "production code paths"
@@ -50,7 +49,6 @@ is_production=true
 case "$FILE_PATH" in
   *Tests/*|*Test.swift|*Tests.swift|*/Bench/*|*Benchmark*) is_production=false ;;
 esac
-
 
 VIOLATIONS=""
 REVIEW=""

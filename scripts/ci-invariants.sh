@@ -12,9 +12,11 @@ while IFS= read -r f; do
   [ -f "$f" ] || continue
   while IFS= read -r line; do
     [ -n "$line" ] || continue
+    # Strip the severity tag, then the project root — both patterns quoted so a
+    # path containing glob metacharacters can't be misinterpreted by the # expansion.
     case "$line" in
-      HARD:*)   printf '✗ %s\n' "${line#HARD:$PROJECT_DIR/}" >&2; hard=$((hard+1)) ;;
-      REVIEW:*) printf '• %s\n' "${line#REVIEW:$PROJECT_DIR/}";   review=$((review+1)) ;;
+      HARD:*)   rel=${line#"HARD:"};   printf '✗ %s\n' "${rel#"$PROJECT_DIR/"}" >&2; hard=$((hard+1)) ;;
+      REVIEW:*) rel=${line#"REVIEW:"}; printf '• %s\n' "${rel#"$PROJECT_DIR/"}";     review=$((review+1)) ;;
     esac
   done < <(inv_check_file "$PROJECT_DIR/$f")
 done < <(git ls-files '*.swift' '*.plist')

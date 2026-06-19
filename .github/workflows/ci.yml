@@ -113,6 +113,9 @@ jobs:
   invariants:
     name: Security invariants
     runs-on: ubuntu-latest
+    # Least privilege: the scan only needs to read the checked-out tree.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Run security invariant scan

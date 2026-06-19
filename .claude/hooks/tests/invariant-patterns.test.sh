@@ -38,5 +38,13 @@ silent "print in tests ok" "$(mk App/EngineTests/Z.swift 'print("[LUMA] hi")')"
 expect "keychain bad"  "$(mk App/Account/KeychainStore.swift 'add[k] = kSecAttrAccessibleAfterFirstUnlock')" REVIEW 'Keychain'
 silent "keychain good" "$(mk App/Account/Good.swift 'add[k] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly')"
 
+# Test/benchmark files are excluded from enforcement — they reference forbidden
+# patterns by design (e.g. LumaAPIURLTests asserts that appending(component:) is
+# wrong for routes). A *LumaAPI*-named TEST matches the appending scope by name,
+# so the test-file guard must win.
+silent "append in LumaAPI test ok"  "$(mk LUMA/Tests/LumaAPIURLTests.swift 'let u = base.appending(component: "auth/apple")')"
+silent "net in App test ok"         "$(mk App/Views/SomeViewTests.swift 'let s = URLSession.shared')"
+silent "keychain in test ok"        "$(mk App/Account/KeychainStoreTests.swift 'add[k] = kSecAttrAccessibleAfterFirstUnlock')"
+
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

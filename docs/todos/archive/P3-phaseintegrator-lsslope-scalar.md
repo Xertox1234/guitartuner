@@ -1,11 +1,30 @@
 ---
 priority: P3
-status: partial
+status: wont-do
 domain: dsp
 source: 2026-06-15-full audit (L2), re-scoped 2026-06-18 sweep
+resolved: 2026-06-18 — closed as won't-do (see Resolution)
 ---
 
 # PhaseIntegrator.lsSlope — centering/means still scalar (vDSP partial)
+
+## Resolution (2026-06-18): WON'T-DO
+
+Closed without the change. Rationale:
+
+- **Net perf loss, not win.** Arrays are k ≤ 140 and off the hot path; the vDSP call
+  overhead (`vDSP_meanvD`, `vDSP_vsaddD`) exceeds the scalar `.reduce`/`.map` cost at
+  these sizes. The todo itself rated this "very low value."
+- **Breaks the byte-identical benchmark proof for zero benefit.** `reduce(0,+)` →
+  `vDSP_meanvD` changes summation order, so the mean (which feeds centering → slope →
+  `precisionCents`/`emittedFrequency`) shifts by ~1 ULP and the CI-gated accuracy.csv is
+  no longer byte-identical. (`vDSP_vsaddD` centering alone *would* be bit-identical since
+  `a + (-tMean) == a - tMean` in IEEE — but half-vectorizing a function for a consistency
+  nit is worse than leaving it.)
+- The `sxy`/`sxx`/SSE dot products are already vDSP (`c85720e`); the dominant arithmetic
+  is done. The residual is a consistency nit, not correctness or perf.
+
+Disposition agreed: not worth the risk/churn. Archived for the record.
 
 **Severity:** Low
 **Audit:** 2026-06-15-full · **Re-scoped:** 2026-06-18 backlog sweep

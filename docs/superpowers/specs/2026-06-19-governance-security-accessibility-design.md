@@ -48,7 +48,7 @@ Consolidates today's scattered security rules and codifies the audit's Tier-B "c
 
 - **Audio privacy is architectural** — `TunerEngine` has no networking; audio is never recorded, stored, or transmitted. Canonical home; `capture.md` / `swiftui.md` link here.
 - **All backend networking lives in `LumaAPI` only.** HTTPS-only; **no ATS exceptions** (`NSAllowsArbitraryLoads`).
-- **URL construction** via `LumaAPI.buildURL` / `appending(path:)`, never `appending(component:)`. → links `url-appending-component-encodes-slashes`.
+- **API route construction** via `LumaAPI.buildURL` / `appending(path:)`, never `appending(component:)` — it percent-encodes slashes, breaking multi-segment routes. Scope: **route strings only**. `appending(component:)` is *correct* for a single-segment **filesystem** name (e.g. `TuningCardStore` / `GearStoreModel` building their `…json` cache filenames) — do not ban it there. → links `url-appending-component-encodes-slashes`.
 - **Tokens/secrets in Keychain**, never `UserDefaults` / JSON cache; `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` (preserves background refresh, blocks backup-restore migration).
 - **Account data** — only email, opt-in, declared in `PrivacyInfo.xcprivacy`. **Account deletion must purge Keychain tokens + cached account JSON.** Scope privacy claims to "audio never leaves the device / no account required to tune."
 - **Logging** — `os.Logger` with `.private` qualifiers in `App/`; never `print` PII / secrets / raw error objects on network or auth paths.
@@ -130,9 +130,9 @@ Extract the deterministic checks (pattern + message + severity) into `scripts/li
 
 | Rule | Code today | Now | After #2 |
 |------|-----------|-----|----------|
-| `NSAllowsArbitraryLoads` / ATS exception | clean ✓ | **HARD + CI** | — |
-| `appending(component:` in `App/` | clean ✓ | **HARD + CI** | — |
-| networking (`URLSession`/`import Network`) outside `LumaAPI` allow-list | clean ✓ | **HARD + CI** | — |
+| `NSAllowsArbitraryLoads` / ATS exception (any plist) | clean ✓ (verified) | **HARD + CI** | — |
+| `appending(component:` **scoped to `App/Networking/` + `*LumaAPI*`** (route strings) | clean ✓ (verified — the two cache stores use it legitimately for filenames and are *out of scope*) | **HARD + CI** | — |
+| networking (`URLSession`/`URLRequest`/`import Network`) outside the `networking_allowed()` allow-list | clean ✓ (verified — only `LumaAPI` + allow-listed sites) | **HARD + CI** | — |
 | `print(` in `App/` production | **violates** (current convention) | REVIEW (local only) | **promote → HARD + CI** |
 | Keychain without `…ThisDeviceOnly` | **violates** | REVIEW (local only) | **promote → HARD + CI** |
 | `assertionFailure`/`fatalError` on recoverable path | mostly clean | REVIEW only (heuristic) | stays REVIEW |
@@ -152,6 +152,14 @@ Add to `.github/workflows/ci.yml` (fast, no Xcode, runs in parallel with `engine
       - name: Security invariants
         run: ./scripts/ci-invariants.sh   # exit non-zero on any HARD violation
 ```
+
+### 5.4 Grep-pattern cautions (avoid self-inflicted false positives)
+
+The patterns in `invariant-patterns.sh` must be written carefully — a naive grep breaks the rule it's meant to enforce:
+
+- **Keychain — substring trap.** `kSecAttrAccessibleAfterFirstUnlock` is a **prefix** of the *correct* `…AfterFirstUnlockThisDeviceOnly`, so a bare match for the bad form also matches the good form. After sub-project #2 switches to `…ThisDeviceOnly`, a naive check would keep firing on now-correct code — and the "promote → HARD+CI" step would then **block the build on correct code**. Match "`AfterFirstUnlock` **not** followed by `ThisDeviceOnly`" (e.g. `AfterFirstUnlock([^T]|$)`, or a two-step grep: line contains `AfterFirstUnlock` AND not `ThisDeviceOnly`). Also intentionally allow `…WhenUnlockedThisDeviceOnly` and other `…ThisDeviceOnly` classes.
+- **`print(` — anchor it.** `grep 'print('` also hits `debugPrint(`, `sprint(`, `fingerprint(`. Anchor with `\bprint(`. Decision: **also flag `\bdebugPrint(`** (it emits the same uncontrolled output) — so the pattern is `\b(print|debugPrint)\(`. REVIEW-only, so residual noise is tolerable, but anchoring keeps it honest.
+- **`appending(component:` — scope, don't broaden.** Enforce only within `App/Networking/` + `*LumaAPI*` (§5.2). The repo grep in `ci-invariants.sh` must restrict its path glob accordingly so the two cache stores never trip it.
 
 ---
 

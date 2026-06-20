@@ -74,18 +74,24 @@ A rigid translating grating has **constant total luminance** — so the
 ≳25% of the central 10° field undergoes a synchronized ≥10% reversal.
 
 At a typical phone viewing distance the screen subtends ~35°, so the 13 Aurora
-ribbons have an angular period ≈ 35°/13 ≈ **2.7°**. The WCAG threshold area
-(0.006 sr ≈ a ~5° patch, ~25% of the 10° central field) spans ≈ 5°/2.7° ≈ **1.85
-ribbon periods**. Spatial averaging over ~1.85 periods attenuates but does **not**
-cancel the modulation: the patch holds ~1.85 ribbons of brightness (DC) with a
-±~0.4-ribbon swing as bands enter/leave → **~15–20% residual modulation depth**,
-oscillating at the ribbon-passing rate 13×beat. Radial concentrates 36 marks and
-a swept brightness envelope (`StrobeMath.markEnvelope`) toward the ring top,
-giving an even larger localized synchronized area.
+ribbons have an angular period ≈ 35°/13 ≈ **2.7°**, and the WCAG threshold area
+(0.006 sr ≈ a ~5° patch, ~25% of the 10° central field) spans ≈ 1.85 ribbon
+periods. The *residual* synchronized modulation depth over such a patch is
+**model-dependent** — a continuous sinc average gives ~8% (which would argue
+below-threshold), while discrete band-counting (~1.5↔2.2 bands in the patch)
+gives 30–50%. That spread is exactly the point: **the area exemption is not a
+default; it must be affirmatively demonstrated.** The traveling-wave structure
+reduces flash *synchrony* (the whole-screen integral is near-constant), but it
+does **not** reduce flash *area* — bright, full-height bands sweep across far more
+than 25% of the central field, and a full-screen high-contrast translating
+grating cannot be shown to keep every ≥25% region below the 10%-of-max reversal
+bar across the operating range. Radial is worse: 36 marks with a brightness
+envelope (`StrobeMath.markEnvelope`) swept toward the ring top concentrate a
+larger synchronized area.
 
-So the spatial structure lowers the *concurrent* depth from the ~100% of a global
-on/off flash to ~15–20% — but against a near-black field that residual still
-clears the 10%-of-max bar (§4), at a rate far above 3/sec.
+Net: the spatial structure spares the *whole-screen integral* but cannot
+establish the area exemption for any large central region; the high-contrast
+reversals (§4) at N×beat (§2) remain.
 
 ## 4. Luminance delta
 
@@ -145,6 +151,11 @@ Metal shaders (preserve the triple-buffer contract and 120 fps) and must keep th
 on-pitch/lock path byte-identical (the clamp bites only at high beat rates).
 
 ---
+
+*Standard reference:* WCAG 2.2 SC 2.3.1 and the W3C definitions of *general
+flash*, *flash*, and the 0.006 sr / 25%-of-10°-central-field area threshold
+(<https://www.w3.org/TR/WCAG22/#three-flashes-or-below-threshold>,
+<https://www.w3.org/TR/WCAG22/#dfn-general-flashes-and-red-flashes>).
 
 *Method note:* relative luminance and the danger-band reasoning use the WCAG 2.x
 sRGB formula in `Packages/LumaDesignSystem/Tests/LumaDesignSystemTests/ContrastAuditTests.swift`.

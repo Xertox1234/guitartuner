@@ -78,6 +78,7 @@ public struct RadialStrobe: View {
         let lock = clock.lock
 
         let prox = StrobeMath.proximity(cents: err)
+        var safeBrightness = 1.0   // WCAG 2.3.1 photosensitivity guard (off-pitch field)
 
         // advance rotation: engine phase (true strobe) or cents-derived approximation
         if phaseScroll {
@@ -92,8 +93,13 @@ public struct RadialStrobe: View {
             } else if time - clock.phaseChangeTime > 0.25 {
                 clock.rotVel = 0            // stale (silence) → stop drifting
             }
-            // one beat cycle == one full revolution (2π)
-            if animated { clock.angle += clock.rotVel * 2 * .pi * dt * (1 - lock) }
+            // WCAG 2.3.1 (C-4b, Lever C): cap rotation speed (aesthetic) + danger-
+            // band dim. `effectiveRate` eases to 0 at lock → safeBrightness → 1, so
+            // the bloom is untouched. one beat cycle == one full revolution (2π).
+            // See StrobeMath + docs/solutions/accessibility/strobe-photosensitivity-2026-06-19.md.
+            let effectiveRate = StrobeMath.clampedStrobeRate(clock.rotVel) * (1 - lock)
+            safeBrightness = StrobeMath.photosensitivityBrightness(rateHz: effectiveRate, ribbonCount: marks)
+            if animated { clock.angle += effectiveRate * 2 * .pi * dt }
         } else if animated {
             clock.angle += StrobeMath.ringSpeed(cents: err, lock: lock) * dt
         }
@@ -118,7 +124,7 @@ public struct RadialStrobe: View {
         for i in 0..<marks {
             let a = (Double(i) / Double(marks)) * 2 * .pi + clock.angle
             let env = StrobeMath.markEnvelope(angle: a)
-            let alpha = (0.12 + 0.6 * env) * breath * (1 - lock * 0.35) * (light ? 0.6 : 1)
+            let alpha = (0.12 + 0.6 * env) * breath * (1 - lock * 0.35) * (light ? 0.6 : 1) * safeBrightness
             if alpha < 0.01 { continue }
             let ca = cos(a), sa = sin(a)
             let p0 = CGPoint(x: cx + ca * r0, y: cy + sa * r0)

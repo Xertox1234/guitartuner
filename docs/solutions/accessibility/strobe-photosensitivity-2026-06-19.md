@@ -152,6 +152,40 @@ on-pitch/lock path byte-identical (the clamp bites only at high beat rates).
 
 ---
 
+## 7. Mitigation applied (C-4b, 2026-06-20) — Lever C (blend)
+
+Implemented per the product owner's choice (rate ceiling + danger-band dim),
+**entirely CPU-side** — the embedded MSL is unchanged (both Metal shaders already
+multiply the whole luminous accumulation by `U.dim`, so the guard folds into that
+uniform; the triple-buffer path and 120 fps are untouched).
+
+Pure helpers in `StrobeMath` (unit-tested by the *compliance invariant*, not clamp
+mechanics, in `PhotosensitivityClampTests`):
+- `clampedStrobeRate(_:)` — caps |translation/rotation rate| to `maxStrobeRateHz`
+  (4.0 cycles/sec; **aesthetic** ceiling on visible drift speed, engineering
+  judgement — not the safety mechanism).
+- `photosensitivityBrightness(rateHz:ribbonCount:)` — the **safety** mechanism:
+  full vividness while region flicker (`N × rate`) ≤ 2 Hz, ramping to
+  `shimmerFloor = flashLuminanceFraction / peakLuminanceSwing = 0.10 / 0.40 = 0.25`
+  by the 3 Hz limit. So at all times either flicker ≤ 3/sec OR swing ≤ 10% of max
+  — compliant **by construction** given the §4 luminance model. `0.25` is a
+  *visible low-contrast shimmer*, not darkness; direction + motion stay readable.
+
+Applied in all four full-screen renderers — `AuroraStrobe`, `RadialStrobe`
+(Canvas: multiply ribbon/mark + central-column alpha), `MetalStrobe`,
+`RadialMetalStrobe` (fold into `dim`). The guard is driven by the **lock-eased**
+effective rate, so it vanishes at lock (`→ 1`) and the in-tune bloom is
+byte-identical (honors `strobe.md` lock trip-wire). The menu-bar strobe is
+*area-exempt* (well below the 25%-of-central-field threshold) and is not modified.
+
+**Verification scope (honest):** the unit test proves the safety *logic* given the
+§4 luminance model (peak swing ≈ 0.40); it is **not** an on-device flash
+measurement, and the rate ceiling is a feel choice. The off-pitch (non-phase /
+simulator) preview path is out of scope (the live tuner always uses
+`phaseScroll: true`).
+
+---
+
 *Standard reference:* WCAG 2.2 SC 2.3.1 and the W3C definitions of *general
 flash*, *flash*, and the 0.006 sr / 25%-of-10°-central-field area threshold
 (<https://www.w3.org/TR/WCAG22/#three-flashes-or-below-threshold>,

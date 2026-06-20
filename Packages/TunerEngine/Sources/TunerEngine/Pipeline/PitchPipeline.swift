@@ -339,3 +339,35 @@ public final class PitchPipeline {
         return current
     }
 }
+
+// MARK: - Test introspection (internal)
+//
+// The reset-relevant detection state is `private`, so `@testable import` cannot
+// reach it. This read-only snapshot surfaces just enough for `PipelineTests` to
+// verify that `setPolicy(_:)` / `reset()` actually clear each field — proving the
+// *reset*, not mere policy propagation (docs/todos/P2-setpolicy-state-reset-test.md).
+// `internal` → no change to the public API the app consumes; nothing here mutates.
+extension PitchPipeline {
+    struct StateProbe: Equatable {
+        var trackedFrequency: Double?
+        var currentBand: BandSpec
+        var unvoicedStreak: Int
+        var hasPrevFrame: Bool
+        var gateIsCold: Bool
+        var smootherIsCold: Bool
+        var integratorIsCold: Bool
+    }
+
+    /// A snapshot of the reset-relevant detection state, for regression tests.
+    var stateProbe: StateProbe {
+        StateProbe(
+            trackedFrequency: trackedFrequency,
+            currentBand: currentBand,
+            unvoicedStreak: unvoicedStreak,
+            hasPrevFrame: prevFrame != nil,
+            gateIsCold: gate.isCold,
+            smootherIsCold: smoother.isCold,
+            integratorIsCold: phaseIntegrator.isCold
+        )
+    }
+}

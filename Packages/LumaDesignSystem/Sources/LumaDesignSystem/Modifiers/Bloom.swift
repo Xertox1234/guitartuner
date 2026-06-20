@@ -49,32 +49,57 @@ public extension View {
 struct BloomModifier: ViewModifier {
     let level: BloomLevel
     @Environment(\.lumaGlow) private var glow
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    private func a(_ base: Double) -> Double {
+        Translucency.attenuated(base, reduceTransparency: reduceTransparency)
+    }
 
     @ViewBuilder
     func body(content: Content) -> some View {
         switch level {
         case .l1:
             content
-                .shadow(color: glow.opacity(0.55), radius: 2)
+                .shadow(color: glow.opacity(a(0.55)), radius: 2)
         case .l2:
             content
-                .shadow(color: glow.opacity(0.60), radius: 3)
-                .shadow(color: glow.opacity(0.30), radius: 8)
+                .shadow(color: glow.opacity(a(0.60)), radius: 3)
+                .shadow(color: glow.opacity(a(0.30)), radius: 8)
         case .l3:
             content
-                .shadow(color: glow.opacity(0.70), radius: 4)
-                .shadow(color: glow.opacity(0.40), radius: 12)
-                .shadow(color: glow.opacity(0.22), radius: 28)
+                .shadow(color: glow.opacity(a(0.70)), radius: 4)
+                .shadow(color: glow.opacity(a(0.40)), radius: 12)
+                .shadow(color: glow.opacity(a(0.22)), radius: 28)
         case .text:
             content
-                .shadow(color: glow.opacity(0.45), radius: 6)
-                .shadow(color: glow.opacity(0.25), radius: 20)
+                .shadow(color: glow.opacity(a(0.45)), radius: 6)
+                .shadow(color: glow.opacity(a(0.25)), radius: 20)
         }
     }
 }
 
 #if DEBUG
 #Preview("Bloom levels — dark") {
+    HStack(spacing: 30) {
+        ForEach([BloomLevel.l1, .l2, .l3], id: \.self) { level in
+            RoundedRectangle(cornerRadius: Radius.r3)
+                .fill(Color.lumaInTune)
+                .frame(width: 60, height: 60)
+                .bloom(level)
+        }
+    }
+    .lumaGlow(.lumaInTune)
+    .padding(60)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.lumaBg)
+    .preferredColorScheme(.dark)
+}
+
+// NOTE: accessibilityReduceTransparency is get-only in this SDK and cannot be
+// forced via .environment(_:_:) in a code Preview. The trait routing is verified
+// by TranslucencyTests. To see zero-bloom visually, use Accessibility Inspector
+// or the Simulator's Reduce Transparency setting.
+#Preview("Bloom levels — reduce transparency (see note above)") {
     HStack(spacing: 30) {
         ForEach([BloomLevel.l1, .l2, .l3], id: \.self) { level in
             RoundedRectangle(cornerRadius: Radius.r3)

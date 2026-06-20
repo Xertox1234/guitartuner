@@ -48,11 +48,13 @@ flat 3.74:1, sharp 2.66:1, inTune 2.76:1. Additionally, sharp and inTune fall be
 graphic threshold (3.0:1) at 2.66 and 2.76 respectively. Flat passes the graphic
 threshold at 3.74:1.
 
-**No token was changed.** Correcting light-mode failures would require adjusting the
-brand color palette, not just lightness (the hue-preservation constraint in
-`docs/rules/accessibility.md` does not apply here — a lightness-only shift would require
-moving e.g. #07A07C to a near-black green that no longer reads as "teal/mint", which is
-the brand identity). This is a brand-palette decision surfaced to the user.
+**No token was changed.** A lightness-only fix (darkening the light-mode tokens) is
+mathematically possible and hue-preserving, but it substantially mutes the vibrancy of
+the signature brand colors — sharp orange (#D9760F → deep brown) and inTune teal
+(#07A07C → dark teal) would shift away from their intended character. This is a
+brand-palette decision: dark mode meets AA throughout; light-mode aurora state colors fall
+below AA (text threshold for all three, graphic threshold for sharp and inTune). Surfaced
+to the user; no token changed pending that decision.
 
 ### Failing ratios (prominently reported for brand decision)
 

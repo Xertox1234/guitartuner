@@ -67,7 +67,7 @@ hollow asserts to satisfy a TDD template.
 | Finding | Real verification |
 |---------|-------------------|
 | **C-1** | Extract the attenuation into a **pure helper** → unit-assert `attenuated < base`; plus `#Preview`s (dark + light) with `accessibilityReduceTransparency` forced on |
-| **C-2** | Unit-assert the **scaled-size computation** grows across content-size categories (the one finding with a natural assertion); plus previews at the largest accessibility size |
+| **C-2** | **Previews** at the largest accessibility size (dark + light) + code review that the scaling APIs are wired (chrome opts in, instrument opts out) + the doc-comment fix. **No headless unit assertion is achievable**: a SwiftUI `Font` is opaque (no public API resolves it to a point size), `@ScaledMetric` only scales inside a view's environment, and `UIFontMetrics.scaledValue(for:)` is **iOS-only** while the DS package's `swift test` builds for **macOS** — so previews + review are the honest verification here, not a hollow assert |
 | **C-3** | **Documented** contrast ratios (a measurement, not an assertion) + `differentiateWithoutColor` preview + a genuine **StringRow VoiceOver-label** assertion |
 | **C-4** | An **analysis writeup**; *if* the mitigation branch fires → a unit-assert on the `StrobeMath` rate/luminance clamp |
 
@@ -125,6 +125,14 @@ Chrome consumers to migrate (verified call sites): `App/SettingsView.swift`,
 consumers (`NoteReadout`, `CentsReadout`, `StateLine`, `StringRow`, `StageView`,
 the `LiveTunerScreen` dock readouts) are the deliberate opt-out.
 
+**Verification reality:** C-2 has no headless unit test (see the verification
+table — `Font` is opaque, `UIFontMetrics` is iOS-only, the host test target is
+macOS). Verification is previews at the largest accessibility size + code review
+that the builders use the scaling APIs and the opt-out is explicit. The
+cross-platform-correct mechanism choice (custom vs. system path, `relativeTo:`
+vs. `@ScaledMetric`) is the subtlest single decision in the sub-project — this
+task gets the **most-capable model**, not the standard tier.
+
 ### C-3 — Contrast audit + color independence
 
 Mostly *verify + document + a small residual* (the shape B-4 had in #2).
@@ -135,10 +143,15 @@ asset-catalog state colors —
 — against the **actual app background tokens** the state text/UI is shown over in
 each appearance (the implementer resolves the exact bg token per surface — the
 strobe's near-black `≈ #0A0B10` is a *separate* palette, see below) for WCAG AA
-(4.5:1 text). Adjust any token that fails; document the ratios for **both**
-appearances. The strobe's **separate** literal-RGB palette
-(`Strobe/StrobePalette.swift`) is audited at 3:1 graphics and documented, but
-**retuning it is deferred** unless a value egregiously fails (core visual).
+(4.5:1 text). Document the ratios for **both** appearances.
+
+**Adjusting a failing token is a design decision — treat both color sources the
+same way.** If an asset-catalog state color fails, the implementer applies only a
+**hue-preserving lightness change** (minimal, documented); any adjustment that
+would shift the brand hue is **surfaced to the user**, not made silently. The
+strobe's **separate** literal-RGB palette (`Strobe/StrobePalette.swift`) is
+audited identically at 3:1 graphics and documented under the same rule — audit +
+document, no silent retune of the core visual.
 
 **Part 2 — color independence.** `accessibilityDifferentiateWithoutColor` is read
 nowhere. The primary flow already honors "never color alone" (StateLine text tag,
@@ -176,6 +189,14 @@ save it, but with ~13 ribbons that is not self-evidently safe.
    touches `Strobe/StrobeMath.swift` and the four renderers — including the
    **Metal shaders** (`MetalStrobe.swift`, `RadialMetalStrobe.swift`).
 
+**Decompose into two plan tasks** (the analysis result gates whether code is
+written — this does not fit one TDD task):
+- **4a — analysis.** Produce the determination writeup (the measurement above).
+  The controller reads it and decides whether 4b is dispatched. If "below
+  threshold," 4a also lands the one-line `strobe.md` note and C-4 ends here.
+- **4b — conditional mitigation.** Dispatched **only if** 4a finds a hazard.
+  Implements the rate/luminance clamp.
+
 **Risk controls (CLAUDE.md):** the mitigation branch is Metal-shader / strobe
 work — **most-capable model**, **strobe-specialist review**, never delegated to a
 cheap worker. Sequenced **last** so its uncertainty does not block C-1/C-2/C-3.
@@ -197,10 +218,12 @@ Recorded here so the absence is a decision, not an oversight.
 - **Branch first** — done: `accessibility-code-conformance` off `main` (`a2d682a`).
 - Task order **C-1 → C-2 → C-3 → C-4 → wrap-up**: deterministic wins first,
   C-4's analysis uncertainty last.
-- Execution via subagent-driven-development (same as #2). Model selection:
-  C-1/C-2/C-3 standard tier; **C-4 most-capable** (analysis + possible Metal
-  mitigation) with strobe-specialist review; final whole-branch review
-  most-capable.
+- Execution via subagent-driven-development (same as #2). Task order
+  **C-1 → C-2 → C-3 → C-4a → (C-4b if needed) → wrap-up**. Model selection:
+  C-1/C-3 standard tier; **C-2 most-capable** (the cross-platform font-scaling
+  mechanism is the subtlest single decision); **C-4 most-capable** (analysis +
+  possible Metal mitigation) with strobe-specialist review; final whole-branch
+  review most-capable.
 - On completion, `git mv` the four todos
   (`P2-reduce-transparency`, `P2-dynamic-type-chrome`,
   `P2-contrast-color-independence`, `P3-strobe-photosensitivity-check`) into

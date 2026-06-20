@@ -206,6 +206,7 @@ final class RadialStrobeRenderer: NSObject, MTKViewDelegate {
         lockEase += (target - lockEase) * min(1.0, dt * 6 + (animated ? 0.0 : 1.0))
         let lock = lockEase
         let prox = StrobeMath.proximity(cents: err)
+        var photosensitivityDim = 1.0   // WCAG 2.3.1 guard (folded into U.dim below)
 
         if phaseScroll {
             let phase = Double(input.phase)
@@ -219,7 +220,12 @@ final class RadialStrobeRenderer: NSObject, MTKViewDelegate {
             } else if now - phaseChangeTime > 0.25 {
                 rotVel = 0
             }
-            if animated { angle += rotVel * 2 * .pi * dt * (1 - lock) }
+            // WCAG 2.3.1 (C-4b, Lever C): cap rotation speed (aesthetic) + danger-
+            // band dim. `effectiveRate` eases to 0 at lock → photosensitivityDim → 1,
+            // so the bloom (also × U.dim in the shader) stays byte-identical.
+            let effectiveRate = StrobeMath.clampedStrobeRate(rotVel) * (1 - lock)
+            photosensitivityDim = StrobeMath.photosensitivityBrightness(rateHz: effectiveRate, ribbonCount: 36)
+            if animated { angle += effectiveRate * 2 * .pi * dt }
         } else if animated {
             angle += StrobeMath.ringSpeed(cents: err, lock: lock) * dt
         }
@@ -229,7 +235,7 @@ final class RadialStrobeRenderer: NSObject, MTKViewDelegate {
 
         let breath = input.isIdle ? 0.55 + 0.45 * sin(now * 1.4) : 1.0
         // Match Canvas RadialStrobe: marks multiplied by (light ? 0.6 : 1).
-        let dim = scheme == .light ? 0.6 : 1.0
+        let dim = (scheme == .light ? 0.6 : 1.0) * photosensitivityDim
 
         // Geometry in drawable-pixel space (matches Canvas coordinate system).
         let w = Float(size.width)

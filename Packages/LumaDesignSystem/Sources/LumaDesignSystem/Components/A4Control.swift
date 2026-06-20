@@ -20,7 +20,7 @@ public struct A4Control: View {
                 .frame(minWidth: 58)
             step("+", "Raise A4") { a4 = min(Self.range.upperBound, a4 + 1) }
         }
-        .font(LumaFont.mono(11))
+        .font(LumaFont.mono(11, relativeTo: .caption2))
         .lumaTracking(0.08, size: 11)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("A4 reference")

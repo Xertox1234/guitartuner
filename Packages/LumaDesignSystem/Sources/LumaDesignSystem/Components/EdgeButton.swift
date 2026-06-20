@@ -14,7 +14,7 @@ public struct EdgeButtonStyle: ButtonStyle {
 
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(LumaFont.mono(10.5))
+            .font(LumaFont.mono(10.5, relativeTo: .caption2))
             .lumaTracking(Tracking.chip, size: 10.5)
             .textCase(.uppercase)
             .foregroundStyle(active ? activeColor : Color.lumaDim)

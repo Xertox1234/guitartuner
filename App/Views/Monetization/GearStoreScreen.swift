@@ -64,7 +64,7 @@ struct GearStoreScreen: View {
             gearStore.selectedCategory = category
         } label: {
             Text(label)
-                .font(LumaFont.ui(LumaFont.Size.cap, weight: .bold))
+                .lumaUIFont(LumaFont.Size.cap, weight: .bold)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
@@ -87,7 +87,7 @@ struct GearStoreScreen: View {
 
     private var affiliateDisclosure: some View {
         Text("Affiliate disclosure: LUMA earns a small commission on Sweetwater purchases at no extra cost to you.")
-            .font(LumaFont.ui(LumaFont.Size.micro))
+            .lumaUIFont(LumaFont.Size.micro)
             .foregroundStyle(.tertiary)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
@@ -112,25 +112,25 @@ struct FeaturedBanner: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.lumaInTune.opacity(0.15))
                     .frame(width: 56, height: 56)
-                    .overlay(Image(systemName: "guitars").font(LumaFont.ui(22)).foregroundStyle(Color.lumaInTune))
+                    .overlay(Image(systemName: "guitars").font(.system(size: 22)).foregroundStyle(Color.lumaInTune))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("FEATURED")
-                        .font(LumaFont.ui(LumaFont.Size.micro, weight: .bold))
+                        .lumaUIFont(LumaFont.Size.micro, weight: .bold)
                         .foregroundStyle(Color.lumaInTune)
                         .kerning(1)
                     Text(product.name)
-                        .font(LumaFont.display(LumaFont.Size.body, weight: .semibold))
+                        .font(LumaFont.display(LumaFont.Size.body, weight: .semibold, relativeTo: .body))
                         .foregroundStyle(.primary)
                     if !product.priceHint.isEmpty {
                         Text(product.priceHint)
-                            .font(LumaFont.mono(LumaFont.Size.cap))
+                            .font(LumaFont.mono(LumaFont.Size.cap, relativeTo: .caption))
                             .foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
                 Text("View →")
-                    .font(LumaFont.ui(LumaFont.Size.cap, weight: .bold))
+                    .lumaUIFont(LumaFont.Size.cap, weight: .bold)
                     .foregroundStyle(Color.lumaInTune)
             }
             .padding(14)
@@ -151,22 +151,22 @@ struct ProductCard: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.secondary.opacity(0.08))
                     .frame(height: 60)
-                    .overlay(Image(systemName: icon(for: product.category)).font(LumaFont.ui(22)).foregroundStyle(.secondary))
+                    .overlay(Image(systemName: icon(for: product.category)).font(.system(size: 22)).foregroundStyle(.secondary))
 
                 Text(product.name)
-                    .font(LumaFont.ui(LumaFont.Size.cap, weight: .bold))
+                    .lumaUIFont(LumaFont.Size.cap, weight: .bold)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 if !product.priceHint.isEmpty {
                     Text(product.priceHint)
-                        .font(LumaFont.mono(LumaFont.Size.micro))
+                        .font(LumaFont.mono(LumaFont.Size.micro, relativeTo: .caption2))
                         .foregroundStyle(Color.lumaInTune)
                 }
 
                 Text("Shop →")
-                    .font(LumaFont.ui(LumaFont.Size.micro, weight: .bold))
+                    .lumaUIFont(LumaFont.Size.micro, weight: .bold)
                     .foregroundStyle(Color.lumaInTune)
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(Color.lumaInTune.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))

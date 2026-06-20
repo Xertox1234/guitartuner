@@ -321,4 +321,10 @@ private struct FlowControls<Content: View>: View {
 #Preview("Gallery — light") {
     DesignSystemGallery().preferredColorScheme(.light)
 }
+
+#Preview("Gallery — accessibility XXXL") {
+    DesignSystemGallery()
+        .environment(\.dynamicTypeSize, .accessibility5)
+        .preferredColorScheme(.dark)
+}
 #endif

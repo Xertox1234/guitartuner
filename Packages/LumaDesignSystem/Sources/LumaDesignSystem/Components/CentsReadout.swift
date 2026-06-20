@@ -36,7 +36,7 @@ public struct CentsReadout: View {
             Text("\(sign)\(magnitude)")
                 .font(.lumaCents)
             Text("\u{00A2}")
-                .font(LumaFont.mono(16))
+                .font(LumaFont.mono(16, relativeTo: .caption2))
                 .foregroundStyle(Color.lumaDim)
         }
         .foregroundStyle(state == .tune ? glow : state.accent)

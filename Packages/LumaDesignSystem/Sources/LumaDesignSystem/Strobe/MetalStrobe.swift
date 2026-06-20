@@ -209,6 +209,7 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
         lockEase += (target - lockEase) * min(1.0, dt * 6 + (animated ? 0.0 : 1.0))
         let lock = lockEase
         let prox = StrobeMath.proximity(cents: err)
+        var photosensitivityDim = 1.0   // WCAG 2.3.1 guard (folded into U.dim below)
 
         if phaseScroll {
             // Engine-driven true strobe: estimate scroll velocity from the live phase
@@ -224,13 +225,18 @@ final class StrobeRenderer: NSObject, MTKViewDelegate {
             } else if now - phaseChangeTime > 0.25 {
                 scrollVel = 0                                   // stale (silence)
             }
-            if animated { scroll += scrollVel * dt * (1 - lock) }
+            // WCAG 2.3.1 (C-4b, Lever C): cap drift speed (aesthetic) + danger-band
+            // dim. `effectiveRate` eases to 0 at lock → photosensitivityDim → 1, so
+            // the lock bloom (also × U.dim in the shader) stays byte-identical.
+            let effectiveRate = StrobeMath.clampedStrobeRate(scrollVel) * (1 - lock)
+            photosensitivityDim = StrobeMath.photosensitivityBrightness(rateHz: effectiveRate, ribbonCount: 13)
+            if animated { scroll += effectiveRate * dt }
         } else if animated {
             scroll += StrobeMath.scrollSpeed(cents: err, lock: lock) * dt
         }
 
         let breath = input.isIdle ? 0.6 + 0.4 * sin(now * 1.4) : 1.0
-        let dim = scheme == .light ? 0.5 : 1.0
+        let dim = (scheme == .light ? 0.5 : 1.0) * photosensitivityDim
         let main = StrobeShaderColors.main(cents: err, prox: prox, lock: lock, pal: pal)
         let column = StrobeShaderColors.column(main: main, lock: lock, pal: pal)
 

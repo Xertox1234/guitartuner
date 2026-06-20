@@ -74,6 +74,7 @@ public struct AuroraStrobe: View {
         let lock = clock.lock
 
         let prox = StrobeMath.proximity(cents: err)
+        var safeBrightness = 1.0   // WCAG 2.3.1 photosensitivity guard (off-pitch field)
         if phaseScroll {
             // Engine-driven: estimate scroll velocity from the live phase advance
             // (Δphase over the time between readings), eased to zero at lock.
@@ -88,7 +89,13 @@ public struct AuroraStrobe: View {
             } else if time - clock.phaseChangeTime > 0.25 {
                 clock.scrollVel = 0          // stale (silence) → stop drifting
             }
-            if animated { clock.scroll += clock.scrollVel * dt * (1 - lock) }
+            // WCAG 2.3.1 (C-4b, Lever C): cap the visible drift speed (aesthetic)
+            // and dim the field in the danger band. `effectiveRate` eases to 0 at
+            // lock, so `safeBrightness → 1` and the lock bloom is untouched.
+            // See StrobeMath + docs/solutions/accessibility/strobe-photosensitivity-2026-06-19.md.
+            let effectiveRate = StrobeMath.clampedStrobeRate(clock.scrollVel) * (1 - lock)
+            safeBrightness = StrobeMath.photosensitivityBrightness(rateHz: effectiveRate, ribbonCount: ribbonCount)
+            if animated { clock.scroll += effectiveRate * dt }
         } else if animated {
             clock.scroll += StrobeMath.scrollSpeed(cents: err, lock: lock) * dt
         }
@@ -110,7 +117,7 @@ public struct AuroraStrobe: View {
             pos -= floor(pos)
             let x = pos * w
             let env = exp(-pow((x - cx) / (w * 0.34), 2))
-            let a = (0.10 + 0.5 * env) * breath * (1 - lock * 0.55) * (light ? 0.5 : 1)
+            let a = (0.10 + 0.5 * env) * breath * (1 - lock * 0.55) * (light ? 0.5 : 1) * safeBrightness
             if a < 0.01 { continue }
             let bw = ribW * (0.7 + env * 1.1)
             fillBand(&ctx, centerX: x, halfWidth: bw, height: h, color: col, alpha: a)
@@ -118,7 +125,7 @@ public struct AuroraStrobe: View {
 
         // central column — grows as we converge / lock
         let colCol = mix(col, pal.tune, lock)
-        let colA = (0.18 + 0.55 * max(prox, lock)) * breath * (light ? 0.5 : 1)
+        let colA = (0.18 + 0.55 * max(prox, lock)) * breath * (light ? 0.5 : 1) * safeBrightness
         let colW = w * (0.018 + 0.05 * max(prox, lock))
         fillBand(&ctx, centerX: cx, halfWidth: colW * 3, height: h, color: colCol, alpha: colA)
 

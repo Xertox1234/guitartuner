@@ -184,7 +184,7 @@ struct LiveTunerScreen: View {
             }
 
             Text(model.status)
-                .font(LumaFont.mono(10))
+                .font(LumaFont.mono(10, relativeTo: .caption2))
                 .foregroundStyle(Color.lumaDim)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -194,7 +194,7 @@ struct LiveTunerScreen: View {
             // system's privacy pane so re-granting is one tap away.
             if model.permissionDenied, let url = microphoneSettingsURL {
                 Button("Open Settings") { openURL(url) }
-                    .font(LumaFont.mono(11))
+                    .font(LumaFont.mono(11, relativeTo: .caption2))
                     .buttonStyle(.bordered)
                     .tint(.lumaInTune)
             }

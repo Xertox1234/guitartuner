@@ -16,6 +16,11 @@ struct AccountSheet: View {
     @State private var marketingOptIn = false
     @State private var errorMessage: String?
 
+    // Dynamic-Type-scaled sizes for inline `Text + Text` runs, where `.lumaUIFont`
+    // (which returns `some View`) cannot be used because `+` requires `Text`.
+    @ScaledMetric(relativeTo: .body) private var bodySize: CGFloat = LumaFont.Size.body
+    @ScaledMetric(relativeTo: .caption2) private var microSize: CGFloat = LumaFont.Size.micro
+
     var body: some View {
         NavigationStack {
             Group {
@@ -46,7 +51,7 @@ struct AccountSheet: View {
                 Section {
                     Text(err)
                         .foregroundStyle(.red)
-                        .font(LumaFont.ui(LumaFont.Size.body))
+                        .lumaUIFont(LumaFont.Size.body)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -101,16 +106,16 @@ struct AccountSheet: View {
                     isRegistering.toggle()
                     errorMessage = nil
                 }
-                .font(LumaFont.ui(LumaFont.Size.label))
+                .lumaUIFont(LumaFont.Size.label)
                 .foregroundStyle(.secondary)
             }
 
             Section {
                 Text("All audio is analyzed on your device and never sent anywhere. ")
-                    .font(LumaFont.ui(LumaFont.Size.micro))
+                    .font(LumaFont.ui(microSize))
                     .foregroundStyle(.tertiary)
                 + Text("Privacy Policy")
-                    .font(LumaFont.ui(LumaFont.Size.micro))
+                    .font(LumaFont.ui(microSize))
                     .foregroundStyle(Color.lumaInTune)
             }
         }
@@ -123,11 +128,11 @@ struct AccountSheet: View {
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Check your inbox")
-                        .font(LumaFont.display(LumaFont.Size.lg, weight: .semibold))
+                        .font(LumaFont.display(LumaFont.Size.lg, weight: .semibold, relativeTo: .title3))
                     Text("We sent a verification link to ")
-                        .font(LumaFont.ui(LumaFont.Size.body)).foregroundStyle(.secondary)
+                        .font(LumaFont.ui(bodySize)).foregroundStyle(.secondary)
                     + Text(email)
-                        .font(LumaFont.ui(LumaFont.Size.body)).foregroundStyle(Color.lumaInTune)
+                        .font(LumaFont.ui(bodySize)).foregroundStyle(Color.lumaInTune)
                 }
                 .padding(.vertical, 4)
             }
@@ -136,9 +141,9 @@ struct AccountSheet: View {
                 Toggle(isOn: $marketingOptIn) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Get exclusive gear deals")
-                            .font(LumaFont.ui(LumaFont.Size.body))
+                            .lumaUIFont(LumaFont.Size.body)
                         Text("Occasional handpicked Sweetwater deals. No spam. Unsubscribe anytime.")
-                            .font(LumaFont.ui(LumaFont.Size.cap))
+                            .lumaUIFont(LumaFont.Size.cap)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -146,7 +151,7 @@ struct AccountSheet: View {
 
                 if marketingOptIn {
                     Text("We'll use **\(email)** for gear deal emails.")
-                        .font(LumaFont.ui(LumaFont.Size.cap))
+                        .lumaUIFont(LumaFont.Size.cap)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -163,14 +168,14 @@ struct AccountSheet: View {
 
             Section {
                 Button("I'll skip for now") { dismiss() }
-                    .font(LumaFont.ui(LumaFont.Size.label))
+                    .lumaUIFont(LumaFont.Size.label)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
 
                 Button("Resend verification email") {
                     Task { try? await accountModel.register(email: email, password: password) }
                 }
-                .font(LumaFont.ui(LumaFont.Size.cap))
+                .lumaUIFont(LumaFont.Size.cap)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
             }

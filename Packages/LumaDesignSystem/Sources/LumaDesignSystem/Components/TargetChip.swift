@@ -21,7 +21,7 @@ public struct TargetChip: View {
             ForEach(TargetMode.allCases) { option in
                 let selected = mode == option
                 Text(option.label)
-                    .font(LumaFont.mono(11))
+                    .font(LumaFont.mono(11, relativeTo: .caption2))
                     .lumaTracking(Tracking.chipWide, size: 11)
                     .textCase(.uppercase)
                     .foregroundStyle(selected ? Color.lumaBg : Color.lumaDim)

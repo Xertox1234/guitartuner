@@ -67,17 +67,17 @@ struct StringCell: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(string.note)
-                .font(LumaFont.display(21, weight: .semibold))
+                .font(LumaFont.display(21, weight: .semibold, relativeTo: .title3))
                 .foregroundStyle(locked ? tuneColor : Color.lumaInk)
             Text("\(string.octave)")
-                .font(LumaFont.mono(8.5))
+                .font(LumaFont.mono(8.5, relativeTo: .caption2))
                 .foregroundStyle(active || locked ? Color.lumaDim : Color.lumaFaint)
         }
         .frame(maxWidth: .infinity)
         .aspectRatio(1 / 1.18, contentMode: .fit)
         .overlay(alignment: .topLeading) {
             Text(String(format: "%02d", string.idx))
-                .font(LumaFont.mono(7.5))
+                .font(LumaFont.mono(7.5, relativeTo: .caption2))
                 .foregroundStyle(Color.lumaFaint)
                 .padding(.top, 4)
                 .padding(.leading, 6)

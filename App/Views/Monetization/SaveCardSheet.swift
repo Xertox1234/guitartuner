@@ -35,7 +35,7 @@ struct SaveCardSheet: View {
                 }
 
                 if let err = errorMessage {
-                    Section { Text(err).foregroundStyle(.red).font(LumaFont.ui(LumaFont.Size.cap)) }
+                    Section { Text(err).foregroundStyle(.red).lumaUIFont(LumaFont.Size.cap) }
                 }
 
                 Section {
@@ -84,7 +84,7 @@ struct SaveCardSheet: View {
                 Text(palette.label).foregroundStyle(palette.color)
             }
         }
-        .font(LumaFont.ui(LumaFont.Size.body))
+        .lumaUIFont(LumaFont.Size.body)
     }
 
     private func prefillName() {

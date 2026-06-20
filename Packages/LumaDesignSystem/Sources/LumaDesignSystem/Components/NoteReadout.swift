@@ -46,7 +46,7 @@ public struct NoteReadout: View {
                     .padding(.top, LumaFont.Size.note * 0.10)
             }
             Text("\(octave)")
-                .font(LumaFont.mono(16))
+                .font(LumaFont.mono(16, relativeTo: .caption2))
                 .lumaTracking(0.1, size: 16)
                 .foregroundStyle(Color.lumaDim)
                 .padding(.top, LumaFont.Size.note * 0.42)

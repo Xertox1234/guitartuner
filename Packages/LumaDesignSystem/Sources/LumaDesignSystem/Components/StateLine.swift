@@ -16,14 +16,14 @@ public struct StateLine: View {
         let tuneGlow = state == .tune ? glow : state.glow
         HStack(spacing: 9) {
             Text(state.tag)
-                .font(LumaFont.mono(10))
+                .font(LumaFont.mono(10, relativeTo: .caption2))
                 .lumaTracking(Tracking.tag, size: 10)
                 .textCase(.uppercase)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
                 .overlay(Capsule().stroke(tuneGlow, lineWidth: 1))
             Text(state.hint)
-                .font(.lumaStateHint)
+                .lumaUIFont(LumaFont.Size.body, weight: .medium)
                 .foregroundStyle(Color.lumaDim)
         }
         .foregroundStyle(tuneGlow)

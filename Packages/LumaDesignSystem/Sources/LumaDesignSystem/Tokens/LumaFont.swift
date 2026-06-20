@@ -37,23 +37,40 @@ public enum LumaFont {
 
     // MARK: Builders
 
-    /// Display face (Chakra Petch), falling back to SF Pro Display.
-    public static func display(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+    /// Display face (Chakra Petch), falling back to SF Pro Display. Pass
+    /// `relativeTo:` to scale with Dynamic Type; omit it for a fixed size
+    /// (the deliberate opt-out for the full-bleed instrument readout).
+    public static func display(_ size: CGFloat, weight: Font.Weight = .semibold,
+                               relativeTo textStyle: Font.TextStyle? = nil) -> Font {
         if isAvailable(displayFamily) {
-            return .custom(displayFamily, size: size).weight(weight)
+            if let textStyle {
+                return Font.custom(displayFamily, size: size, relativeTo: textStyle).weight(weight)
+            }
+            return Font.custom(displayFamily, size: size).weight(weight)
         }
         return .system(size: size, weight: weight, design: .default)
     }
 
     /// Mono face (JetBrains Mono) with tabular digits, falling back to SF Mono.
-    public static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        let base: Font = isAvailable(monoFamily)
-            ? .custom(monoFamily, size: size).weight(weight)
-            : .system(size: size, weight: weight, design: .monospaced)
+    /// Pass `relativeTo:` to scale with Dynamic Type; omit it for a fixed size.
+    public static func mono(_ size: CGFloat, weight: Font.Weight = .regular,
+                            relativeTo textStyle: Font.TextStyle? = nil) -> Font {
+        let base: Font
+        if isAvailable(monoFamily) {
+            if let textStyle {
+                base = Font.custom(monoFamily, size: size, relativeTo: textStyle).weight(weight)
+            } else {
+                base = Font.custom(monoFamily, size: size).weight(weight)
+            }
+        } else {
+            base = .system(size: size, weight: weight, design: .monospaced)
+        }
         return base.monospacedDigit()
     }
 
-    /// System UI face for body/labels (full Dynamic Type + localization).
+    /// System UI face at a *fixed* point size. For Dynamic-Type scaling, use the
+    /// `.lumaUIFont(_:)` view modifier instead — a system font cannot carry
+    /// `relativeTo:`, so scaling must happen at the view via `@ScaledMetric`.
     public static func ui(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
         .system(size: size, weight: weight, design: .default)
     }
@@ -72,16 +89,20 @@ public enum LumaFont {
 }
 
 public extension Font {
-    /// The hero note name — Chakra Petch 600 @ 168.
+    /// The hero note name — Chakra Petch 600 @ 168. Deliberately **fixed**: the
+    /// full-bleed instrument readout opts out of Dynamic Type (layout stability;
+    /// already display-huge). See docs/rules/accessibility.md (Dynamic Type).
     static var lumaNote: Font { LumaFont.display(LumaFont.Size.note) }
-    /// Card / section titles — Chakra Petch 600 @ 24.
-    static var lumaTitle: Font { LumaFont.display(LumaFont.Size.xl2) }
-    /// The wordmark / small display labels @ 13.
-    static var lumaWordmark: Font { LumaFont.display(LumaFont.Size.label) }
-    /// Big signed cents readout — JetBrains Mono 500 @ 30.
+    /// Card / section titles — Chakra Petch 600 @ 24 (scales).
+    static var lumaTitle: Font { LumaFont.display(LumaFont.Size.xl2, relativeTo: .title) }
+    /// The wordmark / small display labels @ 13 (scales).
+    static var lumaWordmark: Font { LumaFont.display(LumaFont.Size.label, relativeTo: .caption) }
+    /// Big signed cents readout — JetBrains Mono 500 @ 30. Deliberately **fixed**:
+    /// part of the full-bleed instrument readout (opts out, see `lumaNote`).
     static var lumaCents: Font { LumaFont.mono(30, weight: .medium) }
-    /// State-line hint — system 500 @ 15.
+    /// State-line hint — system 500 @ 15. NOTE: scaling for this size lives in
+    /// `.lumaUIFont`; `StateLine` applies it directly (this static is fixed).
     static var lumaStateHint: Font { LumaFont.ui(LumaFont.Size.body, weight: .medium) }
-    /// Freq line / chip mono @ 11.
-    static var lumaMicroMono: Font { LumaFont.mono(LumaFont.Size.micro) }
+    /// Freq line / chip mono @ 11 (scales).
+    static var lumaMicroMono: Font { LumaFont.mono(LumaFont.Size.micro, relativeTo: .caption2) }
 }

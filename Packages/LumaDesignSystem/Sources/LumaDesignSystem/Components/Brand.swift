@@ -13,7 +13,7 @@ public struct Brand: View {
         HStack(spacing: 10) {
             BrandDot()
             Text(label)
-                .font(LumaFont.display(LumaFont.Size.label, weight: .semibold))
+                .font(LumaFont.display(LumaFont.Size.label, weight: .semibold, relativeTo: .caption))
                 .lumaTracking(Tracking.tag, size: LumaFont.Size.label)
                 .foregroundStyle(Color.lumaInk)
         }

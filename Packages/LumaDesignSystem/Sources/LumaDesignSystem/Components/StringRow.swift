@@ -47,6 +47,7 @@ struct StringCell: View {
 
     @Environment(\.lumaPalette) private var palette
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var diffWithoutColor
 
     private var tuneColor: Color {
         Color(StrobePalette.resolve(scheme, palette: palette).tune, opacity: 1)
@@ -62,6 +63,15 @@ struct StringCell: View {
         if locked { return tuneColor.opacity(0.16) }
         if active { return Color.lumaSurface3.opacity(0.8) }
         return Color.lumaSurface.opacity(0.45)
+    }
+
+    /// VoiceOver label — announces identity AND lock state so the in-tune state
+    /// is never color-only. Pure for testability.
+    static func a11yLabel(idx: Int, note: String, octave: Int, active: Bool, locked: Bool) -> String {
+        var label = "String \(idx), \(note)\(octave)"
+        if locked { label += ", in tune" }
+        else if active { label += ", selected" }
+        return label
     }
 
     var body: some View {
@@ -90,7 +100,16 @@ struct StringCell: View {
         .shadow(color: locked ? tuneColor.opacity(0.30) : .clear, radius: 9)
         .scaleEffect(active || locked ? 1.0 : 0.95)
         .animation(.spring(response: 0.28, dampingFraction: 0.52), value: active || locked)
-        .accessibilityLabel("String \(string.idx), \(string.note)\(string.octave)")
+        .overlay(alignment: .bottomTrailing) {
+            if locked && diffWithoutColor {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(tuneColor)
+                    .padding(.bottom, 4)
+                    .padding(.trailing, 6)
+            }
+        }
+        .accessibilityLabel(StringCell.a11yLabel(idx: string.idx, note: string.note, octave: string.octave, active: active, locked: locked))
         .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
     }
 }
@@ -112,4 +131,14 @@ private struct StringRowDemo: View {
 
 #Preview("String row — dark") { StringRowDemo().preferredColorScheme(.dark) }
 #Preview("String row — light") { StringRowDemo().preferredColorScheme(.light) }
+
+#Preview("String row — differentiate without color") {
+    // NOTE: force this trait via Accessibility Inspector — the env key is get-only
+    // and can't be set in a preview.
+    StringRow(tuning: Tunings.guitar, activeIdx: .constant(5), lockedIdx: 5)
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.lumaBg)
+        .preferredColorScheme(.dark)
+}
 #endif

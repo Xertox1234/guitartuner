@@ -1,9 +1,21 @@
 ---
 priority: P2
-status: open
+status: resolved
 domain: testing, pipeline
 source: 2026-06-17 instrument-profiles Slice 1 review (Task 6)
+resolved: 2026-06-20
 ---
+
+> **Resolved 2026-06-20** (branch `test/setpolicy-reset`). Added
+> `setPolicyResetsDetectionStateForColdReacquire` and `setPolicyResetsUnvoicedStreak`
+> in `PipelineTests.swift`, backed by minimal internal test-introspection accessors
+> (`SustainGate.isCold`, `FrequencySmoother.isCold`, `PhaseIntegrator.isCold`,
+> `PitchPipeline.stateProbe` — no public API change). The test asserts every reset
+> target (smoother, gate, currentBand→acquire, trackedFrequency, unvoicedStreak,
+> prevFrame, phaseIntegrator) is cleared *before* the next sample, then that the
+> pipeline re-acquires lock under `.bass`. Each per-field assertion was verified to
+> have teeth by removing its reset line one at a time (mutation testing) — a purely
+> behavioural `isLockIntegrated` check only catches gate+integrator removed together.
 
 # Test `PitchPipeline.setPolicy` actually resets detection state on swap
 

@@ -95,14 +95,9 @@ public extension Font {
     static var lumaNote: Font { LumaFont.display(LumaFont.Size.note) }
     /// Card / section titles — Chakra Petch 600 @ 24 (scales).
     static var lumaTitle: Font { LumaFont.display(LumaFont.Size.xl2, relativeTo: .title) }
-    /// The wordmark / small display labels @ 13 (scales).
-    static var lumaWordmark: Font { LumaFont.display(LumaFont.Size.label, relativeTo: .caption) }
     /// Big signed cents readout — JetBrains Mono 500 @ 30. Deliberately **fixed**:
     /// part of the full-bleed instrument readout (opts out, see `lumaNote`).
     static var lumaCents: Font { LumaFont.mono(30, weight: .medium) }
-    /// State-line hint — system 500 @ 15. NOTE: scaling for this size lives in
-    /// `.lumaUIFont`; `StateLine` applies it directly (this static is fixed).
-    static var lumaStateHint: Font { LumaFont.ui(LumaFont.Size.body, weight: .medium) }
     /// Freq line / chip mono @ 11 (scales).
     static var lumaMicroMono: Font { LumaFont.mono(LumaFont.Size.micro, relativeTo: .caption2) }
 }

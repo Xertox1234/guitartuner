@@ -112,7 +112,7 @@ struct FeaturedBanner: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.lumaInTune.opacity(0.15))
                     .frame(width: 56, height: 56)
-                    .overlay(Image(systemName: "guitars").lumaUIFont(22).foregroundStyle(Color.lumaInTune))
+                    .overlay(Image(systemName: "guitars").font(.system(size: 22)).foregroundStyle(Color.lumaInTune))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("FEATURED")
@@ -151,7 +151,7 @@ struct ProductCard: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.secondary.opacity(0.08))
                     .frame(height: 60)
-                    .overlay(Image(systemName: icon(for: product.category)).lumaUIFont(22).foregroundStyle(.secondary))
+                    .overlay(Image(systemName: icon(for: product.category)).font(.system(size: 22)).foregroundStyle(.secondary))
 
                 Text(product.name)
                     .lumaUIFont(LumaFont.Size.cap, weight: .bold)

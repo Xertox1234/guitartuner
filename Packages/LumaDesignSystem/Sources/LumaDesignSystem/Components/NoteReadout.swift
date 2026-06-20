@@ -40,6 +40,7 @@ public struct NoteReadout: View {
                 .font(.lumaNote)
                 .tracking(-3)
             if !parts.accidental.isEmpty {
+                // Fixed: part of the full-bleed instrument readout (opts out of Dynamic Type, see lumaNote).
                 Text(parts.accidental)
                     .font(LumaFont.display(LumaFont.Size.note * 0.34))
                     .foregroundStyle(locked ? glow : Color.lumaDim)

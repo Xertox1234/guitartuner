@@ -47,6 +47,11 @@ struct FrequencySmoother {
         ema = nil
     }
 
+    /// Test-introspection (internal): true when no smoothing history is held, i.e.
+    /// freshly built or `reset()`. Lets reset/`setPolicy` regression tests prove the
+    /// smoother was rebuilt, not just that the policy propagated.
+    var isCold: Bool { ema == nil && window.isEmpty }
+
     static func median(_ xs: [Double]) -> Double {
         guard !xs.isEmpty else { return 0 }
         let s = xs.sorted()
@@ -91,4 +96,9 @@ struct SustainGate {
     }
 
     mutating func reset() { confidentStreak = 0 }
+
+    /// Test-introspection (internal): true when no confident streak has accumulated,
+    /// i.e. freshly built or `reset()`. Lets reset/`setPolicy` regression tests prove
+    /// the gate re-acquires from zero rather than inheriting a warm lock.
+    var isCold: Bool { confidentStreak == 0 }
 }

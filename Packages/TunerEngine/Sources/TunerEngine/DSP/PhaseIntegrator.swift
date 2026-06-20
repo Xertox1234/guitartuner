@@ -180,6 +180,11 @@ struct PhaseIntegrator {
         hopCount = 0
     }
 
+    /// Test-introspection (internal): true when no integration history is held, i.e.
+    /// freshly built or `reset()`. Lets reset/`setPolicy` regression tests prove the
+    /// integrator's accumulated slope was cleared, not carried into the new policy.
+    var isCold: Bool { refF0 == nil && hopCount == 0 }
+
     // MARK: - Private helpers
 
     /// Stiff-string partial frequency: n·f0·√(1 + B·n²).

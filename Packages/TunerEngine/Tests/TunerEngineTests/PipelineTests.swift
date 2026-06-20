@@ -225,4 +225,84 @@ import Testing
         #expect(full.0 == guitar.0, "note identical under clamp at \(f) Hz")
         #expect(abs(full.1 - guitar.1) < 0.01, "cents identical under clamp at \(f) Hz")
     }
+
+    // MARK: - setPolicy state reset (docs/todos/P2-setpolicy-state-reset-test.md)
+
+    /// `setPolicy` is the load-bearing seam of live instrument switching: a mid-stream
+    /// swap must **reset detection state** so the previous instrument's lock/track/gate
+    /// does not bleed into the new one. This pins the *reset* per field (not mere policy
+    /// propagation) plus the behavioural cold re-acquire. Each per-field `#expect` fails
+    /// if its matching reset line is dropped from `setPolicy` — verified by removing the
+    /// reset lines one at a time (the behavioural `isLockIntegrated` check alone only
+    /// catches `gate.reset()` + `phaseIntegrator.reset()` removed *together*).
+    @Test func setPolicyResetsDetectionStateForColdReacquire() throws {
+        let f = 196.0   // G3 — tracked under both .guitar (60…1400) and .bass (25…420)
+        let block = 480
+        let p = PitchPipeline(sampleRate: fs, a4: 440, method: .mpm, policy: .guitar)
+
+        func feed(_ seconds: Double) -> [PitchReading] {
+            let sig = Synth.harmonic(fundamental: f, sampleRate: fs, seconds: seconds)
+            var rs: [PitchReading] = []
+            var i = 0
+            while i < sig.count { let e = min(i + block, sig.count); rs += p.process(Array(sig[i..<e])); i = e }
+            return rs
+        }
+
+        // 1) Warm the pipeline under .guitar so every reset target is populated —
+        //    otherwise the post-swap "is cold" assertions would be vacuous.
+        let preSwap = feed(1.2)
+        #expect(preSwap.contains { $0.isLockIntegrated },
+                "precondition: must reach an integrated lock before the swap")
+        let warm = p.stateProbe
+        #expect(warm.trackedFrequency != nil, "precondition: tracked frequency warm")
+        #expect(!warm.gateIsCold, "precondition: sustain gate warm")
+        #expect(!warm.smootherIsCold, "precondition: smoother warm")
+        #expect(!warm.integratorIsCold, "precondition: phase integrator warm")
+        #expect(warm.hasPrevFrame, "precondition: phase-vocoder prev frame present")
+        #expect(warm.currentBand != DetectionPolicy.bass.acquire, "precondition: band is a guitar band")
+
+        // 2) Swap policy mid-stream.
+        p.setPolicy(.bass)
+
+        // 3) Every reset target must be cleared *before another sample is fed* — the
+        //    per-field proof the todo asks for.
+        let cold = p.stateProbe
+        #expect(p.policy.searchRange == 25...420, "swap must take effect")
+        #expect(cold.trackedFrequency == nil, "tracked frequency must reset")
+        #expect(cold.currentBand == DetectionPolicy.bass.acquire, "band must reset to the new policy's acquire")
+        #expect(!cold.hasPrevFrame, "phase-vocoder prev frame must reset")
+        #expect(cold.gateIsCold, "sustain gate must reset")
+        #expect(cold.smootherIsCold, "smoother must rebuild (no history)")
+        #expect(cold.integratorIsCold, "phase integrator must reset")
+
+        // 4) Integration: the swap doesn't just reset — it re-acquires cleanly. With a
+        //    cold gate + cold integrator the first post-swap reading cannot be pre-locked,
+        //    and the pipeline must re-lock under .bass (proves the reset didn't break it).
+        let postSwap = feed(1.5)
+        let first = try #require(postSwap.first, ".bass must still track the tone")
+        #expect(!first.isLockIntegrated, "first post-swap reading must re-acquire, not stay locked")
+        #expect(postSwap.contains { $0.isLockIntegrated }, "must re-lock under .bass after the cold-start reset")
+    }
+
+    /// `unvoicedStreak` is 0 throughout a continuous tone, so the test above can't
+    /// exercise its reset line. Warm the streak with a brief silence (kept below the
+    /// 8-frame self-reset), then prove `setPolicy` zeroes it.
+    @Test func setPolicyResetsUnvoicedStreak() {
+        let p = PitchPipeline(sampleRate: fs, a4: 440, method: .mpm, policy: .guitar)
+        // Lock first so analysis is live (filled ring), then feed silence in small
+        // sub-hop chunks until the unvoiced streak first ticks up — landing in (0, 8).
+        _ = p.process(Synth.harmonic(fundamental: 196, sampleRate: fs, seconds: 0.8))
+        var streak = 0
+        var guardCount = 0
+        while streak == 0 && guardCount < 4000 {
+            _ = p.process([Float](repeating: 0, count: 64))
+            streak = p.stateProbe.unvoicedStreak
+            guardCount += 1
+        }
+        #expect((1...7).contains(p.stateProbe.unvoicedStreak),
+                "precondition: unvoiced streak warmed without tripping the >=8 self-reset")
+
+        p.setPolicy(.bass)
+        #expect(p.stateProbe.unvoicedStreak == 0, "unvoiced streak must reset on policy swap")
+    }
 }

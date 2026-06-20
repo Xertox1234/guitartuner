@@ -1,6 +1,6 @@
 import Testing
+import Foundation
 @testable import LumaDesignSystem
-import SwiftUI
 
 // WCAG 2.x relative luminance + contrast ratio (sRGB). Test-only — enforces that
 // the design tokens meet AA so a future hex edit can't silently regress contrast.
@@ -52,7 +52,6 @@ struct ContrastAuditTests {
         ]
         for (name, c) in darkTokens {
             let ratio = contrastRatio(c, bgDark)
-            print("[contrast-audit] \(name) dark vs bg-dark: \(String(format: "%.2f", ratio)):1")
             #expect(ratio >= 4.5, "\(name) (dark) below AA text (4.5:1); got \(ratio)")
         }
     }
@@ -72,7 +71,6 @@ struct ContrastAuditTests {
         ]
         for (name, c) in lightTokens {
             let ratio = contrastRatio(c, bgLight)
-            print("[contrast-audit] \(name) light vs bg-light: \(String(format: "%.2f", ratio)):1")
             #expect(ratio >= 4.5, "\(name) (light) below AA text (4.5:1); got \(ratio)")
         }
     }
@@ -93,7 +91,6 @@ struct ContrastAuditTests {
         ]
         for (name, c) in slots {
             let ratio = contrastRatio(c, bgDark)
-            print("[contrast-audit] aurora \(name) dark vs bg-dark: \(String(format: "%.2f", ratio)):1")
             #expect(ratio >= 3.0, "aurora \(name) (dark) below AA graphic (3.0:1); got \(ratio)")
         }
     }
@@ -113,7 +110,6 @@ struct ContrastAuditTests {
         ]
         for (name, c) in slots {
             let ratio = contrastRatio(c, bgLight)
-            print("[contrast-audit] aurora \(name) light vs bg-light: \(String(format: "%.2f", ratio)):1")
             #expect(ratio >= 3.0, "aurora \(name) (light) below AA graphic (3.0:1); got \(ratio)")
         }
     }

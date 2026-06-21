@@ -121,9 +121,28 @@ strobe ribbon (both graphics). Side effect: in **dark** mode the in-tune tag for
 palettes now uses the aurora `inTune` colorset rather than that palette's tune (dark passes
 AA throughout, so this is cosmetic).
 
-**Scope.** Aurora only — the signature/default palette the audit and the two tests cover.
-The other four palettes (amber/neon/forest/crimson) almost certainly fail light AA too but
-are untested and not CI-gated; tracked separately in `docs/todos/`.
+**Scope.** Originally aurora only (the signature/default palette). **Update — 2026-06-21
+follow-up** (`P3-lightmode-aa-other-palettes`): the four sibling palettes were swept too.
+amber (`sharp` 1.73, `tune` 2.01 — plus the rendered side ribbon `mix(sharp,sharp2,0.35)`
+at 2.08) and neon (`flat` 2.81, `tune` 1.71) failed light graphic AA and were nudged darker
+(hue-preserving, same constant-factor linear-RGB method); forest and crimson already passed
+everywhere. `strobeGraphicContrast_light` now loops every `LumaPalette` and gates the full
+rendered set per palette — the three pure primaries plus both `mix(_, _2, 0.35)` side
+ribbons. That five-value gate is **provably complete**: sRGB→linear is convex, so
+contrast(mix) ≥ min(contrast(endpoints)), which also covers the in-tune `mix(side, tune, …)`
+transitions that are never asserted directly.
+
+| Palette | Slot   | was → now             | ratio: was → now      |
+|---------|--------|-----------------------|-----------------------|
+| amber   | sharp  | `#E6A92B` → `#A77A1C` | 1.73 → **3.20**       |
+| amber   | sharp2 | `#D96A1A` → `#9E4B10` | (side mix 2.08) → **3.75** |
+| amber   | tune   | `#C9A227` → `#9D7E1C` | 2.01 → **3.21**       |
+| neon    | flat   | `#008CFF` → `#0082EE` | 2.81 → **3.21**       |
+| neon    | tune   | `#66CC00` → `#489300` | 1.71 → **3.20**       |
+
+`sharp2` was paired-scaled with `sharp` (one linear factor) so the ramp step is preserved
+and the rendered side mix clears 3:1. `tune2` is referenced by no renderer, so it was left
+unchanged regardless of its ratio.
 
 Both `ContrastAuditTests` light tests are re-enabled (no longer `.disabled`) and pass; the
 dark tests are unchanged and still pass.

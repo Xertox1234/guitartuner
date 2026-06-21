@@ -13,8 +13,8 @@ depends_on: docs/todos/archive/P3-lightmode-palette-aa.md
 > tune 1.71) failed light graphic AA; **forest** and **crimson** already passed everywhere.
 > Fixed by hue-preserving darkening (constant-factor linear-RGB scale, same method as the
 > aurora fix): amber `sharp #E6A92B→#A77A1C`, `sharp2 #D96A1A→#9E4B10` (paired), `tune
-> #C9A227→#9D7E1C`; neon `flat #008CFF→#0082EE`, `tune #66CC00→#489300`. `tune2` is unused
-> by every renderer, so it was left unchanged. `strobeGraphicContrast_light` now loops every
+> #C9A227→#9D7E1C`; neon `flat #008CFF→#0082EE`, `tune #66CC00→#489300`. `tune2` is referenced by no
+> renderer, so it was left unchanged. `strobeGraphicContrast_light` now loops every
 > `LumaPalette` and gates the **complete rendered set** per palette — the three pure primaries
 > plus both `mix(_, _2, 0.35)` side ribbons (five values); convexity of sRGB→linear proves
 > this covers every other rendered mix, including the in-tune `mix(side, tune, …)`. Details +

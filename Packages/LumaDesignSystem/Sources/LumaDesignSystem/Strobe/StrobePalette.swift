@@ -58,7 +58,7 @@ struct StrobePalette {
     // LIGHT ribbons are gated to WCAG AA graphic contrast (3:1) on bg #E7EAF1.
     // What actually renders: the pure primaries flat/sharp/tune (e.g. ReducedGauge
     // at opacity 1, the tune glow) and the side ribbons mix(flat,flat2,0.35) /
-    // mix(sharp,sharp2,0.35); flat2/sharp2 never render alone and tune2 is unused.
+    // mix(sharp,sharp2,0.35); flat2/sharp2 never render alone and tune2 is never rendered.
     // `ContrastAuditTests` gates those five rendered values for every palette —
     // convexity of sRGB→linear makes that the complete set (every other rendered
     // mix is ≥ the min of its endpoints, so the in-tune mix(side, tune, …) is

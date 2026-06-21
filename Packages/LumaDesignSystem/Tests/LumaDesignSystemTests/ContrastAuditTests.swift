@@ -109,7 +109,7 @@ struct ContrastAuditTests {
     //    The rendered ribbon set per palette is the three pure primaries
     //    (flat/sharp/tune — ReducedGauge at opacity 1, the in-tune glow) plus the
     //    two side ribbons mix(flat,flat2,0.35) and mix(sharp,sharp2,0.35).
-    //    flat2/sharp2 never render alone; tune2 is unused. Gating these five is
+    //    flat2/sharp2 never render alone; tune2 is never rendered. Gating these five is
     //    COMPLETE: sRGB→linear is convex, so contrast(mix) ≥ min(contrast(endpoints));
     //    every other rendered mix (e.g. the in-tune mix(side, tune, …)) is ≥ 3:1 too.
     //    Two-tier fix: aurora (2026-06-21); amber sharp/sharp2/tune and neon flat/tune

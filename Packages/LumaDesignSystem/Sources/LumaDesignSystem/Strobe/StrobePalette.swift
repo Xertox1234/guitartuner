@@ -3,10 +3,11 @@ import SwiftUI
 /// RGB triple in 0...1 for additive strobe blending — the `Canvas` needs colour
 /// component access that SwiftUI `Color` doesn't expose. Values mirror
 /// `ds-tokens.css` (the strobe reads the same palette as `readPalette()` in
-/// `strobe-aurora.jsx`), with one deliberate exception: the aurora **light**
-/// `sharp`/`tune` ribbons are nudged darker than the design-reference hexes to
-/// clear WCAG AA graphic contrast (3:1) on the light background — see
-/// `chroma(_:_:)` and `docs/solutions/accessibility/state-color-contrast-audit-2026-06-19.md`.
+/// `strobe-aurora.jsx`), with deliberate exceptions: several **light** ribbons
+/// (aurora `sharp`/`tune`; amber `sharp`/`sharp2`/`tune`; neon `flat`/`tune`) are
+/// nudged darker than the design-reference hexes to clear WCAG AA graphic contrast
+/// (3:1) on the light background — see `chroma(_:_:)` and
+/// `docs/solutions/accessibility/state-color-contrast-audit-2026-06-19.md`.
 struct RGB: Equatable {
     var r, g, b: Double
 
@@ -54,12 +55,19 @@ struct StrobePalette {
     // brighter (additive .plusLighter). flat2/sharp2 sit one step deeper on the
     // same hue ramp because the shader mixes them with flat/sharp at 0.35.
     //
-    // Aurora light `sharp`/`tune` are nudged darker (sharp 3.16:1, tune 3.14:1 vs
-    // bg #E7EAF1) to clear WCAG AA graphic contrast (3:1); `flat` already passes
-    // (3.74:1) and is unchanged. These are the *ribbon* (graphic) values and are
-    // intentionally lighter than the `flat`/`sharp`/`inTune` colorset tokens, which
-    // the small StateLine tag *text* uses at the stricter 4.5:1 text threshold —
-    // colorset ≠ strobe for light aurora by design. See the C-3 contrast audit.
+    // LIGHT ribbons are gated to WCAG AA graphic contrast (3:1) on bg #E7EAF1.
+    // What actually renders: the pure primaries flat/sharp/tune (e.g. ReducedGauge
+    // at opacity 1, the tune glow) and the side ribbons mix(flat,flat2,0.35) /
+    // mix(sharp,sharp2,0.35); flat2/sharp2 never render alone and tune2 is unused.
+    // `ContrastAuditTests` gates those five rendered values for every palette —
+    // convexity of sRGB→linear makes that the complete set (every other rendered
+    // mix is ≥ the min of its endpoints, so the in-tune mix(side, tune, …) is
+    // covered too). Slots nudged darker to clear 3:1 (hue preserved, scaled by a
+    // constant factor in linear-RGB): aurora sharp/tune; amber sharp+sharp2 (paired)
+    // and tune; neon flat and tune. These *ribbon* (graphic) values are intentionally
+    // lighter than the flat/sharp/inTune *colorset* tokens, which the small StateLine
+    // tag *text* uses at the stricter 4.5:1 text threshold — colorset ≠ strobe for
+    // light by design. See docs/solutions/accessibility/state-color-contrast-audit-2026-06-19.md.
     private static func chroma(_ palette: LumaPalette, _ scheme: ColorScheme)
         -> (flat: RGB, flat2: RGB, sharp: RGB, sharp2: RGB, tune: RGB, tune2: RGB) {
         let light = scheme == .light
@@ -75,16 +83,16 @@ struct StrobePalette {
         case .amber:
             return light
                 ? (RGB(hex: 0xB87333), RGB(hex: 0x8C4A1F),
-                   RGB(hex: 0xE6A92B), RGB(hex: 0xD96A1A),
-                   RGB(hex: 0xC9A227), RGB(hex: 0xA8821D))
+                   RGB(hex: 0xA77A1C), RGB(hex: 0x9E4B10),
+                   RGB(hex: 0x9D7E1C), RGB(hex: 0xA8821D))
                 : (RGB(hex: 0xE89B4A), RGB(hex: 0xC76A2A),
                    RGB(hex: 0xFFD15C), RGB(hex: 0xFF8A33),
                    RGB(hex: 0xF5D547), RGB(hex: 0xD9B524))
         case .neon:
             return light
-                ? (RGB(hex: 0x008CFF), RGB(hex: 0x0066CC),
+                ? (RGB(hex: 0x0082EE), RGB(hex: 0x0066CC),
                    RGB(hex: 0xE6007E), RGB(hex: 0xB80060),
-                   RGB(hex: 0x66CC00), RGB(hex: 0x4DAA00))
+                   RGB(hex: 0x489300), RGB(hex: 0x4DAA00))
                 : (RGB(hex: 0x33CFFF), RGB(hex: 0x00A8FF),
                    RGB(hex: 0xFF3DA8), RGB(hex: 0xFF1480),
                    RGB(hex: 0xB6FF3D), RGB(hex: 0x8FE61A))

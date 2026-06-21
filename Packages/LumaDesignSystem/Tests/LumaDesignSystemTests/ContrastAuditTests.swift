@@ -105,22 +105,33 @@ struct ContrastAuditTests {
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // 5. Strobe GRAPHIC contrast — LIGHT appearance — threshold 3.0
-    //    Two-tier fix (2026-06-21): ribbons kept vivid; sharp/tune nudged to clear
-    //    3:1 — flat 3.74 (unchanged), sharp 3.16, tune 3.14. Resolves from
-    //    StrobePalette, so it tracks the actual aurora light ribbon values.
+    // 5. Strobe GRAPHIC contrast — LIGHT appearance — threshold 3.0 — ALL palettes
+    //    The rendered ribbon set per palette is the three pure primaries
+    //    (flat/sharp/tune — ReducedGauge at opacity 1, the in-tune glow) plus the
+    //    two side ribbons mix(flat,flat2,0.35) and mix(sharp,sharp2,0.35).
+    //    flat2/sharp2 never render alone; tune2 is unused. Gating these five is
+    //    COMPLETE: sRGB→linear is convex, so contrast(mix) ≥ min(contrast(endpoints));
+    //    every other rendered mix (e.g. the in-tune mix(side, tune, …)) is ≥ 3:1 too.
+    //    Two-tier fix: aurora (2026-06-21); amber sharp/sharp2/tune and neon flat/tune
+    //    nudged to clear 3:1 while staying vivid (2026-06-21 follow-up). forest/crimson
+    //    already passed. Resolves live from StrobePalette, tracking actual ribbon hexes.
     // ──────────────────────────────────────────────────────────────────────
-    @Test("aurora strobe ribbons meet AA graphic contrast (3.0:1) — light appearance")
+    @Test("strobe ribbons meet AA graphic contrast (3.0:1) — light appearance, all palettes")
     func strobeGraphicContrast_light() {
-        let pal = StrobePalette.resolve(.light, palette: .aurora)
-        let slots: [(String, RGB)] = [
-            ("flat",   pal.flat),
-            ("sharp",  pal.sharp),
-            ("tune",   pal.tune),
-        ]
-        for (name, c) in slots {
-            let ratio = contrastRatio(c, bgLight)
-            #expect(ratio >= 3.0, "aurora \(name) (light) below AA graphic (3.0:1); got \(ratio)")
+        for palette in LumaPalette.allCases {
+            let pal = StrobePalette.resolve(.light, palette: palette)
+            let rendered: [(String, RGB)] = [
+                ("flat",     pal.flat),
+                ("sharp",    pal.sharp),
+                ("tune",     pal.tune),
+                ("flatMix",  mix(pal.flat,  pal.flat2,  0.35)),
+                ("sharpMix", mix(pal.sharp, pal.sharp2, 0.35)),
+            ]
+            for (name, c) in rendered {
+                let ratio = contrastRatio(c, bgLight)
+                #expect(ratio >= 3.0,
+                        "\(palette.rawValue) \(name) (light) below AA graphic (3.0:1); got \(ratio)")
+            }
         }
     }
 }

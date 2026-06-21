@@ -8,6 +8,19 @@ depends_on: docs/todos/archive/P3-lightmode-palette-aa.md
 
 # Light-mode AA for the four non-aurora palettes (amber/neon/forest/crimson)
 
+> **✅ COMPLETED 2026-06-21.** Swept all four siblings. **amber** (sharp 1.73, tune 2.01,
+> and the rendered side ribbon `mix(sharp,sharp2,0.35)` at 2.08) and **neon** (flat 2.81,
+> tune 1.71) failed light graphic AA; **forest** and **crimson** already passed everywhere.
+> Fixed by hue-preserving darkening (constant-factor linear-RGB scale, same method as the
+> aurora fix): amber `sharp #E6A92B→#A77A1C`, `sharp2 #D96A1A→#9E4B10` (paired), `tune
+> #C9A227→#9D7E1C`; neon `flat #008CFF→#0082EE`, `tune #66CC00→#489300`. `tune2` is unused
+> by every renderer, so it was left unchanged. `strobeGraphicContrast_light` now loops every
+> `LumaPalette` and gates the **complete rendered set** per palette — the three pure primaries
+> plus both `mix(_, _2, 0.35)` side ribbons (five values); convexity of sRGB→linear proves
+> this covers every other rendered mix, including the in-tune `mix(side, tune, …)`. Details +
+> before/after table in `docs/solutions/accessibility/state-color-contrast-audit-2026-06-19.md`
+> (Scope update). 20/20 LumaDesignSystem tests pass.
+
 ## Problem
 
 The 2026-06-21 two-tier fix made **aurora** light-mode state colors meet WCAG AA

@@ -1,49 +1,50 @@
-import XCTest
+import Testing
+import Foundation
 @testable import TunerEngine
 
-final class BenchmarkTests: XCTestCase {
+@Suite struct BenchmarkTests {
     let fs = 48_000.0
 
-    func testErrorStats() {
+    @Test func errorStats() {
         let s = ErrorStats.from([-2, -1, 0, 1, 2])
-        XCTAssertEqual(s.count, 5)
-        XCTAssertEqual(s.mean, 0, accuracy: 1e-12)
-        XCTAssertEqual(s.meanAbs, 1.2, accuracy: 1e-12)
-        XCTAssertEqual(s.sigma, 2.0.squareRoot(), accuracy: 1e-12)
-        XCTAssertEqual(s.maxAbs, 2, accuracy: 1e-12)
+        #expect(s.count == 5)
+        #expect(abs(s.mean - 0) < 1e-12)
+        #expect(abs(s.meanAbs - 1.2) < 1e-12)
+        #expect(abs(s.sigma - 2.0.squareRoot()) < 1e-12)
+        #expect(abs(s.maxAbs - 2) < 1e-12)
     }
 
-    func testCentsErrorHelper() {
-        XCTAssertEqual(ErrorStats.centsError(estimate: 880, truth: 440), 1200, accuracy: 1e-9)
-        XCTAssertEqual(ErrorStats.centsError(estimate: 440, truth: 440), 0, accuracy: 1e-9)
+    @Test func centsErrorHelper() {
+        #expect(abs(ErrorStats.centsError(estimate: 880, truth: 440) - 1200) < 1e-9)
+        #expect(abs(ErrorStats.centsError(estimate: 440, truth: 440) - 0) < 1e-9)
     }
 
-    func testSeededRNGDeterministic() {
+    @Test func seededRNGDeterministic() {
         var a = SeededRNG(seed: 7), b = SeededRNG(seed: 7)
-        for _ in 0..<100 { XCTAssertEqual(a.next(), b.next()) }
+        for _ in 0..<100 { #expect(a.next() == b.next()) }
     }
 
-    func testNoiseHitsTargetSNR() {
+    @Test func noiseHitsTargetSNR() {
         var rng = SeededRNG(seed: 1)
         let sig = Synth.pure(frequency: 200, sampleRate: fs, seconds: 0.5)
         let noisy = Synth.addNoise(to: sig, snrDB: 20, rng: &rng)
         let sigP = sig.reduce(0.0) { $0 + Double($1) * Double($1) } / Double(sig.count)
         let noiseP = zip(sig, noisy).reduce(0.0) { $0 + pow(Double($1.1 - $1.0), 2) } / Double(sig.count)
         let measuredSNR = 10 * log10(sigP / noiseP)
-        XCTAssertEqual(measuredSNR, 20, accuracy: 1.5)
+        #expect(abs(measuredSNR - 20) < 1.5)
     }
 
-    func testCaseRunnerScoresCleanTone() {
+    @Test func caseRunnerScoresCleanTone() {
         let sig = Synth.harmonic(fundamental: 196, sampleRate: fs, seconds: 2.0)
         let r = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 196,
                                category: "harmonic", centsTarget: 0, snrDB: .infinity, method: .mpm)
-        XCTAssertFalse(r.octaveError)
-        XCTAssertLessThan(r.stats.meanAbs, 3.0)
-        XCTAssertNotNil(r.timeToLockMS)
-        XCTAssertLessThan(r.timeToLockMS ?? 999, 350)
+        #expect(!r.octaveError)
+        #expect(r.stats.meanAbs < 3.0)
+        #expect(r.timeToLockMS != nil)
+        #expect((r.timeToLockMS ?? 999) < 350)
     }
 
-    func testAllMethodsScoreAccurately() {
+    @Test func allMethodsScoreAccurately() {
         // The "let the benchmark decide" smoke test — each method stays octave-safe
         // and accurate on a representative tone. (The full MPM/YIN/hybrid matrix
         // runs in the release `Benchmark` CI step; kept light here for debug speed.)
@@ -51,12 +52,12 @@ final class BenchmarkTests: XCTestCase {
         for method in DetectionMethod.allCases {
             let r = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 146.83,
                                    category: "inharmonic", centsTarget: 0, snrDB: .infinity, method: method)
-            XCTAssertFalse(r.octaveError, "\(method) octave-safe")
-            XCTAssertLessThan(r.stats.meanAbs, 1.0, "\(method) accuracy")
+            #expect(!r.octaveError, "\(method) octave-safe")
+            #expect(r.stats.meanAbs < 1.0, "\(method) accuracy")
         }
     }
 
-    func testCaseRunnerPolicyParamRoutesToPipeline() {
+    @Test func caseRunnerPolicyParamRoutesToPipeline() {
         let fs = 48_000.0
         let sig = Synth.inharmonicString(fundamental: 110, sampleRate: fs, seconds: 1.2)
 
@@ -66,8 +67,8 @@ final class BenchmarkTests: XCTestCase {
         let full = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 110,
                                   category: "t", centsTarget: 0, snrDB: .infinity, method: .mpm,
                                   policy: .fullRange)
-        XCTAssertEqual(dflt.readings, full.readings)
-        XCTAssertEqual(dflt.stats, full.stats)
+        #expect(dflt.readings == full.readings)
+        #expect(dflt.stats == full.stats)
 
         // A policy whose searchRange excludes 110 Hz must change the result —
         // proves the parameter actually reaches the pipeline.
@@ -77,34 +78,34 @@ final class BenchmarkTests: XCTestCase {
         let clamped = CaseRunner.run(signal: sig, sampleRate: fs, trueFrequency: 110,
                                      category: "t", centsTarget: 0, snrDB: .infinity, method: .mpm,
                                      policy: narrow)
-        XCTAssertNotEqual(clamped.stats.meanAbs, full.stats.meanAbs, "narrow searchRange must change the estimate")
+        #expect(clamped.stats.meanAbs != full.stats.meanAbs, "narrow searchRange must change the estimate")
     }
 
-    func testBenchmarkExposesBassPolicySummary() {
+    @Test func benchmarkExposesBassPolicySummary() {
         // Exercise the bass-policy wiring on the 10 bass cases directly (~seconds),
         // not the full BenchmarkSuite.run() matrix (~11 min). run() calls this exact
         // helper, so this proves the same path it ships.
         let result = BenchmarkSuite.bassPolicyPass(method: .mpm, sampleRate: fs,
                                                     a4: Pitch.standardA4,
                                                     lockWindowStart: BenchmarkSuite.lockWindowStart)
-        XCTAssertFalse(result.isEmpty, "bass-policy pass must run cases")
+        #expect(!result.isEmpty, "bass-policy pass must run cases")
         let categories = Set(result.map { $0.category })
-        XCTAssertTrue(categories.contains("bass-clean"), "bass-clean category present")
-        XCTAssertTrue(categories.contains("bass-weak-fund"), "bass-weak-fund category present")
+        #expect(categories.contains("bass-clean"), "bass-clean category present")
+        #expect(categories.contains("bass-weak-fund"), "bass-weak-fund category present")
         for r in result {
-            XCTAssertGreaterThanOrEqual(r.lockRetention, 0)
-            XCTAssertLessThanOrEqual(r.lockRetention, 1)
+            #expect(r.lockRetention >= 0)
+            #expect(r.lockRetention <= 1)
         }
 
         // Feed the small result through the Summary aggregation to prove the wiring
         // cheaply (bassPolicyCases populated, retention in range).
         let summary = BenchmarkSuite.summarize(clean: [], stress: [], bassPolicy: result, method: .mpm)
-        XCTAssertGreaterThan(summary.bassPolicyCases, 0, "Summary aggregates bass-policy cases")
-        XCTAssertGreaterThanOrEqual(summary.bassLockRetention, 0)
-        XCTAssertLessThanOrEqual(summary.bassLockRetention, 1)
+        #expect(summary.bassPolicyCases > 0, "Summary aggregates bass-policy cases")
+        #expect(summary.bassLockRetention >= 0)
+        #expect(summary.bassLockRetention <= 1)
     }
 
-    func testLockTrajectoryComputesRetentionAndDrops() {
+    @Test func lockTrajectoryComputesRetentionAndDrops() {
         func r(_ t: TimeInterval, _ locked: Bool) -> PitchReading {
             PitchReading(frequency: 110, note: Note(midi: 45), cents: 0, confidence: 0.9,
                          phase: 0, timestamp: t, inharmonicityB: nil,
@@ -114,13 +115,13 @@ final class BenchmarkTests: XCTestCase {
         // 3/4 locked.
         let readings = [r(0.5, true), r(1.0, true), r(1.2, true), r(1.4, false), r(1.6, true)]
         let (retention, drops) = CaseRunner.lockTrajectory(readings, windowStart: 1.0)
-        XCTAssertEqual(retention, 0.75, accuracy: 1e-9)
-        XCTAssertEqual(drops, 1)
+        #expect(abs(retention - 0.75) < 1e-9)
+        #expect(drops == 1)
 
         // Never locks in window → 0 retention, 0 drops.
         let none = [r(1.0, false), r(1.2, false)]
         let (ret2, drops2) = CaseRunner.lockTrajectory(none, windowStart: 1.0)
-        XCTAssertEqual(ret2, 0)
-        XCTAssertEqual(drops2, 0)
+        #expect(ret2 == 0)
+        #expect(drops2 == 0)
     }
 }

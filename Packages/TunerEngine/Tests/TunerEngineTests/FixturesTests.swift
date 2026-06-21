@@ -1,45 +1,46 @@
-import XCTest
+import Testing
+import Foundation
 @testable import TunerEngine
 
 /// Exercises the real-DI fixture harness end-to-end without committing binary
 /// audio: synthesize → encode WAV → decode → score, plus the filename parser and
 /// the graceful no-fixtures skip (Plan 06 §9).
-final class FixturesTests: XCTestCase {
+@Suite struct FixturesTests {
     let fs = 48_000.0
 
     // MARK: filename → truth
 
-    func testParseTrueFrequency() {
+    @Test func parseTrueFrequency() {
         // Explicit Hz wins.
-        XCTAssertEqual(Fixtures.parseTrueFrequency(fileName: "E2_82.41.wav", a4: 440)?.hz ?? 0, 82.41, accuracy: 1e-9)
-        XCTAssertEqual(Fixtures.parseTrueFrequency(fileName: "lowB_30.87.wav", a4: 440)?.label, "lowB")
+        #expect(abs((Fixtures.parseTrueFrequency(fileName: "E2_82.41.wav", a4: 440)?.hz ?? 0) - 82.41) < 1e-9)
+        #expect(Fixtures.parseTrueFrequency(fileName: "lowB_30.87.wav", a4: 440)?.label == "lowB")
         // Note-name derivation matches Pitch/Note.
-        XCTAssertEqual(Fixtures.parseTrueFrequency(fileName: "E2.wav", a4: 440)?.hz ?? 0,
-                       Pitch.frequency(midi: 40), accuracy: 1e-9)
-        XCTAssertEqual(Fixtures.parseTrueFrequency(fileName: "A4.wav", a4: 440)?.hz ?? 0, 440, accuracy: 1e-9)
-        XCTAssertEqual(Fixtures.parseTrueFrequency(fileName: "Bb1.wav", a4: 440)?.hz ?? 0,
-                       Pitch.frequency(midi: 34), accuracy: 1e-9)   // Bb1 == A#1
-        XCTAssertNil(Fixtures.parseTrueFrequency(fileName: "garbage.wav", a4: 440))
+        #expect(abs((Fixtures.parseTrueFrequency(fileName: "E2.wav", a4: 440)?.hz ?? 0)
+                    - Pitch.frequency(midi: 40)) < 1e-9)
+        #expect(abs((Fixtures.parseTrueFrequency(fileName: "A4.wav", a4: 440)?.hz ?? 0) - 440) < 1e-9)
+        #expect(abs((Fixtures.parseTrueFrequency(fileName: "Bb1.wav", a4: 440)?.hz ?? 0)
+                    - Pitch.frequency(midi: 34)) < 1e-9)   // Bb1 == A#1
+        #expect(Fixtures.parseTrueFrequency(fileName: "garbage.wav", a4: 440) == nil)
     }
 
     // MARK: WAV round-trip
 
-    func testWavRoundTrip() {
+    @Test func wavRoundTrip() throws {
         let tone = Synth.pure(frequency: 220, sampleRate: fs, seconds: 0.2, amplitude: 0.8)
         let wav = Fixtures.encodeWAV(tone, sampleRate: fs)
-        guard let (decoded, sr) = Fixtures.decodeWAV(wav) else { return XCTFail("decode failed") }
-        XCTAssertEqual(sr, fs, accuracy: 1e-9)
-        XCTAssertEqual(decoded.count, tone.count)
+        let (decoded, sr) = try #require(Fixtures.decodeWAV(wav), "decode failed")
+        #expect(abs(sr - fs) < 1e-9)
+        #expect(decoded.count == tone.count)
         // 16-bit quantisation error only (~1/32768).
         var maxErr: Float = 0
         for (a, b) in zip(tone, decoded) { maxErr = max(maxErr, abs(a - b)) }
-        XCTAssertLessThan(maxErr, 1e-3)
-        XCTAssertNil(Fixtures.decodeWAV(Data([0, 1, 2, 3])))   // garbage → nil
+        #expect(maxErr < 1e-3)
+        #expect(Fixtures.decodeWAV(Data([0, 1, 2, 3])) == nil)   // garbage → nil
     }
 
     // MARK: end-to-end scoring from a directory
 
-    func testRunScoresFixturesFromDirectory() throws {
+    @Test func runScoresFixturesFromDirectory() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("luma-fixtures-\(ProcessInfo.processInfo.processIdentifier)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -52,20 +53,20 @@ final class FixturesTests: XCTestCase {
         }
 
         let results = Fixtures.run(directory: dir, method: .mpm)
-        XCTAssertEqual(results.count, 2)
+        #expect(results.count == 2)
         for r in results {
-            XCTAssertFalse(r.result.octaveError, "\(r.name) octave-safe")
-            XCTAssertLessThan(r.result.stats.meanAbs, 5, "\(r.name) accuracy")
+            #expect(!r.result.octaveError, "\(r.name) octave-safe")
+            #expect(r.result.stats.meanAbs < 5, "\(r.name) accuracy")
         }
         // Markdown renders a table when fixtures exist.
-        XCTAssertTrue(Fixtures.markdown(results).contains("Real-DI fixtures"))
+        #expect(Fixtures.markdown(results).contains("Real-DI fixtures"))
     }
 
     // MARK: graceful skip (keeps CI synthetic)
 
-    func testMissingDirectoryYieldsNoFixtures() {
+    @Test func missingDirectoryYieldsNoFixtures() {
         let missing = URL(fileURLWithPath: "/nonexistent/luma/fixtures/path")
-        XCTAssertTrue(Fixtures.run(directory: missing).isEmpty)
-        XCTAssertTrue(Fixtures.markdown([]).contains("No fixtures present"))
+        #expect(Fixtures.run(directory: missing).isEmpty)
+        #expect(Fixtures.markdown([]).contains("No fixtures present"))
     }
 }

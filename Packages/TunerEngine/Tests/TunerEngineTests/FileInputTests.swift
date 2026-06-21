@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import TunerEngine
 
 #if canImport(AVFoundation)
@@ -8,10 +8,10 @@ import AVFoundation
 /// (and that CI can run headlessly): synthesize → write an audio file → read it
 /// back via `AVAudioFile` → run the pipeline. The live `AVAudioEngine` capture
 /// path can't run in CI, but this proves file/sample-buffer input works end to end.
-final class FileInputTests: XCTestCase {
+@Suite struct FileInputTests {
     let fs = 48_000.0
 
-    func testRoundTripThroughAudioFile() throws {
+    @Test func roundTripThroughAudioFile() throws {
         let frequency = 220.0   // A3
         let samples = Synth.harmonic(fundamental: frequency, sampleRate: fs, seconds: 0.8)
 
@@ -19,12 +19,12 @@ final class FileInputTests: XCTestCase {
             .appendingPathComponent("tunerengine-\(UUID().uuidString).caf")
         defer { try? FileManager.default.removeItem(at: url) }
 
-        let format = try XCTUnwrap(AVAudioFormat(
+        let format = try #require(AVAudioFormat(
             commonFormat: .pcmFormatFloat32, sampleRate: fs, channels: 1, interleaved: false))
 
         // Write.
         let file = try AVAudioFile(forWriting: url, settings: format.settings)
-        let writeBuffer = try XCTUnwrap(AVAudioPCMBuffer(
+        let writeBuffer = try #require(AVAudioPCMBuffer(
             pcmFormat: format, frameCapacity: AVAudioFrameCount(samples.count)))
         writeBuffer.frameLength = AVAudioFrameCount(samples.count)
         samples.withUnsafeBufferPointer { src in
@@ -36,9 +36,9 @@ final class FileInputTests: XCTestCase {
         let readFile = try AVAudioFile(forReading: url)
         let readFormat = readFile.processingFormat
         let frames = AVAudioFrameCount(readFile.length)
-        let readBuffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: readFormat, frameCapacity: frames))
+        let readBuffer = try #require(AVAudioPCMBuffer(pcmFormat: readFormat, frameCapacity: frames))
         try readFile.read(into: readBuffer)
-        let channel = try XCTUnwrap(readBuffer.floatChannelData)
+        let channel = try #require(readBuffer.floatChannelData)
         let restored = Array(UnsafeBufferPointer(start: channel.pointee, count: Int(readBuffer.frameLength)))
 
         // Analyse the file content.
@@ -52,9 +52,9 @@ final class FileInputTests: XCTestCase {
             i = end
         }
 
-        let last = try XCTUnwrap(readings.last)
-        XCTAssertEqual(last.note.description, "A3")
-        XCTAssertLessThan(abs(last.cents), 5)
+        let last = try #require(readings.last)
+        #expect(last.note.description == "A3")
+        #expect(abs(last.cents) < 5)
     }
 }
 #endif

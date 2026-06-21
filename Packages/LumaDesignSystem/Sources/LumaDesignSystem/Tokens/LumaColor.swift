@@ -4,7 +4,10 @@ import SwiftUI
 ///
 /// Each token is a colour set with an **Any (light)** + **Dark** appearance, so
 /// the system resolves the active theme. Values come straight from
-/// `docs/design_reference/ds-tokens.css` (`DESIGN_SYSTEM.md` is the source of truth).
+/// `docs/design_reference/ds-tokens.css` (`DESIGN_SYSTEM.md` is the source of truth),
+/// with one deliberate exception: the **light** `flat`/`sharp`/`inTune` state tokens
+/// were darkened from the reference hexes to meet WCAG AA text contrast (4.5:1) on the
+/// light background — see `docs/solutions/accessibility/state-color-contrast-audit-2026-06-19.md`.
 ///
 /// Use either the enum (handy for enumerating tokens in the gallery) or the
 /// `Color.luma*` conveniences (idiomatic in views):

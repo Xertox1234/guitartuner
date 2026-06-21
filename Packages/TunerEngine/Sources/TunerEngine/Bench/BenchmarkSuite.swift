@@ -285,7 +285,8 @@ public enum BenchmarkSuite {
         md += "_\(dateLabel). Method: **\(summary.method.rawValue.uppercased())**, "
         md += "\(Int(sampleRate)) Hz, A4 = \(Int(a4)) Hz. Deterministic (seeded)._\n\n"
         md += "> Regenerate: `swift run -c release --package-path Packages/TunerEngine Benchmark --out docs/benchmarks`. "
-        md += "CI (macOS) regenerates this every build as an artifact; this committed copy is the published spec.\n\n"
+        md += "CI regenerates this on every build in the Linux `engine` job and uploads it as the `accuracy-report` "
+        md += "artifact; this committed copy is the published spec — refresh it from that artifact, not a local run.\n\n"
 
         md += "## Headline\n\n"
         md += "| Metric | Value |\n|---|---|\n"

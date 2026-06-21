@@ -2,8 +2,10 @@ import Testing
 import Foundation
 @testable import LumaDesignSystem
 
-// WCAG 2.x relative luminance + contrast ratio (sRGB). Test-only — enforces that
-// the design tokens meet AA so a future hex edit can't silently regress contrast.
+// WCAG 2.x relative luminance + contrast ratio (sRGB). Test-only. The strobe tests
+// resolve live from `StrobePalette.resolve()`, so they catch any palette hex regression.
+// The colorset text tests assert fixed reference hexes mirrored by hand from the
+// `*.colorset` assets — they pin the audited values, not the live asset bytes.
 private func relativeLuminance(_ c: RGB) -> Double {
     func lin(_ v: Double) -> Double { v <= 0.03928 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
     return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
@@ -23,11 +25,15 @@ struct ContrastAuditTests {
     let bgLight = RGB(hex: 0xE7EAF1)
 
     // Colorset hexes confirmed from Colors.xcassets/{flat,sharp,inTune}.colorset:
-    //   flat:   light #2E6BFF  dark #4D8BFF
-    //   sharp:  light #D9760F  dark #FFA53C
-    //   inTune: light #07A07C  dark #28F0C0
-    // These are identical to StrobePalette.chroma(.aurora, scheme) primaries — confirmed
-    // by reading StrobePalette.swift aurora branch.
+    //   flat:   light #285EE2  dark #4D8BFF
+    //   sharp:  light #9F5508  dark #FFA53C
+    //   inTune: light #04775B  dark #28F0C0
+    // The DARK colorset hexes are identical to StrobePalette.chroma(.aurora, .dark)
+    // primaries. The LIGHT hexes intentionally DIVERGE (two-tier light palette,
+    // 2026-06-21): the colorset tokens are the text-safe values the small StateLine
+    // tag *text* uses (4.5:1), darker than the strobe ribbon values
+    // (StrobePalette aurora light: flat #2E6BFF, sharp #C66B0D, tune #069573, graphic
+    // 3:1). See docs/solutions/accessibility/state-color-contrast-audit-2026-06-19.md.
 
     // ──────────────────────────────────────────────────────────────────────
     // 1. Sanity: formula reproduces the canonical black/white extreme (21:1).
@@ -59,15 +65,18 @@ struct ContrastAuditTests {
     // ──────────────────────────────────────────────────────────────────────
     // 3. State TEXT contrast — LIGHT appearance — threshold 4.5 (normal text)
     //    StateLine tag text (10 pt mono) on bg light #E7EAF1.
-    //    KNOWN FAILURE: flat 3.74, sharp 2.66, inTune 2.76 — all below 4.5.
-    //    Disabled: surfaced to design as a brand-palette decision.
+    //    Two-tier fix (2026-06-21): the text-safe colorset tokens were darkened to
+    //    clear 4.5:1 — flat 4.60, sharp 4.62, inTune 4.59. The vivid strobe ribbons
+    //    stay lighter (graphic 3:1, asserted separately below). StateLine colours the
+    //    in-tune tag from `state.glow` (the inTune colorset), not the palette glow,
+    //    so this colorset value is what actually renders.
     // ──────────────────────────────────────────────────────────────────────
-    @Test(.disabled("surfaced to design: light-mode aurora state tokens below AA text (4.5) — see state-color-contrast-audit-2026-06-19.md; awaiting brand decision"))
+    @Test("state colors meet AA text contrast (4.5:1) — light appearance")
     func stateTextContrast_light() {
         let lightTokens: [(String, RGB)] = [
-            ("flat",   RGB(hex: 0x2E6BFF)),
-            ("sharp",  RGB(hex: 0xD9760F)),
-            ("inTune", RGB(hex: 0x07A07C)),
+            ("flat",   RGB(hex: 0x285EE2)),
+            ("sharp",  RGB(hex: 0x9F5508)),
+            ("inTune", RGB(hex: 0x04775B)),
         ]
         for (name, c) in lightTokens {
             let ratio = contrastRatio(c, bgLight)
@@ -97,10 +106,11 @@ struct ContrastAuditTests {
 
     // ──────────────────────────────────────────────────────────────────────
     // 5. Strobe GRAPHIC contrast — LIGHT appearance — threshold 3.0
-    //    KNOWN FAILURE: flat 3.74 (passes), sharp 2.66, inTune 2.76 (both fail).
-    //    Disabled: surfaced to design as a brand-palette decision.
+    //    Two-tier fix (2026-06-21): ribbons kept vivid; sharp/tune nudged to clear
+    //    3:1 — flat 3.74 (unchanged), sharp 3.16, tune 3.14. Resolves from
+    //    StrobePalette, so it tracks the actual aurora light ribbon values.
     // ──────────────────────────────────────────────────────────────────────
-    @Test(.disabled("surfaced to design: light-mode aurora sharp/inTune below AA graphic (3.0) — see state-color-contrast-audit-2026-06-19.md; awaiting brand decision"))
+    @Test("aurora strobe ribbons meet AA graphic contrast (3.0:1) — light appearance")
     func strobeGraphicContrast_light() {
         let pal = StrobePalette.resolve(.light, palette: .aurora)
         let slots: [(String, RGB)] = [

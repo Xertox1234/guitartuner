@@ -1,9 +1,23 @@
 ---
 priority: P2
-status: open
+status: resolved
 domain: swiftui
 source: 2026-06-15-full audit (M6)
+resolved: 2026-06-20
 ---
+
+> **Resolved 2026-06-20** (branch `fix/bottomdrawer-lumafont-tokens`). Converted all
+> 13 raw semantic system-font usages in `BottomDrawer.swift` to `LumaFont` tokens via
+> `.lumaUIFont(LumaFont.Size.…)` — sizes map 1:1 to the iOS default text-style points
+> (`.caption`→cap/12, `.caption2`→micro/11, `.subheadline`→body/15, `.title3`→xl/20,
+> `.largeTitle`→xl3/32), so no visual change at default Dynamic Type. Includes line 197's
+> `.largeTitle` icon (not in the original 12-line list — same construct as the line-183
+> plus icon; converting only one would re-trigger the "violation moved to a new line"
+> cycle). The explicit `.font(.system(size: 9, design: .monospaced))` note chip is left
+> intentionally (explicit point size, not a semantic style — passes the audit criterion).
+> Second Fix bullet also done: added a typography enforcement rule to
+> `docs/rules/swiftui.md` (auto-injects on `App/` edits) so the violation stops migrating
+> into new screens. Verified by a green iOS simulator build.
 
 # System fonts used in monetization screens instead of LumaFont tokens
 

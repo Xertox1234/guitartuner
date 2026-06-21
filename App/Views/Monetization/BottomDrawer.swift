@@ -87,16 +87,16 @@ struct BottomDrawer: View {
     private var header: some View {
         HStack {
             Text("MY TUNINGS")
-                .font(.caption.bold())
+                .lumaUIFont(LumaFont.Size.cap, weight: .bold)
                 .foregroundStyle(.secondary)
                 .kerning(1)
             Spacer()
             Button("+ Save Current") { handleSave() }
-                .font(.caption.bold())
+                .lumaUIFont(LumaFont.Size.cap, weight: .bold)
                 .foregroundStyle(Color.lumaInTune)
             Button { showGearStore = true } label: {
                 Label("Store", systemImage: "bag")
-                    .font(.caption)
+                    .lumaUIFont(LumaFont.Size.cap)
             }
             .foregroundStyle(.secondary)
             Button {
@@ -180,9 +180,9 @@ struct BottomDrawer: View {
         Button { handleSave() } label: {
             VStack(spacing: 6) {
                 Image(systemName: "plus")
-                    .font(.title3)
+                    .lumaUIFont(LumaFont.Size.xl)
                 Text("Save tuning")
-                    .font(.caption2)
+                    .lumaUIFont(LumaFont.Size.micro)
             }
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, minHeight: 70)
@@ -193,10 +193,10 @@ struct BottomDrawer: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "music.note.list")
-                .font(.largeTitle)
+                .lumaUIFont(LumaFont.Size.xl3)
                 .foregroundStyle(.secondary)
             Text("No saved tunings yet")
-                .font(.subheadline)
+                .lumaUIFont(LumaFont.Size.body)
                 .foregroundStyle(.secondary)
             Button("Save Current Tuning") { handleSave() }
                 .buttonStyle(.borderedProminent)
@@ -218,7 +218,7 @@ struct BottomDrawer: View {
                     Button("Sign out") { showSignOutConfirm = true }
                         .foregroundStyle(.secondary)
                 }
-                .font(.caption)
+                .lumaUIFont(LumaFont.Size.cap)
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 16)
             } else {
@@ -226,7 +226,7 @@ struct BottomDrawer: View {
                     showAccount = true
                 } label: {
                     Text("Sign in to sync tunings across devices")
-                        .font(.caption)
+                        .lumaUIFont(LumaFont.Size.cap)
                         .foregroundStyle(Color.lumaInTune)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.bottom, 16)
@@ -257,10 +257,10 @@ struct CardChip: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(card.name)
-                .font(.caption.bold())
+                .lumaUIFont(LumaFont.Size.cap, weight: .bold)
                 .foregroundStyle(card.palette.color)
             Text("\(card.instrument == .guitar ? "Guitar" : "Bass") · \(Int(card.a4))")
-                .font(.caption2)
+                .lumaUIFont(LumaFont.Size.micro)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 10)
@@ -275,10 +275,10 @@ struct TuningCardCell: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(card.name)
-                .font(.caption.bold())
+                .lumaUIFont(LumaFont.Size.cap, weight: .bold)
                 .foregroundStyle(card.palette.color)
             Text("\(card.instrument == .guitar ? "Guitar" : "Bass") · \(Int(card.a4)) Hz · \(card.palette.label)")
-                .font(.caption2)
+                .lumaUIFont(LumaFont.Size.micro)
                 .foregroundStyle(.secondary)
             HStack(spacing: 4) {
                 ForEach(card.strings.prefix(4)) { s in

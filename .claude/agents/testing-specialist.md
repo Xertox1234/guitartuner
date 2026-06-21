@@ -14,7 +14,7 @@ These are the CI gates in `BenchmarkSuite.swift`:
 4. **Any test in `swift test --package-path Packages/TunerEngine`** — all must pass
 5. **Any test in `swift test --package-path Packages/LumaDesignSystem`** — all must pass
 
-The published accuracy spec is in `docs/benchmarks/accuracy.md`. The CSV in `docs/benchmarks/accuracy.csv` is the machine-readable version from the last CI run. Both are committed and represent the floor — do not regress.
+The published accuracy spec is in `docs/benchmarks/accuracy.md` — it is the **Linux CI `accuracy-report` artifact** (the `--ci` gate runs in the `engine` job on `ubuntu-latest`, not macOS). `docs/benchmarks/accuracy.csv` is **gitignored** (regenerated each run), not committed — so re-baseline by pulling the Linux artifact (`gh run download -n accuracy-report`), never by committing a local macOS regen (vDSP vs scalar differs in deep decimals). The clean/headline numbers are the floor — do not regress. But the **stress families (vibrato/decay-glide/weak-fund) are NOT a floor**: their steady-window `max`/`σ` are toolchain-chaotic pre-lock *acquisition transients* (e.g. vibrato `max` legitimately moved 12.51→27.03 ¢ across a CI-image bump with zero code change). Gate them only by octave-safety (`stressOctaveErrors == 0`) and post-1 s lock-σ — never by stress max/abs. See `docs/solutions/best-practices/accuracy-spec-is-linux-artifact-stress-metrics-toolchain-chaotic-2026-06-20.md`.
 
 ## Swift Testing Framework
 

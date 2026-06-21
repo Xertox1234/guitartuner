@@ -1,17 +1,17 @@
 # TunerEngine — measured accuracy
 
-_Generated 2026-06-15T00:35:22Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
+_Generated 2026-06-20T21:09:51Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Deterministic (seeded)._
 
-> Regenerate: `swift run -c release --package-path Packages/TunerEngine Benchmark --out docs/benchmarks`. CI (macOS) regenerates this every build as an artifact; this committed copy is the published spec.
+> Regenerate: `swift run -c release --package-path Packages/TunerEngine Benchmark --out docs/benchmarks`. CI regenerates this on every build in the Linux `engine` job and uploads it as the `accuracy-report` artifact; this committed copy is the published spec — refresh it from that artifact, not a local run.
 
 ## Headline
 
 | Metric | Value |
 |---|---|
 | Mean abs cents error (clean) | **0.10¢** |
-| Jitter σ (clean, steady) | 0.18¢ |
+| Jitter σ (clean, steady) | 0.15¢ |
 | **Held-note lock-window σ (clean)** | 0.12¢ |
-| Worst-case abs error (clean) | 3.79¢ |
+| Worst-case abs error (clean) | 1.72¢ |
 | Octave-error rate (clean) | 0.00% |
 | Median time-to-lock (cold start) | 43 ms |
 | Clean cases / stress cases | 195 / 15 |
@@ -20,15 +20,15 @@ _Generated 2026-06-15T00:35:22Z. Method: **MPM**, 48000 Hz, A4 = 440 Hz. Determi
 
 | Signal | n | mean ¢ | abs ¢ | σ ¢ | max ¢ |
 |---|---|---|---|---|---|
-| pure | 10525 | -0.00 | 0.01 | 0.06 | 1.41 |
-| harmonic | 10525 | 0.00 | 0.03 | 0.15 | 3.79 |
-| inharmonic | 10525 | 0.26 | 0.27 | 0.15 | 2.71 |
+| pure | 10201 | -0.00 | 0.01 | 0.07 | 1.41 |
+| harmonic | 10255 | 0.01 | 0.02 | 0.10 | 1.72 |
+| inharmonic | 10255 | 0.26 | 0.27 | 0.07 | 1.33 |
 
 ## By range (clean) — steady vs held-note lock window
 
 | Range | n | abs ¢ | σ ¢ | max ¢ | lock abs ¢ | lock σ ¢ |
 |---|---|---|---|---|---|---|
-| bass (<82 Hz) | 6762 | 0.14 | 0.29 | 3.79 | 0.09 | 0.13 |
+| bass (<82 Hz) | 5898 | 0.13 | 0.20 | 1.72 | 0.10 | 0.13 |
 | mid (82–330 Hz) | 13401 | 0.09 | 0.13 | 1.16 | 0.09 | 0.12 |
 | high (>330 Hz) | 11412 | 0.09 | 0.12 | 0.27 | 0.09 | 0.12 |
 
@@ -38,10 +38,10 @@ Real-world realities the default model omits — the families P1–P3 must impro
 
 | Family | n | abs ¢ | σ ¢ | lock σ ¢ | max ¢ | octave err |
 |---|---|---|---|---|---|---|
-| weak-fund | 348 | 0.63 | 1.00 | 0.33 | 7.94 | 0 |
-| missing-fund | 348 | 0.36 | 0.45 | 0.40 | 1.57 | 0 |
+| weak-fund | 303 | 0.33 | 0.26 | 0.21 | 1.08 | 0 |
+| missing-fund | 303 | 0.28 | 0.27 | 0.27 | 0.55 | 0 |
 | decay-glide | 704 | 9.47 | 2.36 | 1.89 | 14.77 | 0 |
-| vibrato | 617 | 0.33 | 0.98 | 0.04 | 12.51 | 0 |
+| vibrato | 617 | 0.95 | 3.75 | 0.04 | 27.03 | 0 |
 
 ## Noise robustness (inharmonic, abs cents vs SNR)
 
@@ -78,7 +78,7 @@ _Absolute-pitch clock floor: a device sample clock off by N ppm reads `1200·log
 
 | Note | true Hz | abs ¢ | octave error |
 |---|---|---|---|
-| B0 | 30.87 | 0.40 | no |
+| B0 | 30.87 | 0.18 | no |
 | E1 | 41.20 | 0.33 | no |
 | A1 | 55.00 | 0.30 | no |
 | D2 | 73.42 | 0.28 | no |
@@ -90,7 +90,8 @@ _Absolute-pitch clock floor: a device sample clock off by N ppm reads `1200·log
 |---|---|---|---|---|
 | high | ≥250 Hz | 1024 (21 ms) | 256 (5.3 ms) | 75% |
 | mid | 120–250 Hz | 2048 (43 ms) | 512 (11 ms) | 75% |
-| low | <120 Hz | 4096 (85 ms) | 1024 (21 ms) | 75% |
+| low | 40–120 Hz | 4096 (85 ms) | 1024 (21 ms) | 75% |
+| ultralow | <40 Hz (5-str low B) | 8192 (170 ms) | 2048 (43 ms) | 75% |
 | acquire (cold) | unknown | 4096 (85 ms) | 1024 (21 ms) | 75% |
 
 ## Method

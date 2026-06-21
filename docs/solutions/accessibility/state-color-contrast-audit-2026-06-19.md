@@ -1,13 +1,22 @@
 # State-color contrast audit — WCAG AA (2026-06-19)
 
+> **Resolved 2026-06-21** (`P3-lightmode-palette-aa`, "two-tier" brand decision). The
+> light-mode AA gap documented below is fixed: the small StateLine tag *text* now uses
+> darker, text-safe colorset tokens (≥ 4.5:1) while the strobe *ribbons* stay vivid,
+> nudged only enough to clear the 3:1 graphic threshold. Both `ContrastAuditTests`
+> light-appearance tests are re-enabled and passing. New values + mechanism are in the
+> **Resolution** section at the end of this file. The tables below are the original
+> 2026-06-19 *pre-fix* measurements, preserved as the audit trail.
+
 Source rule: `docs/rules/accessibility.md` (Contrast). Method: WCAG 2.x sRGB
 relative-luminance ratio (see `ContrastAuditTests.swift`). Backgrounds: dark `#0A0B10`,
 light `#E7EAF1` (confirmed from `Colors.xcassets/bg.colorset/Contents.json` and
 `StrobePalette.resolve()` — bg is palette-agnostic).
 
-Note: the `*.colorset` hexes and `StrobePalette.chroma(.aurora, scheme)` primaries are
-identical (confirmed by reading both sources), so the text-section and graphic-section
-ratios below are the same six measurements — only the threshold differs (4.5 vs 3.0).
+Note (pre-fix): at audit time the `*.colorset` hexes and `StrobePalette.chroma(.aurora,
+scheme)` primaries were identical, so the text-section and graphic-section ratios below
+are the same six measurements — only the threshold differs (4.5 vs 3.0). **This parity
+no longer holds for light aurora after the 2026-06-21 fix** — see Resolution.
 
 ## Asset-catalog state tokens (text, 4.5:1 threshold)
 
@@ -70,3 +79,51 @@ The affected tests (`stateTextContrast_light`, `strobeGraphicContrast_light`) ar
 `@Test(.disabled(...))` in `ContrastAuditTests.swift` — they remain visible in the test
 suite to prevent silent regression once the brand decision is made and the tokens are
 updated.
+
+---
+
+## Resolution (2026-06-21) — two-tier light palette
+
+Brand decision: **keep the strobe ribbons vivid, make the tag text readable.** Rather than
+darkening every light token to the 4.5:1 text threshold (which would mute the signature
+strobe), the light aurora palette is split into two tiers by WCAG element class:
+
+- **Tag text (normal text, 4.5:1)** — the `flat`/`sharp`/`inTune` *colorset* tokens are
+  darkened (hue-preserving: scaled by a constant factor in linear-RGB, so luminance drops
+  while chromaticity holds up to 8-bit rounding):
+
+  | Token  | Light: was → now | Ratio: was → now |
+  |--------|------------------|------------------|
+  | flat   | `#2E6BFF` → `#285EE2` | 3.74 → **4.60** |
+  | sharp  | `#D9760F` → `#9F5508` | 2.66 → **4.62** |
+  | inTune | `#07A07C` → `#04775B` | 2.76 → **4.59** |
+
+- **Strobe ribbons (graphic, 3:1)** — `StrobePalette.chroma(.aurora, .light)` keeps the
+  vivid hues, nudged only enough to clear 3:1; `flat` was already compliant:
+
+  | Slot  | Light: was → now | Ratio: was → now |
+  |-------|------------------|------------------|
+  | flat  | `#2E6BFF` (unchanged) | 3.74 (already ≥ 3.0) |
+  | sharp | `#D9760F` → `#C66B0D` | 2.66 → **3.16** |
+  | tune  | `#07A07C` → `#069573` | 2.76 → **3.14** |
+
+  `flat2`/`sharp2`/`tune2` were already ≥ 3.0 and are unchanged (ramp order preserved).
+
+**Mechanism note — why the colorset and the strobe palette now diverge for light aurora.**
+The audit measured the colorset as a proxy for the rendered tag, valid only while the two
+sources were byte-identical. They are now intentionally different: the small StateLine tag
+is *normal text* (4.5:1), the ribbon is a *graphic* (3:1). One code change makes the proxy
+honest again — `StateLine` previously coloured the in-tune tag from the palette-resolved
+glow (`state == .tune ? glow : state.glow`); it now uses `state.glow` (the `inTune`
+colorset) for **all** states, so the in-tune tag is text-safe and palette-agnostic, exactly
+like FLAT/SHARP. The vivid palette `tune` still drives the hero `NoteReadout` bloom and the
+strobe ribbon (both graphics). Side effect: in **dark** mode the in-tune tag for *non-aurora*
+palettes now uses the aurora `inTune` colorset rather than that palette's tune (dark passes
+AA throughout, so this is cosmetic).
+
+**Scope.** Aurora only — the signature/default palette the audit and the two tests cover.
+The other four palettes (amber/neon/forest/crimson) almost certainly fail light AA too but
+are untested and not CI-gated; tracked separately in `docs/todos/`.
+
+Both `ContrastAuditTests` light tests are re-enabled (no longer `.disabled`) and pass; the
+dark tests are unchanged and still pass.

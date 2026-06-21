@@ -10,10 +10,15 @@ public struct StateLine: View {
         self.state = state
     }
 
-    @Environment(\.lumaGlow) private var glow
-
     public var body: some View {
-        let tuneGlow = state == .tune ? glow : state.glow
+        // The tag is a small (10 pt) label — normal text under WCAG, so it uses the
+        // text-safe state colorset token (AA 4.5:1 on the light bg) for ALL states,
+        // including the in-tune "sacred" state. Previously the in-tune tag inherited
+        // the palette-resolved tune glow, which sits below 4.5:1 in light mode; the
+        // vivid palette tune still drives the hero NoteReadout bloom and the strobe
+        // ribbon, where it reads as a graphic (3:1). The tag is now palette-agnostic
+        // like FLAT/SHARP. See ContrastAuditTests.stateTextContrast_light.
+        let tagColor = state.glow
         HStack(spacing: 9) {
             Text(state.tag)
                 .font(LumaFont.mono(10, relativeTo: .caption2))
@@ -21,12 +26,12 @@ public struct StateLine: View {
                 .textCase(.uppercase)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .overlay(Capsule().stroke(tuneGlow, lineWidth: 1))
+                .overlay(Capsule().stroke(tagColor, lineWidth: 1))
             Text(state.hint)
                 .lumaUIFont(LumaFont.Size.body, weight: .medium)
                 .foregroundStyle(Color.lumaDim)
         }
-        .foregroundStyle(tuneGlow)
+        .foregroundStyle(tagColor)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(state.tag), \(state.hint)")
     }

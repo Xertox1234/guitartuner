@@ -8,6 +8,18 @@ depends_on: docs/todos/archive/P2-contrast-color-independence.md
 
 # Light-mode aurora state colors are below WCAG AA (deferred brand decision)
 
+> **✅ COMPLETED 2026-06-21** — brand decision: **"two-tier" (keep ribbons vivid, make tag
+> text readable).** Tag-text colorset tokens darkened to clear 4.5:1 (flat `#2E6BFF`→`#285EE2`
+> 4.60, sharp `#D9760F`→`#9F5508` 4.62, inTune `#07A07C`→`#04775B` 4.59); strobe aurora light
+> ribbons kept vivid, nudged only to clear 3:1 (sharp `#D9760F`→`#C66B0D` 3.16, tune
+> `#07A07C`→`#069573` 3.14; flat unchanged at 3.74). `StateLine` now colours the in-tune tag
+> from the text-safe `inTune` colorset (not the palette glow) for all states, making it
+> palette-agnostic like FLAT/SHARP. Both `ContrastAuditTests` light tests re-enabled and
+> passing. Full mechanism + before/after table: the **Resolution** section of
+> `docs/solutions/accessibility/state-color-contrast-audit-2026-06-19.md`.
+> **Scope:** aurora only — the four non-aurora palettes are tracked in
+> `docs/todos/P3-lightmode-aa-other-palettes.md`.
+
 ## Problem
 
 The C-3 contrast audit found the light-mode aurora state colors fall below WCAG AA

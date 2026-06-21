@@ -3,7 +3,10 @@ import SwiftUI
 /// RGB triple in 0...1 for additive strobe blending — the `Canvas` needs colour
 /// component access that SwiftUI `Color` doesn't expose. Values mirror
 /// `ds-tokens.css` (the strobe reads the same palette as `readPalette()` in
-/// `strobe-aurora.jsx`).
+/// `strobe-aurora.jsx`), with one deliberate exception: the aurora **light**
+/// `sharp`/`tune` ribbons are nudged darker than the design-reference hexes to
+/// clear WCAG AA graphic contrast (3:1) on the light background — see
+/// `chroma(_:_:)` and `docs/solutions/accessibility/state-color-contrast-audit-2026-06-19.md`.
 struct RGB: Equatable {
     var r, g, b: Double
 
@@ -50,6 +53,13 @@ struct StrobePalette {
     // saturated (Canvas uses .normal blend at 0.5 alpha); dark variants are
     // brighter (additive .plusLighter). flat2/sharp2 sit one step deeper on the
     // same hue ramp because the shader mixes them with flat/sharp at 0.35.
+    //
+    // Aurora light `sharp`/`tune` are nudged darker (sharp 3.16:1, tune 3.14:1 vs
+    // bg #E7EAF1) to clear WCAG AA graphic contrast (3:1); `flat` already passes
+    // (3.74:1) and is unchanged. These are the *ribbon* (graphic) values and are
+    // intentionally lighter than the `flat`/`sharp`/`inTune` colorset tokens, which
+    // the small StateLine tag *text* uses at the stricter 4.5:1 text threshold —
+    // colorset ≠ strobe for light aurora by design. See the C-3 contrast audit.
     private static func chroma(_ palette: LumaPalette, _ scheme: ColorScheme)
         -> (flat: RGB, flat2: RGB, sharp: RGB, sharp2: RGB, tune: RGB, tune2: RGB) {
         let light = scheme == .light
@@ -57,8 +67,8 @@ struct StrobePalette {
         case .aurora:
             return light
                 ? (RGB(hex: 0x2E6BFF), RGB(hex: 0x6B4DFF),
-                   RGB(hex: 0xD9760F), RGB(hex: 0xDF4226),
-                   RGB(hex: 0x07A07C), RGB(hex: 0x0A8E70))
+                   RGB(hex: 0xC66B0D), RGB(hex: 0xDF4226),
+                   RGB(hex: 0x069573), RGB(hex: 0x0A8E70))
                 : (RGB(hex: 0x4D8BFF), RGB(hex: 0x8A6BFF),
                    RGB(hex: 0xFFA53C), RGB(hex: 0xFF6A4D),
                    RGB(hex: 0x28F0C0), RGB(hex: 0x16C8A0))

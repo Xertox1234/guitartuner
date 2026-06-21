@@ -39,6 +39,8 @@ Each `sweetwater_url` is a **Sweetwater search URL** for the product, e.g.
 `https://www.sweetwater.com/store/search?s=Elixir+Nanoweb+Light+Electric`.
 Rationale: search URLs reliably resolve to a real page today (so the end-to-end tap-through is genuinely testable), carry no affiliate ID, and are trivially swapped for affiliate-wrapped product URLs before launch. A header comment in the seed file marks this as the pre-launch swap point.
 
+**Re-seed clobber warning:** because the seed uses `INSERT OR REPLACE` with stable IDs, the real-affiliate-link swap must be done by **editing `seed/store_products.sql` and re-applying it** — never by hand-editing URLs directly in production D1, which a later re-seed would silently overwrite back to the template. This is called out in the seed file header.
+
 ### 3.3 Starter catalog (~12 products, 2 featured)
 
 | category | name | price_hint | featured |
@@ -76,6 +78,8 @@ Rationale: search URLs reliably resolve to a real page today (so the end-to-end 
 
 No new types, no package-boundary changes; `gearStore` is already a `LiveTunerScreen` property threaded from `LumaApp`.
 
+**Presentation-conflict risk (verify early).** `LiveTunerScreen` already presents the drawer as a *permanently-open* sheet (`.sheet(isPresented: .constant(true))`). Adding a `.fullScreenCover` on the **same base view** means the base presents a sheet and a cover simultaneously — the classic "attempt to present while already presenting" combination. The existing drawer "Store" button avoids this by presenting its cover from *within* the sheet. This must be verified on a real iOS run as an early step. **Fallback if it conflicts:** route the bag tap through the drawer's existing `showGearStore` presentation (e.g. via a shared binding) instead of a second base-level cover, or hoist the cover above the sheet. The type surface is trivial; the presentation interaction is the actual risk.
+
 ## 5. Data flow (contract unchanged)
 
 ```
@@ -96,11 +100,25 @@ Unchanged from the shipped `GearStoreModel` / `GearStoreScreen`:
 
 No change to the privacy posture: zero tracking SDK, audio still never leaves the device, affiliate disclosure footer present. Template URLs carry no affiliate ID; the pre-launch swap introduces the affiliate ID only.
 
-## 8. Testing / verification
+## 8. Testing / verification (ordered — early gates first)
 
-- **Backend:** existing `test/store.test.ts` stays green. Seed file validity confirmed by applying to the local D1 and asserting `GET /products` returns the seeded count.
+The store has **never decoded a real row** (it has always been empty), so the riskiest steps are the untested runtime seams, not document hygiene. The plan must run these as *early gates*, not a final glance.
+
+**Gate A — Codable decode against real seeded data (BEFORE the production write).**
+The D1→JSON→Swift seam is unexercised. Specific hazards:
+- `is_featured` / `sort_order` are SQLite `INTEGER`, so `SELECT *` → `JSON.stringify` emits `"is_featured": 1` (a number), while `GearProduct.isFeatured` is a Swift `Bool`. Foundation's `JSONDecoder` may throw `typeMismatch` on `1`→`Bool`.
+- `[GearProduct]` decodes **all-or-nothing** — one malformed/null row throws out the *entire* catalog, leaving the store still blank after all the work.
+- snake_case `CodingKeys` mapping across all nine fields.
+
+Action: apply the seed to **local** D1, capture the real `GET /store/products` payload, and run it through `JSONDecoder().decode(ProductsResponse.self, …)` in a Swift test asserting the full seeded count decodes. This single test closes Bool-coercion, all-or-nothing, and key-mapping at once. **If `1`→`Bool` throws, fix empirically** (tiny custom decode for `isFeatured`, or coerce in the route) and re-run before proceeding. This gate must pass before the `--remote` production seed.
+
+**Gate B — Presentation interaction on a real iOS run (early).**
+Verify the top-chrome bag opens `GearStoreScreen` *over* the permanently-open drawer without an "already presenting" conflict (see §4). If it conflicts, apply the §4 fallback before continuing.
+
+**Then:**
+- **Backend:** existing `test/store.test.ts` stays green; seed validity confirmed via the local apply in Gate A.
 - **iOS:** `XcodeRefreshCodeIssuesInFile` on `LiveTunerScreen.swift` → clean; full build succeeds.
-- **End-to-end (manual):** launch app → bag icon visible in top chrome **at rest** (no gesture) → tap → seeded products render and category pills filter → tap a product → Safari opens the Sweetwater page.
+- **End-to-end (manual):** launch → bag visible in top chrome **at rest** (no gesture) → tap → seeded products render and category pills filter → tap a product → Safari opens the Sweetwater page.
 
 ## 9. Out of scope / open items
 

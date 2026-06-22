@@ -76,6 +76,84 @@ final class LiveTunerModel {
     @ObservationIgnored private var lastUpdate = Date.distantPast
     @ObservationIgnored private var lockGate = LockGate()
 
+    #if DEBUG
+    // MARK: - Session recording (DEBUG-only)
+    @ObservationIgnored private var recorder: SessionRecorder?
+    @ObservationIgnored private var recordDrain: Task<Void, Never>?
+    private(set) var isRecording = false
+    private(set) var recordPeak: Float = 0
+    private(set) var recordClips = 0
+
+    /// Begin capturing the live mono stream + raw readings. Requires `running`.
+    func startRecording() async {
+        guard running, recorder == nil else { return }
+        let e = engine
+        let rec = SessionRecorder(sampleRate: await e.captureSampleRate)
+        recorder = rec
+        recordPeak = 0; recordClips = 0
+        isRecording = true
+        await e.setRecording(true)
+        let stream = await e.rawSamples
+        recordDrain = Task { @MainActor [weak self] in
+            for await block in stream {
+                guard let self, let rec = self.recorder else { break }
+                rec.append(samples: block)
+                self.recordPeak = rec.peak
+                self.recordClips = rec.clippedCount
+                if rec.capReached {
+                    await e.setRecording(false)
+                    self.status = "Recording cap reached (5 min)"
+                    break
+                }
+            }
+        }
+    }
+
+    /// Stop and write the take. Returns the file URLs, or nil if unnameable / write fails.
+    func stopRecording(labelOverride: String?) -> (wav: URL, csv: URL)? {
+        guard let rec = recorder else { return nil }
+        let e = engine
+        recordDrain?.cancel(); recordDrain = nil       // the stream won't finish on its own
+        Task { await e.setRecording(false) }
+        isRecording = false
+        defer { recorder = nil }
+        guard let stem = SessionRecorder.fixtureStem(targetNote: targetNote, a4: a4, override: labelOverride) else {
+            status = "Need a target string or an explicit label to name the take"
+            return nil
+        }
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        do { return try rec.write(stem: stem, metadata: currentMetadata(), to: dir) }
+        catch { status = "Write failed: \(error.localizedDescription)"; return nil }
+    }
+
+    func currentFixtureStem(override: String?) -> String? {
+        SessionRecorder.fixtureStem(targetNote: targetNote, a4: a4, override: override)
+    }
+
+    func currentMetadata() -> SessionMetadata {
+        SessionMetadata(
+            instrument: instrument.rawValue, tuningId: tuning.id, a4: a4,
+            correctionFactor: correctionFactor, sampleRate: recorder?.sampleRate ?? 48_000,
+            deviceModel: Self.deviceModelString(), referenceNote: note,
+            capturedAt: Date(), appVersion: Self.appVersion)
+    }
+
+    private static var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+    }
+    private static func deviceModelString() -> String {
+        #if os(iOS)
+        var sys = utsname(); uname(&sys)
+        let id = Mirror(reflecting: sys.machine).children.reduce(into: "") { acc, e in
+            if let c = e.value as? Int8, c != 0 { acc.unicodeScalars.append(UnicodeScalar(UInt8(c))) }
+        }
+        return id.isEmpty ? "iOS" : id
+        #else
+        return "macOS"
+        #endif
+    }
+    #endif
+
     init() {
         // didSet not called during init; engine.setA4 is called on start().
         self.a4 = storedA4
@@ -278,6 +356,9 @@ final class LiveTunerModel {
             handleLock(si.locked, noteFreq: r.note.frequency(a4: a4))
         }
         lastUpdate = Date()
+        #if DEBUG
+        recorder?.append(reading: r)        // raw — uncorrected, not lock-relative (spec §5)
+        #endif
     }
 
     /// Fire the in-tune haptic and confirmation ping on the rising edge into lock.

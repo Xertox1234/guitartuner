@@ -20,6 +20,7 @@ struct LiveTunerScreen: View {
     var gearStore: GearStoreModel
     @State private var drawerDetent: PresentationDetent = .height(80)
     @State private var showSettings = false
+    @State private var showGearStore = false
     /// Full-screen, max-contrast Stage Mode (EXPERIENCE §8).
     @State private var stageMode = false
     /// Persisted hero-strobe choice (Aurora default); shared with the Settings sheet
@@ -91,6 +92,7 @@ struct LiveTunerScreen: View {
                 cardStore: cardStore,
                 accountModel: accountModel,
                 gearStore: gearStore,
+                showGearStore: $showGearStore,
                 palette: $palette,
                 detent: $drawerDetent
             )
@@ -123,6 +125,11 @@ struct LiveTunerScreen: View {
                                accessibilityLabel: "Stage Mode") {
                     withAnimation(.easeInOut(duration: 0.3)) { stageMode = true }
                 }
+                #if os(iOS)
+                EdgeIconButton(systemImage: "bag", accessibilityLabel: "Gear Store") {
+                    showGearStore = true
+                }
+                #endif
                 SettingsButton { showSettings = true }
             }
         }

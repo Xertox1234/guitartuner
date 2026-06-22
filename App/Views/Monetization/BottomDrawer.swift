@@ -8,11 +8,15 @@ struct BottomDrawer: View {
     @Bindable var cardStore: TuningCardStore
     @Bindable var accountModel: AccountModel
     @Bindable var gearStore: GearStoreModel
+    /// Shared with `LiveTunerScreen`'s top-chrome bag icon: the drawer owns the
+    /// gear-store `.fullScreenCover` (presented from within the drawer's own
+    /// presentation, which a base-level cover on the tuner can't do while the
+    /// drawer sheet is permanently up), so both entry points drive this binding.
+    @Binding var showGearStore: Bool
 
     @Binding var palette: LumaPalette
     @State private var showAccount = false
     @State private var showSaveCard = false
-    @State private var showGearStore = false
     @State private var showSignOutConfirm = false
     @State private var showDeleteConfirm = false
     @State private var deleteError: String? = nil
@@ -306,6 +310,7 @@ struct TuningCardCell: View {
         cardStore: TuningCardStore(),
         accountModel: AccountModel(),
         gearStore: GearStoreModel(),
+        showGearStore: .constant(false),
         palette: $palette,
         detent: $detent
     )
@@ -319,6 +324,7 @@ struct TuningCardCell: View {
         cardStore: TuningCardStore(),
         accountModel: AccountModel(),
         gearStore: GearStoreModel(),
+        showGearStore: .constant(false),
         palette: $palette,
         detent: $detent
     )

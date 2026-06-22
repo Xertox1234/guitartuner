@@ -53,7 +53,7 @@ public enum Fixtures {
     // MARK: - Filename → truth
 
     /// `"E2_82.41.wav"` → `("E2", 82.41)`; `"E2.wav"` → `("E2", 82.41)`.
-    static func parseTrueFrequency(fileName: String, a4: Double) -> (label: String, hz: Double)? {
+    public static func parseTrueFrequency(fileName: String, a4: Double) -> (label: String, hz: Double)? {
         let stem = (fileName as NSString).deletingPathExtension
         guard !stem.isEmpty else { return nil }
         if let us = stem.lastIndex(of: "_"), let hz = Double(stem[stem.index(after: us)...]), hz > 0 {

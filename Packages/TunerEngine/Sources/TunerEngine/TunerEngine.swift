@@ -59,6 +59,48 @@ public actor TunerEngine {
         continuations[id] = nil
     }
 
+    #if DEBUG
+    // MARK: - Raw-sample recording (DEBUG-only; compiled out of release)
+
+    private var isRecordingRaw = false
+    private var rawContinuation: AsyncStream<[Float]>.Continuation?
+
+    /// The exact post-downmix mono blocks the pipeline consumes, for the DEBUG-only
+    /// session recorder. **Lossless** (`.unbounded`) — a dropped block corrupts the
+    /// recorded WAV. Single consumer; minting replaces the prior continuation. No file
+    /// I/O here — the app persists.
+    public var rawSamples: AsyncStream<[Float]> {
+        AsyncStream([Float].self, bufferingPolicy: .unbounded) { cont in
+            rawContinuation = cont
+            cont.onTermination = { [weak self] _ in Task { await self?.clearRawContinuation() } }
+        }
+    }
+    private func clearRawContinuation() { rawContinuation = nil }
+
+    /// Gate raw emission. `false` also finishes the stream so a draining `for await`
+    /// ends cleanly (the app additionally cancels its drain task).
+    public func setRecording(_ on: Bool) {
+        isRecordingRaw = on
+        if !on { rawContinuation?.finish(); rawContinuation = nil }
+    }
+
+    /// Actual hardware capture rate (for the recorder's WAV header).
+    public var captureSampleRate: Double {
+        #if canImport(AVFoundation)
+        return capture?.sampleRate ?? 48_000
+        #else
+        return 48_000
+        #endif
+    }
+
+    /// Emit one block if recording. Called from `consume()`; `internal` so the
+    /// gating/losslessness is unit-testable without live capture.
+    func emitRawForRecording(_ samples: [Float]) {
+        guard isRecordingRaw, let rawContinuation else { return }
+        rawContinuation.yield(samples)
+    }
+    #endif
+
     // MARK: State
 
     private let ring = SampleRingBuffer(capacity: 1 << 15)   // ~0.68 s at 48 kHz
@@ -188,6 +230,9 @@ public actor TunerEngine {
             if let pipeline {
                 let samples = ring.read()
                 if !samples.isEmpty {
+                    #if DEBUG
+                    emitRawForRecording(samples)
+                    #endif
                     for reading in pipeline.process(samples) {
                         for cont in continuations.values { cont.yield(reading) }
                     }

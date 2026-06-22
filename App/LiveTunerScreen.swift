@@ -23,6 +23,13 @@ struct LiveTunerScreen: View {
     @State private var showGearStore = false
     /// Full-screen, max-contrast Stage Mode (EXPERIENCE §8).
     @State private var stageMode = false
+    #if DEBUG
+    @State private var showLabelSheet = false
+    @State private var pendingExport: (wav: URL, csv: URL)?
+    #if os(iOS)
+    @State private var exportItem: ExportItem?
+    #endif
+    #endif
     /// Persisted hero-strobe choice (Aurora default); shared with the Settings sheet
     /// via the same key. Reduce Motion still overrides to the still gauge.
     @AppStorage("strobeStyle") private var strobeStyle: StrobeStyle = .aurora
@@ -85,6 +92,20 @@ struct LiveTunerScreen: View {
         .onChange(of: stageMode) { _, active in setStageHold(active) }
         .onDisappear { setStageHold(false); model.stop() }
         .sheet(isPresented: $showSettings) { SettingsView(model: model) }
+        #if DEBUG
+        .sheet(isPresented: $showLabelSheet) {
+            LabelSheet(stem: model.currentFixtureStem(override: nil)) { label in
+                pendingExport = model.stopRecording(labelOverride: label)
+                showLabelSheet = false
+            }
+        }
+        #if os(iOS)
+        .sheet(item: $exportItem) { item in ShareSheet(urls: [item.wav, item.csv]) }
+        .onChange(of: pendingExport?.wav) { _, _ in
+            if let e = pendingExport { exportItem = ExportItem(wav: e.wav, csv: e.csv); pendingExport = nil }
+        }
+        #endif
+        #endif
         #if os(iOS)
         .sheet(isPresented: .constant(true)) {
             BottomDrawer(
@@ -205,6 +226,37 @@ struct LiveTunerScreen: View {
                     .buttonStyle(.bordered)
                     .tint(.lumaInTune)
             }
+            #if DEBUG
+            // DEBUG-only real-instrument recorder (spec §4) — never in release.
+            VStack(spacing: 8) {
+                HStack {
+                    Button(model.isRecording ? "Stop & Save" : "Record take") {
+                        if model.isRecording {
+                            if model.currentFixtureStem(override: nil) != nil {
+                                // auto-nameable: stop and write immediately
+                                pendingExport = model.stopRecording(labelOverride: nil)
+                            } else {
+                                // unnameable: ask for a label first, then stop inside LabelSheet
+                                showLabelSheet = true
+                            }
+                        } else {
+                            Task { await model.startRecording() }
+                        }
+                    }
+                    .disabled(!model.running)
+                    .tint(model.isRecording ? .red : .accentColor)
+
+                    if model.isRecording {
+                        // Peak meter + clip flag — AGC is off, so a hot DI can clip silently.
+                        ProgressView(value: Double(min(model.recordPeak, 1)))
+                            .frame(width: 80)
+                        Text(model.recordClips > 0 ? "CLIP \(model.recordClips)" : "peak \(Int(model.recordPeak * 100))%")
+                            .font(.caption.monospaced())
+                            .foregroundStyle(model.recordClips > 0 ? .red : .secondary)
+                    }
+                }
+            }
+            #endif
         }
         .padding(Space.s5)
         .background(Color.lumaSurface.opacity(0.55),
@@ -243,6 +295,44 @@ struct LiveTunerScreen: View {
         Binding(get: { model.inputKind }, set: { model.setInputKind($0) })
     }
 }
+
+#if DEBUG
+/// Confirm/override the fixture label when auto-naming can't (auto mode / no target).
+private struct LabelSheet: View {
+    let stem: String?
+    let onSave: (String?) -> Void
+    @State private var label: String = ""
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let stem { Text("Suggested: \(stem)").foregroundStyle(.secondary) }
+                TextField("Label or <note> (e.g. E2 or lowB_30.87)", text: $label)
+                    .autocorrectionDisabled()
+            }
+            .navigationTitle("Name the take")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { onSave(label.isEmpty ? nil : label) }
+                }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+            }
+        }
+    }
+}
+
+#if os(iOS)
+struct ExportItem: Identifiable { let id = UUID(); let wav: URL; let csv: URL }
+/// Wraps `UIActivityViewController` — DEBUG-only, so no Files-app Info.plist keys ship.
+struct ShareSheet: UIViewControllerRepresentable {
+    let urls: [URL]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: urls, applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
+#endif
+#endif
 
 #if DEBUG
 #Preview("Live Tuner — dark") {

@@ -44,12 +44,21 @@ Ground truth comes from the **filename convention** (`Fixtures.parseTrueFrequenc
 `<label>_<trueHz>.wav` (e.g. `E2_82.41.wav`) or `<note>.wav`. The filename Hz is the
 **nominal** note. A real plucked string is only at the nominal pitch if it was tuned there.
 
-The methodology that makes filename-truth valid for **absolute** accuracy: tune each string
-to an **independent ±0.1 ¢ reference-grade strobe tuner** (Peterson iStroboSoft on a spare
-phone is sufficient to start; Sonic Research Turbo Tuner / Peterson StroboStomp are hardware
-options) — *not* to LUMA itself (that would be circular). Then the nominal Hz is the true Hz
-to ±0.1 ¢, which is 2–6× tighter than the engine's measured error (0.23–0.59 ¢): a valid
-measurement (reference comfortably better than the device under test).
+The methodology that makes filename-truth valid for **absolute** accuracy requires the reference
+to confirm the string is at pitch **on the same signal, at the moment of capture** —
+*verify-at-capture, not verify-then-hope*. The robust rig is a **passthrough reference-grade
+strobe tuner in the signal chain** (instrument → strobe → DI → device): it reads the exact signal
+being recorded, so "strobe showed 0.0 ¢" is contemporaneous with the take. Tune to the
+**independent** strobe (±0.1 ¢; Sonic Research Turbo Tuner, Peterson StroboStomp), *not* to LUMA
+itself (that would be circular). Then the nominal Hz is the true Hz to ±0.1 ¢ — 2–6× tighter than
+the engine's measured error (0.23–0.59 ¢): a valid measurement (reference comfortably better than
+the device under test).
+
+A strobe **app on a spare phone** is fine for *behavioral* takes but is **not** valid for the
+absolute number unless the signal is split so the phone reads it concurrently. Tuning on the phone
+and then moving the cable to the recording device leaves the pitch **unverified during the take**,
+and short-term drift (temperature, fresh strings, low B/E settling) can silently exceed 0.1 ¢ and
+quietly invalidate the result this feature exists to produce.
 
 - **Validated:** absolute cents error, σ, lock σ, time-to-lock, octave-safety, and robustness
   to real pluck transients / inharmonicity / body resonance on real strings — the failure
@@ -78,10 +87,10 @@ no networking enter `TunerEngine`. All additions below are `#if DEBUG`.
 | Component | File | Responsibility |
 |---|---|---|
 | Engine raw-sample emission | `Packages/TunerEngine/Sources/TunerEngine/TunerEngine.swift` | `#if DEBUG`: `rawSamples: AsyncStream<[Float]>` minted with **lossless** buffering (`.unbounded`), plus `setRecording(_ on: Bool)` gating whether `consume()` yields. Yielded from `consume()` immediately after `ring.read()` (`:189–191`) — the exact post-downmix mono the pipeline consumes. Single consumer (the recorder). No yield when not recording. |
-| `SessionRecorder` | `App/Engine/SessionRecorder.swift` (new) | `#if DEBUG`. Accumulates sample blocks + raw `PitchReading`s in memory; soft cap ~5 min (≈ 57 MB mono Float32 @ 48 kHz) — stop + warn at the cap. On stop, encode Float32 WAV + CSV off the main actor, return file URLs. |
+| `SessionRecorder` | `App/Engine/SessionRecorder.swift` (new) | `#if DEBUG`. Accumulates sample blocks + raw `PitchReading`s in memory; tracks running **peak amplitude + clipped-sample count** for the UI meter; soft cap ~5 min (≈ 57 MB mono Float32 @ 48 kHz) — stop + warn at the cap. On stop, encode Float32 WAV + CSV off the main actor, return file URLs. |
 | Float32 WAV encode | `Packages/TunerEngine/Sources/TunerEngine/Bench/Fixtures.swift` | Extend `encodeWAV` (currently 16-bit PCM only) with a Float32 path (format 3 / 32-bit). Bit-exact round-trip; one codec; lives in the engine package so the headless side shares it. `decodeWAV` already reads float32. |
 | `LiveTunerModel` wiring | `App/Engine/LiveTunerModel.swift` | `#if DEBUG`: owns `SessionRecorder?`; `startRecording()` / `stopRecording() -> [URL]`; on record-start calls `engine.setRecording(true)` and spawns a task draining `engine.rawSamples` into the recorder; `apply(r:)` (`:244`) tees the **raw** `PitchReading` into the recorder CSV; supplies session context. |
-| Recorder UI | `App/LiveTunerScreen.swift` (existing `#if DEBUG`, `:247`) | Record toggle; on stop, a confirm/override sheet for the truth label; `UIActivityViewController` share-sheet export. No Files-app Info.plist keys. |
+| Recorder UI | `App/LiveTunerScreen.swift` (existing `#if DEBUG`, `:247`) | Record toggle; **live peak-level meter + clip counter** while recording (AGC is off under `.measurement`, so a hot DI can clip silently and score as garbage — the meter lets you reject + redo a bad take); on stop, a confirm/override sheet for the truth label; `UIActivityViewController` share-sheet export. No Files-app Info.plist keys. |
 | Determinism test | `Packages/TunerEngine/Tests/TunerEngineTests/` | §7. Pure, headless. |
 
 ### Data flow
@@ -135,6 +144,7 @@ no networking enter `TunerEngine`. All additions below are `#if DEBUG`.
 - **Pipeline determinism:** two fresh `PitchPipeline`s fed identical samples yield identical readings.
 - **Naming:** round-trip names through `Fixtures.parseTrueFrequency` (lock-mode auto-name +
   override + auto-mode-requires-note).
+- **Clip/peak tracking:** a synthetic over-unity buffer raises the recorder's clip counter and peak.
 - **Regression:** existing `FixturesTests`/`StimulusTests` + full `swift test` stay green;
   accuracy benchmark gate unaffected (no DSP change).
 - **Manual on-device (developer):** record a strobe-tuned string, export, drop in
@@ -173,3 +183,17 @@ field. Requires a precision injected source (function generator / disciplined os
   v1 scoring.
 - **A4 / non-standard tunings:** naming uses nominal-at-current-a4; the override field covers
   deliberate offsets. Confirm the lock-mode pre-fill uses the engine's active a4.
+
+## 11. Implementation notes (for the plan)
+
+Gotchas surfaced in review — carry into writing-plans:
+
+- **Cancel the drain task on stop.** The `rawSamples` stream does not finish on its own;
+  `stopRecording()` must cancel the task draining it (mirror `readTask?.cancel()` at
+  `LiveTunerModel.swift:133`) or the `for await` hangs.
+- **Bound *both* buffers.** The ~5 min soft cap must bound the `.unbounded` `rawSamples` backlog,
+  not only the recorder's accumulation array — they are separate buffers. When the cap trips, call
+  `engine.setRecording(false)` to stop the yield at the source.
+- **No clamp on the Float32 write.** The Float32 `encodeWAV` path must NOT inherit the 16-bit
+  clamp `max(-1, min(1, s))` — clamping is wrong for a lossless float write and would break the
+  bit-exact round-trip for an over-unity sample. Keep the clamp on the 16-bit path only.

@@ -53,7 +53,7 @@ public enum Fixtures {
     // MARK: - Filename → truth
 
     /// `"E2_82.41.wav"` → `("E2", 82.41)`; `"E2.wav"` → `("E2", 82.41)`.
-    static func parseTrueFrequency(fileName: String, a4: Double) -> (label: String, hz: Double)? {
+    public static func parseTrueFrequency(fileName: String, a4: Double) -> (label: String, hz: Double)? {
         let stem = (fileName as NSString).deletingPathExtension
         guard !stem.isEmpty else { return nil }
         if let us = stem.lastIndex(of: "_"), let hz = Double(stem[stem.index(after: us)...]), hz > 0 {
@@ -171,6 +171,25 @@ public enum Fixtures {
             let v = Int16(max(-1, min(1, s)) * 32767)
             a16(UInt16(bitPattern: v))
         }
+        return d
+    }
+
+    /// Encode mono `[Float]` as a **32-bit IEEE-float** WAV (format 3) — lossless and
+    /// **unclamped** (float carries the full range), so a recorded fixture replays the
+    /// live pipeline output bit-for-bit. The 16-bit `encodeWAV` clamps; this must not
+    /// (clamping would break the bit-exact round-trip). Pairs with `decodeWAV`'s float path.
+    public static func encodeWAVFloat32(_ samples: [Float], sampleRate: Double) -> Data {
+        var d = Data()
+        func a32(_ v: UInt32) { d.append(contentsOf: [UInt8(v & 0xFF), UInt8((v >> 8) & 0xFF), UInt8((v >> 16) & 0xFF), UInt8((v >> 24) & 0xFF)]) }
+        func a16(_ v: UInt16) { d.append(contentsOf: [UInt8(v & 0xFF), UInt8((v >> 8) & 0xFF)]) }
+        func ascii(_ s: String) { d.append(contentsOf: Array(s.utf8)) }
+        let bytesPerSample: UInt32 = 4
+        let dataBytes = UInt32(samples.count) * bytesPerSample
+        ascii("RIFF"); a32(36 + dataBytes); ascii("WAVE")
+        ascii("fmt "); a32(16); a16(3); a16(1); a32(UInt32(sampleRate))   // 3 = IEEE float, 1 channel
+        a32(UInt32(sampleRate) * bytesPerSample); a16(UInt16(bytesPerSample)); a16(32)   // byteRate, blockAlign, bits
+        ascii("data"); a32(dataBytes)
+        for s in samples { a32(s.bitPattern) }                           // no clamp — lossless
         return d
     }
 

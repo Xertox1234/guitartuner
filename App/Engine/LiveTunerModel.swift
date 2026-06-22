@@ -88,12 +88,18 @@ final class LiveTunerModel {
     func startRecording() async {
         guard running, recorder == nil else { return }
         let e = engine
-        let rec = SessionRecorder(sampleRate: await e.captureSampleRate)
+        let rate = await e.captureSampleRate
+        guard running, recorder == nil else { return }   // a stop/start raced in during the await
+        let rec = SessionRecorder(sampleRate: rate)
         recorder = rec
         recordPeak = 0; recordClips = 0
         isRecording = true
         await e.setRecording(true)
         let stream = await e.rawSamples
+        guard isRecording, recorder === rec else {        // stop (or re-start) raced in during the awaits
+            await e.setRecording(false)                   // finish the continuation we just minted — closes the leak
+            return
+        }
         recordDrain = Task { @MainActor [weak self] in
             for await block in stream {
                 guard let self, let rec = self.recorder else { break }
